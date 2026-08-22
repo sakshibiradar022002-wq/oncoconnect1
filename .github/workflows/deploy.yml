@@ -1,0 +1,117 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Manual trigger
+
+env:
+  RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+  RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run e2e tests
+        run: npm test
+        env:
+          JWT_SECRET: ci-jwt-secret-do-not-use-in-prod
+          PHI_ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
+          NODE_ENV: test
+
+  deploy-render:
+    name: Deploy to Render
+    needs: test
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Deploy to Render
+        run: |
+          echo "🚀 Triggering Render deployment..."
+          curl -X POST \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+            | tee deploy-response.json
+
+          DEPLOY_ID=$(cat deploy-response.json | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+          if [ -z "$DEPLOY_ID" ]; then
+            echo "⚠️  Deploy trigger returned no ID — check Render API key and service ID"
+            exit 1
+          fi
+
+          echo "📦 Deploy ID: $DEPLOY_ID"
+          echo "🔍 Monitoring deploy status..."
+
+          for i in $(seq 1 30); do
+            sleep 10
+            STATUS=$(curl -s \
+              -H "Authorization: Bearer ${RENDER_API_KEY}" \
+              "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys/${DEPLOY_ID}" \
+              | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+            echo "  [$i/30] Status: $STATUS"
+
+            case "$STATUS" in
+              live)
+                echo "✅ Deploy successful!"
+                exit 0
+                ;;
+              build_failed|deploy_failed)
+                echo "❌ Deploy failed with status: $STATUS"
+                exit 1
+                ;;
+              cancelled)
+                echo "⚠️  Deploy was cancelled"
+                exit 1
+                ;;
+            esac
+          done
+
+          echo "⏰ Deploy is still in progress — check Render dashboard"
+          exit 0
+
+  deploy-docker:
+    name: Build & Push Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    if: success() && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image URL
+        run: echo "🐳 Image pushed to ghcr.io/${{ github.repository }}:latest"
