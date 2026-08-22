@@ -1,0 +1,56 @@
+# ═══════════════════════════════════════════════════════════════════
+# OncoConnect — Production Dockerfile (multi-stage, hardened)
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Stage 1: Install dependencies ──────────────────────────────────
+FROM node:20-slim AS deps
+
+WORKDIR /app
+
+# Install native build tools for better-sqlite3
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
+# Copy only package files first (Docker layer caching)
+COPY package*.json ./
+RUN npm install --omit=dev && npm cache clean --force
+
+# ── Stage 2: Production image ──────────────────────────────────────
+FROM node:20-slim AS production
+
+# Security: Run as non-root user
+RUN groupadd -r oncoconnect && useradd -r -g oncoconnect -m -s /bin/bash oncoconnect
+
+WORKDIR /app
+
+# Copy dependencies from builder
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy application code
+COPY src/ ./src/
+COPY public/ ./public/
+COPY api/ ./api/
+COPY scripts/ ./scripts/
+
+# Copy configuration files
+COPY package.json ./
+
+# Create data directory for SQLite
+RUN mkdir -p /data && chown -R oncoconnect:oncoconnect /data
+
+# Set environment defaults
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV DB_PATH=/data/chemocure.db
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+# Expose port
+EXPOSE 3000
+
+# Switch to non-root user
+USER oncoconnect
+
+# Start the application
+CMD ["node", "src/server.js"]

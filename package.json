@@ -1,0 +1,47 @@
+{
+  "name": "oncoconnect-server",
+  "version": "1.0.0",
+  "description": "OncoConnect neuro-oncology EMR — secure backend (Node + Express + SQLite)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "init-db": "node src/db/init.js",
+    "test": "node --test test/e2e.test.js",
+    "test:api": "node --test test/e2e.test.js",
+    "test:ui": "playwright test",
+    "test:ui:debug": "playwright test --debug",
+    "test:ui:headed": "playwright test --headed",
+    "test:security": "npm audit --production && npm test",
+    "audit": "npm audit --production",
+    "audit:fix": "npm audit fix --production",
+    "load-test": "k6 run tests/load.js",
+    "load-test:peak": "k6 run tests/load.js -e VUS=20 -e DURATION=60s",
+    "load-test:stress": "k6 run tests/load.js -e VUS=50 -e DURATION=120s",
+    "backup": "node scripts/backup.js",
+    "rotate-key": "node scripts/rotate-phi-key.js",
+    "make-admin": "node scripts/make-admin.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "@sentry/node": "^7.108.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^9.0.3",
+    "web-push": "^3.6.7",
+    "zod": "^3.23.8"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.10.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.0"
+  }
+}
