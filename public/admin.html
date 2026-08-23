@@ -6,35 +6,65 @@
 <title>OncoConnect Admin</title>
 <meta name="theme-color" content="#2C5EAD">
 <style>
-:root{--blue:#1591DC;--blue2:#2C5EAD;--blue-light:#4BB8FA;--pale:#C4E2F5;--bg:#F1F8FD;--surface:#fff;--border:#C4E2F5;--text:#0f172a;--muted:#475569;--dim:#94a3b8;--red:#dc2626;--green:#059669;}
+/* ═══ ADMIN PANEL — Blue & White Aesthetic ═══ */
+:root,[data-theme="light"]{
+  --blue:#2563eb;--blue2:#1d4ed8;--blue-light:#3b82f6;--blue-pale:rgba(37,99,235,.06);
+  --bg:#FAFAFA;--surface:#ffffff;--surface2:#f0f4fa;--border:#dde5f3;--border2:#c0cfe0;
+  --text:#1a2740;--muted:#5a6d8e;--dim:#94a3b8;--text-dim:#94a3b8;
+  --red:#dc2626;--green:#059669;--orange:#d97706;--purple:#7c3aed;
+  --shadow:0 1px 4px rgba(37,99,235,.05);--shadow-lg:0 8px 32px rgba(37,99,235,.08);
+  --card-hover:rgba(37,99,235,.03);--glass:rgba(255,255,255,.96);
+}
+[data-theme="dark"]{
+  --blue:#4a90e2;--blue2:#2563eb;--blue-light:#6ba3ef;--blue-pale:rgba(74,144,226,.08);
+  --bg:#080d1a;--surface:#0f1729;--surface2:#141e33;--border:#1e2d4a;--border2:#2a3d5e;
+  --text:#e2e8f0;--muted:#8494b2;--dim:#4a5f82;--text-dim:#4a5f82;
+  --red:#ff6b6b;--green:#48c774;--orange:#feca57;--purple:#a78bfa;
+  --shadow:0 2px 8px rgba(0,0,0,.35);--shadow-lg:0 8px 32px rgba(0,0,0,.45);
+  --card-hover:rgba(74,144,226,.05);--glass:rgba(15,23,41,.9);
+}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
-.top{background:var(--blue2);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:10px;}
-.top h1{font-size:16px;}
-.top .who{margin-left:auto;font-size:12px;opacity:.8;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .35s ease,color .35s ease;}
+.top{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;padding:14px 22px;display:flex;align-items:center;gap:10px;position:relative;overflow:hidden;}
+.top::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.06) 0%,transparent 50%);pointer-events:none;}
+.top h1{font-size:16px;position:relative;z-index:1;}
+.top .who{margin-left:auto;font-size:12px;opacity:.8;position:relative;z-index:1;}
 .wrap{max-width:960px;margin:24px auto;padding:0 16px;}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;box-shadow:0 1px 8px rgba(44,94,173,.08);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:var(--shadow);transition:all .25s cubic-bezier(.4,0,.2,1);}
+.card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px);}
 h2{font-size:14px;margin-bottom:12px;}
-table{width:100%;border-collapse:collapse;font-size:12.5px;}
-th{text-align:left;padding:8px;color:var(--muted);font-size:11px;text-transform:uppercase;border-bottom:2px solid var(--border);}
-td{padding:9px 8px;border-bottom:1px solid var(--border);}
-.badge{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:9px;}
-.b-on{background:rgba(5,150,105,.1);color:var(--green);}
-.b-off{background:rgba(220,38,38,.1);color:var(--red);}
-button{font-family:inherit;font-size:12px;font-weight:700;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;}
-.btn-p{background:var(--blue);color:#fff;}
-.btn-r{background:rgba(220,38,38,.1);color:var(--red);}
-.btn-g{background:rgba(5,150,105,.1);color:var(--green);}
-input{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-bottom:10px;font-family:inherit;}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;}
+th{text-align:left;padding:10px 8px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border);background:var(--surface2);font-weight:700;}
+th:first-child{border-radius:10px 0 0 0;}th:last-child{border-radius:0 10px 0 0;}
+td{padding:10px 8px;border-bottom:1px solid var(--border);}
+.badge{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:9px;}
+.b-on{background:rgba(5,150,105,.08);color:var(--green);}
+.b-off{background:rgba(220,38,38,.08);color:var(--red);}
+button{font-family:inherit;font-size:12px;font-weight:700;border:none;border-radius:10px;padding:8px 16px;cursor:pointer;transition:all .2s ease;}
+button:hover{transform:translateY(-1px);}
+.btn-p{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;box-shadow:0 4px 16px rgba(37,99,235,.25);}
+.btn-p:hover{box-shadow:0 6px 24px rgba(37,99,235,.35);}
+.btn-r{background:rgba(220,38,38,.06);color:var(--red);border:1px solid rgba(220,38,38,.12);}
+.btn-r:hover{background:rgba(220,38,38,.1);}
+.btn-g{background:rgba(5,150,105,.06);color:var(--green);border:1px solid rgba(5,150,105,.12);}
+.btn-g:hover{background:rgba(5,150,105,.1);}
+input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;margin-bottom:12px;font-family:inherit;background:var(--surface2);color:var(--text);transition:all .2s ease;}
+input:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-pale);outline:none;}
 #login-card{max-width:380px;margin:8vh auto;}
 .msg{font-size:12.5px;color:var(--red);margin-bottom:8px;min-height:16px;}
 .hint{font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.6;}
 @media(max-width:700px){.hide-sm{display:none;}td,th{padding:7px 5px;}}
 .tbl-scroll{overflow-x:auto;}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:14px;padding:5px 10px;border-radius:8px;cursor:pointer;transition:all .2s;position:relative;z-index:1;}
+.theme-btn:hover{background:rgba(255,255,255,.25);}
 </style>
 </head>
 <body>
-<div class="top"><span>🛡️</span><h1>OncoConnect Admin</h1><div style="margin-left:auto;display:flex;align-items:center;gap:12px;"><a href="/" style="color:#fff;text-decoration:none;font-size:12px;opacity:.85;transition:opacity .15s;padding:4px 10px;border:1px solid rgba(255,255,255,.25);border-radius:6px" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.85'">👨‍⚕️ Doctor</a><a href="/patient.html" style="color:#fff;text-decoration:none;font-size:12px;opacity:.85;transition:opacity .15s;padding:4px 10px;border:1px solid rgba(255,255,255,.25);border-radius:6px" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.85'">🤒 Patient</a><span class="who" id="who"></span></div></div>
+<div class="top"><span>🛡️</span><h1>OncoConnect Admin</h1><div style="margin-left:auto;display:flex;align-items:center;gap:10px;"><a href="/" style="color:#fff;text-decoration:none;font-size:12px;opacity:.85;padding:5px 12px;border:1px solid rgba(255,255,255,.2);border-radius:8px;position:relative;z-index:1">👨‍⚕️ Software</a><a href="/patient.html" style="color:#fff;text-decoration:none;font-size:12px;opacity:.85;padding:5px 12px;border:1px solid rgba(255,255,255,.2);border-radius:8px;position:relative;z-index:1">📱 App</a><button class="theme-btn" onclick="toggleTheme()" id="theme-btn">🌙</button><span class="who" id="who"></span></div></div>
+<script>
+function toggleTheme(){const h=document.documentElement;const c=h.getAttribute('data-theme')||'light';const n=c==='light'?'dark':'light';h.setAttribute('data-theme',n);localStorage.setItem('onco_admin_theme',n);document.getElementById('theme-btn').textContent=n==='dark'?'☀️':'🌙';}
+(function(){const s=localStorage.getItem('onco_admin_theme')||'light';document.documentElement.setAttribute('data-theme',s);document.addEventListener('DOMContentLoaded',()=>{document.getElementById('theme-btn').textContent=s==='dark'?'☀️':'🌙';});})();
+</script>
 <div class="wrap">
 
   <div class="card" id="login-card">
