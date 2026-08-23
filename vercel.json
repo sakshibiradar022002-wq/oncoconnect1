@@ -1,5 +1,10 @@
 {
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/patient.html", "destination": "/api/index" },
+    { "source": "/admin.html", "destination": "/api/index" },
+    { "source": "/patient(.*)", "destination": "/api/index" },
+    { "source": "/admin(.*)", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/api/index" }
   ],
   "functions": {
