@@ -55,7 +55,7 @@ adminDashboardRouter.get('/dashboard', asyncHandler(async (req, res) => {
   // KV store stats (sync data size estimate)
   const kvCount = await db.prepare('SELECT COUNT(*) as c FROM kv_store').get();
   const kvDoctors = await db.prepare(
-    "SELECT COUNT(DISTINCT substr(key, 1, instr(key, '_') - 1)) as c FROM kv_store WHERE key LIKE '%_%'"
+    "SELECT COUNT(DISTINCT substr(k, 1, instr(k, '_') - 1)) as c FROM kv_store WHERE k LIKE '%_%'"
   ).get();
   
   // Daily activity (last 30 days)

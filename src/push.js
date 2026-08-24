@@ -89,6 +89,9 @@ export function startAppointmentReminders() {
       }
     } catch (err) { console.error('[push] reminder scan failed:', err.message); }
   };
-  setInterval(tick, 60 * 60 * 1000);
+  const intervalId = setInterval(tick, 60 * 60 * 1000);
   setTimeout(tick, 15000); // first scan shortly after boot
+  // Clean shutdown support
+  process.on('SIGINT', () => clearInterval(intervalId));
+  process.on('SIGTERM', () => clearInterval(intervalId));
 }

@@ -27,6 +27,8 @@ let fromAddr = null;
 
 function build() {
   if (transport || resend) return;
+  // No early return — re-check env vars every call if not yet configured.
+  // (dotenv may load after first call; module-level vars persist once set.)
 
   // 1. Resend over HTTPS — first choice.
   if (process.env.RESEND_API_KEY) {

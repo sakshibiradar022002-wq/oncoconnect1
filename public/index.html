@@ -385,6 +385,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
           <div id="rg-pass-label" style="font-size:11px;color:var(--text-dim);margin-top:3px;"></div>
         </div>
         <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="startEmailVerification()">Send Verification Code →</button>
+        <div id="reg-email-status" style="font-size:11px;text-align:center;margin-top:6px;color:var(--text-dim);"></div>
       </div>
       <div id="reg-step-2" style="display:none;">
         <div style="text-align:center;margin-bottom:20px;">
@@ -875,7 +876,7 @@ function flash(msg){const d=document.createElement('div');d.style.cssText='posit
 async function pushToServer(changes){try{await api('/sync',{method:'PUT',body:JSON.stringify({changes})})}catch(e){console.warn('[sync] push failed:',e.message)}}
 
 // ── Auth ──
-function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('a-login').style.display=tab==='login'?'block':'none';document.getElementById('a-register').style.display=tab==='register'?'block':'none';}
+function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('a-login').style.display=tab==='login'?'block':'none';document.getElementById('a-register').style.display=tab==='register'?'block':'none';if(tab==='register')checkEmailStatus();}
 function showMsg(id,msg,type='err'){const el=document.getElementById(id);if(!el)return;el.innerHTML=msg;el.className='msg '+type;el.style.display='block';if(type==='err')setTimeout(()=>{if(el)el.style.display='none';},5000);}
 function clearRegMsg(){['reg-msg','reg-ok'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
 
@@ -914,20 +915,23 @@ async function startEmailVerification(){
   if(pass.length<10||!/[A-Za-z]/.test(pass)||!/\d/.test(pass)){showMsg('reg-msg','Password: 10+ chars, letter + number required.');return;}
   // Check server for existing email (also keep local check for offline)
   if(LS.get('doc_email_'+email.replace(/[^a-z0-9]/g,'_'))){showMsg('reg-msg','Account exists locally. <a href="#" onclick="switchATab(\'login\',document.querySelector(\'.ts-btn\'));return false;" style="color:var(--blue);">Sign in?</a>');return;}
-  _pendingOTP=genOTP();_otpExpiry=Date.now()+600000;_otpEmail=email;
-  // Try EmailJS
-  const cfg=LS.get('email_config');
-  if(cfg&&cfg.publicKey&&typeof emailjs!=='undefined'){
-    try{await emailjs.send(cfg.serviceId||'default',cfg.verifyTemplate||'default',{code:_pendingOTP,email:email,name:name});}catch(e){}
+  _otpEmail=email;_otpExpiry=Date.now()+600000;
+  // Server-side OTP via /api/email/otp (uses Resend/Gmail if configured)
+  try{
+    showMsg('reg-msg','Sending verification code…','ok');
+    const r=await api('/email/otp',{method:'POST',body:JSON.stringify({email,name})});
+    document.getElementById('reg-step-1').style.display='none';
+    document.getElementById('reg-step-2').style.display='block';
+    document.getElementById('reg-email-sent-label').textContent='We sent a 6-digit code to '+email;
+    const fb=document.getElementById('rg-otp-fallback');
+    if(r.sent){fb.style.display='none';}
+    else{fb.style.display='block';document.getElementById('rg-otp-shown').textContent=r.devCode;}
+    startResendTimer();
+    document.getElementById('rg-otp').focus();
+    showMsg('reg-msg','','ok');
+  }catch(e){
+    showMsg('reg-msg','Failed to send code: '+((e.message||'').includes('503')?'Email not configured on server. Set RESEND_API_KEY.':e.message||'Server error'));
   }
-  document.getElementById('reg-step-1').style.display='none';
-  document.getElementById('reg-step-2').style.display='block';
-  document.getElementById('reg-email-sent-label').textContent='We sent a 6-digit code to '+email;
-  const fb=document.getElementById('rg-otp-fallback');
-  if(!cfg||!cfg.publicKey){fb.style.display='block';document.getElementById('rg-otp-shown').textContent=_pendingOTP;}
-  else{fb.style.display='none';}
-  startResendTimer();
-  document.getElementById('rg-otp').focus();
 }
 
 function startResendTimer(){
@@ -940,23 +944,36 @@ function startResendTimer(){
   },1000);
 }
 
-function resendOTP(){
-  _pendingOTP=genOTP();_otpExpiry=Date.now()+600000;
-  const cfg=LS.get('email_config');
-  if(cfg&&cfg.publicKey&&typeof emailjs!=='undefined'){
-    emailjs.send(cfg.serviceId||'default',cfg.verifyTemplate||'default',{code:_pendingOTP,email:_otpEmail}).catch(()=>{});
-  }
-  const fb=document.getElementById('rg-otp-fallback');
-  if(!cfg||!cfg.publicKey){fb.style.display='block';document.getElementById('rg-otp-shown').textContent=_pendingOTP;}
+async function resendOTP(){
+  _otpExpiry=Date.now()+600000;
+  try{
+    const r=await api('/email/otp',{method:'POST',body:JSON.stringify({email:_otpEmail})});
+    const fb=document.getElementById('rg-otp-fallback');
+    if(r.sent){fb.style.display='none';}
+    else{fb.style.display='block';document.getElementById('rg-otp-shown').textContent=r.devCode;}
+  }catch(e){showMsg('reg-msg','Failed to resend: '+e.message);}
   startResendTimer();
 }
 
 function backToStep1(){document.getElementById('reg-step-1').style.display='block';document.getElementById('reg-step-2').style.display='none';}
 
+// Check server email config on register tab open
+async function checkEmailStatus(){
+  const el=document.getElementById('reg-email-status');if(!el)return;
+  try{const r=await api('/email/status?verify=1');
+    if(r.configured&&r.ok)el.innerHTML='<span style="color:var(--green);">\u2713 Server email is live ('+r.provider+')</span>';
+    else if(r.configured&&!r.ok)el.innerHTML='<span style="color:var(--orange);">\u26a0 Email configured but not working: '+(r.error||'check credentials')+'</span>';
+    else el.innerHTML='<span style="color:var(--orange);">\u26a0 Email not configured — code shown on screen (dev mode)</span>';
+  }catch(e){el.innerHTML='';}
+}
+
 async function verifyAndCreate(){
   const code=v('rg-otp'),statusEl=document.getElementById('rg-otp-status');
   if(Date.now()>_otpExpiry){statusEl.innerHTML='<span style="color:var(--red);">Code expired. Please resend.</span>';return;}
-  if(code!==_pendingOTP){statusEl.innerHTML='<span style="color:var(--red);">Wrong code. Try again.</span>';document.getElementById('rg-otp').style.cssText+='border-color:var(--red);';setTimeout(()=>{const el=document.getElementById('rg-otp');if(el)el.style.borderColor='';},1500);return;}
+  // Verify OTP via server (checks against hashed code in DB)
+  try{
+    await api('/email/otp/verify',{method:'POST',body:JSON.stringify({email:_otpEmail,code})});
+  }catch(e){statusEl.innerHTML='<span style="color:var(--red);">'+(e.message||'Verification failed')+'</span>';return;}
   // Create account — server first, then local fallback
   const pass=v('rg-pass'),name=v('rg-name').trim(),email=v('rg-email').toLowerCase().trim(),spec=v('rg-spec'),hosp=v('rg-hosp').trim();
   let serverOk=false;
@@ -1136,6 +1153,7 @@ function showRTab(id,btn){
   document.querySelectorAll('.rnav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(btn)btn.classList.add('active');
+  if(id==='rt-creds'&&selectedMRN)loadPendingPasswordRequests(selectedMRN);
 }
 
 // ── Patient Management ──
@@ -1841,8 +1859,10 @@ function buildRecordTabs(p){
         </div>
         <div class="info-card">
           <div class="info-card-title">Reset Password</div>
-          <div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm" onclick="generateNewPassword('${p.mrn}')">Auto-Generate &amp; Reset</button></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary btn-sm" onclick="generateNewPassword('${p.mrn}')">Auto-Generate &amp; Reset</button><button class="btn btn-ghost btn-sm" onclick="requestPasswordChange('${p.mrn}')">🔑 Request OTP Change</button></div>
           <div id="cred-reset-msg" style="font-size:12px;margin-top:8px;display:none;"></div>
+          <div id="cred-otp-msg" style="font-size:12px;margin-top:8px;display:none;"></div>
+          <div id="cred-pending-reqs" style="margin-top:12px;display:none;"></div>
         </div>
       </div>
       <div>
@@ -1994,7 +2014,70 @@ async function saveRecord(){
 function generatePDFDownload(){printPatientSummary();}
 
 // ── Credentials ──
-async function generateNewPassword(mrn){const pass=genPass();const hash=await makePasswordHash(pass);const p=LS.get('pat_'+mrn);if(!p)return;p.pass=hash;p.updatedAt=Date.now();LS.set('pat_'+mrn,p);const el=document.getElementById('cred-reset-msg');if(el){el.style.display='block';el.className='msg ok';el.textContent='New password: '+pass+' — Copy and share with patient.';}flash('Password reset');}  function deletePatient(){if(!confirm('DELETE this patient record? This cannot be undone.'))return;const mrn=selectedMRN;LS.del('pat_'+mrn);pushToServer({['pat_'+mrn]:null});closeRecord();refreshAll();flash('Patient deleted');}
+async function generateNewPassword(mrn){const pass=genPass();const hash=await makePasswordHash(pass);const p=LS.get('pat_'+mrn);if(!p)return;p.pass=hash;p.updatedAt=Date.now();LS.set('pat_'+mrn,p);const el=document.getElementById('cred-reset-msg');if(el){el.style.display='block';el.className='msg ok';el.textContent='New password: '+pass+' — Copy and share with patient.';}flash('Password reset');}
+
+// ── OTP Password Change Request ──
+async function requestPasswordChange(mrn){
+  const msg=document.getElementById('cred-otp-msg');
+  if(msg){msg.style.display='block';msg.style.color='var(--text-muted)';msg.textContent='Requesting...';}
+  try{
+    const r=await api('/sync/password-change-request',{method:'POST',body:JSON.stringify({mrn})});
+    if(r.ok){
+      const isRemote=r.delivery==='email'||r.delivery==='sms';
+      const deliveryLabel=r.delivery==='email'?'📧 Email':r.delivery==='sms'?'📱 SMS':'🧑‍⚕️ In person';
+      if(msg){msg.style.color='var(--green)';
+        let html='<div style="background:var(--green-pale);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px;margin-top:4px;">';
+        if(isRemote){
+          html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+
+            '<span style="font-size:20px;">'+(r.delivery==='email'?'📧':'📱')+'</span>'+
+            '<div><div style="font-weight:700;">OTP sent to patient via '+deliveryLabel+'</div>'+
+            '<div style="font-size:11px;color:var(--text-muted);">'+esc(r.deliveryTo||'')+'</div></div></div>';
+        }else{
+          html+='<div style="font-weight:700;margin-bottom:6px;">🔑 Share OTP with patient in person:</div>'+
+            '<div style="background:var(--surface2);border-radius:6px;padding:8px;margin-bottom:8px;">'+
+            '<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">OTP Code</div>'+
+            '<div style="font-size:28px;font-weight:800;letter-spacing:6px;text-align:center;font-family:var(--mono);color:var(--green);">'+r.otp+'</div></div>';
+        }
+        html+='<div style="background:var(--surface2);border-radius:6px;padding:8px;margin-bottom:8px;">'+
+          '<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">New Password (share after approval)</div>'+
+          '<div style="font-size:16px;font-weight:700;text-align:center;font-family:var(--mono);color:var(--blue);letter-spacing:1px;">'+r.newPassword+'</div></div>'+
+          '<div style="font-size:11px;color:var(--text-muted);">'+r.message+'</div></div>';
+        msg.innerHTML=html;}
+      flash(isRemote?'OTP sent to patient — new password ready':'OTP + new password generated — share with patient');
+      loadPendingPasswordRequests(mrn);
+    }
+  }catch(e){if(msg){msg.style.color='var(--red)';msg.textContent='Error: '+e.message;}}
+}
+
+async function cancelPasswordChangeRequest(requestId,mrn){
+  try{
+    await api('/sync/password-change-cancel',{method:'POST',body:JSON.stringify({requestId})});
+    flash('Request cancelled');
+    loadPendingPasswordRequests(mrn);
+  }catch(e){alert('Error: '+e.message);}
+}
+
+async function loadPendingPasswordRequests(mrn){
+  const el=document.getElementById('cred-pending-reqs');
+  if(!el)return;
+  try{
+    const r=await api('/sync/password-change-pending');
+    const pending=(r.requests||[]).filter(rq=>rq.mrn===mrn&&rq.status==='pending');
+    if(!pending.length){el.style.display='none';return;}
+    el.style.display='block';
+    el.innerHTML='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--orange);margin-bottom:6px;">⏳ Pending Requests</div>'+
+      pending.map(rq=>{
+        const mins=Math.max(0,Math.round((new Date(rq.expires_at)-new Date())/60000));
+        return '<div style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'+
+          '<div><div style="font-size:12px;font-weight:600;">Request pending</div>'+
+          '<div style="font-size:11px;color:var(--text-muted);">Expires in '+mins+' min</div></div>'+
+          '<button class="btn btn-ghost btn-sm" onclick="cancelPasswordChangeRequest(\''+rq.id+'\',\''+mrn+'\')" style="color:var(--red);font-size:11px;">Cancel</button>'+
+        '</div>';
+      }).join('');
+  }catch(e){el.style.display='none';}
+}
+
+function deletePatient(){if(!confirm('DELETE this patient record? This cannot be undone.'))return;const mrn=selectedMRN;LS.del('pat_'+mrn);pushToServer({['pat_'+mrn]:null});closeRecord();refreshAll();flash('Patient deleted');}
 
 // ── AI Analysis ──
 async function promptApiKey(){if(_sessionApiKey)return true;const key=prompt('Enter Anthropic API key (sk-ant-...)\nThis key is session-only and never stored.');if(!key||!key.startsWith('sk-ant-')){alert('Invalid key format.');return false;}_sessionApiKey=key;return true;}

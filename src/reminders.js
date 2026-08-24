@@ -204,7 +204,7 @@ async function markReminderSent(ownerId, mrn, appointmentIndex, tierLabel) {
 // Main check function — called periodically
 async function checkAndSendReminders() {
   const emailReady = mailConfigured();
-  const smsReady = smsConfigured();
+  const smsReady = await smsConfigured();
   
   if (!emailReady && !smsReady) {
     // No email or SMS configured — skip silently

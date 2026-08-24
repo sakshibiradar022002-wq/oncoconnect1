@@ -15,12 +15,17 @@ await db.pragma('journal_mode = WAL');
 await db.pragma('foreign_keys = ON');
 console.log(`[db] using ${activeImpl()}`);
 
+export function closeDb() {
+  if (db && typeof db.close === 'function') db.close();
+}
+
 export async function initSchema() {
   const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf8');
   await db.exec(schema);
   // Column additions for databases created before these features existed.
   try { await db.exec('ALTER TABLE users ADD COLUMN totp_enc TEXT'); } catch { /* already there */ }
   try { await db.exec('ALTER TABLE sessions ADD COLUMN last_activity TEXT'); } catch { /* already there */ }
+  try { await db.exec('ALTER TABLE password_change_requests ADD COLUMN new_pass_plain TEXT'); } catch { /* already there */ }
   console.log('[db] schema ready');
 }
 

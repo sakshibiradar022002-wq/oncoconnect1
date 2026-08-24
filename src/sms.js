@@ -9,7 +9,7 @@
 let twilioClient = null;
 let fromNumber = null;
 
-function buildTwilioClient() {
+async function buildTwilioClient() {
   if (twilioClient) return;
   
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -20,7 +20,8 @@ function buildTwilioClient() {
   
   try {
     // Dynamic import to avoid errors when Twilio is not installed
-    const twilio = require('twilio');
+    const mod = await import('twilio');
+    const twilio = mod.default || mod;
     twilioClient = twilio(accountSid, authToken);
     console.log('[sms] Twilio client initialized');
   } catch (e) {
@@ -29,8 +30,8 @@ function buildTwilioClient() {
   }
 }
 
-export function smsConfigured() {
-  buildTwilioClient();
+export async function smsConfigured() {
+  await buildTwilioClient();
   return !!(twilioClient && fromNumber);
 }
 
@@ -51,7 +52,7 @@ function buildReminderSms(patientName, appointment, tier) {
 
 // Send SMS to a phone number
 export async function sendSms(to, message) {
-  if (!smsConfigured()) {
+  if (!(await smsConfigured())) {
     console.log('[sms] Not configured, skipping SMS to', to);
     return { sent: false, reason: 'not_configured' };
   }

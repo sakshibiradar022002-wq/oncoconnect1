@@ -13,6 +13,8 @@
 // All methods return promises so the same route code works against both the
 // in-process SQLite files and the remote Turso HTTP API.
 
+import { readFileSync, writeFileSync } from 'node:fs';
+
 let impl = null;
 
 export async function openDatabase(path) {
@@ -69,11 +71,6 @@ export async function openDatabase(path) {
         } catch {
           db = new SQL.Database();
         }
-        // Save periodically
-        const save = () => { try { const data = db.export(); fs.writeFileSync(path, Buffer.from(data)); } catch {} };
-        setInterval(save, 5000);
-        process.on('exit', save);
-        process.on('SIGINT', () => { save(); process.exit(); });
       }
       impl = 'sql.js';
       return wrapSqlJs(db, path);
@@ -96,11 +93,18 @@ function wrapSync(db, pragma, dbPath) {
         async all(...args) { return stmt.all(...args); },
       };
     },
+    close() {
+      try { db.close(); } catch {}
+    },
     name: dbPath,
   };
 }
 
 function wrapSqlJs(db, dbPath) {
+  const save = () => { try { const data = db.export(); writeFileSync(dbPath, Buffer.from(data)); } catch {} };
+  const intervalId = setInterval(save, 5000);
+  process.on('exit', save);
+  process.on('SIGINT', () => { save(); process.exit(); });
   return {
     async exec(sql) {
       db.exec(sql);
@@ -152,6 +156,11 @@ function wrapSqlJs(db, dbPath) {
         },
       };
     },
+    close() {
+      clearInterval(intervalId);
+      save(); // final flush
+      db.close();
+    },
     name: dbPath,
   };
 }
@@ -181,6 +190,7 @@ function wrapLibsql(client, url) {
         },
       };
     },
+    close() { /* libsql client has no close method */ },
     name: url,
   };
 }

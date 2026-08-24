@@ -7,12 +7,14 @@
 // session scoped to the keys that mention their MRN.
 
 import { Router } from 'express';
-import { pbkdf2Sync, timingSafeEqual, randomBytes } from 'node:crypto';
+import { pbkdf2Sync, timingSafeEqual, randomBytes, createHash, randomInt } from 'node:crypto';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { db, writeAudit } from '../db/index.js';
-import { encryptPHI, decryptPHI } from '../crypto.js';
+import { encryptPHI, decryptPHI, randomToken } from '../crypto.js';
 import { authenticate, requireRole, createSession } from '../middleware/auth.js';
+import { mailConfigured, sendMail } from '../mail.js';
+import { smsConfigured, sendSms } from '../sms.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { notifySubject } from '../push.js';
 import { validateLabSubmission } from '../validators/labResults.js';
@@ -422,4 +424,244 @@ syncRouter.put('/lab', authenticate, requireRole('kv-lab'), labScope, validate(p
     ip: req.ip,
   });
   res.json({ ok: true, count, warnings: warnings.length > 0 ? warnings : undefined });
+}));
+
+// ═══════════════════════════════════════════════════════════════════
+// Password change request flow: doctor-initiated, patient OTP-approved
+// ═══════════════════════════════════════════════════════════════════
+
+const hashPcrOtp = (mrn, code) =>
+  createHash('sha256').update(mrn.toLowerCase() + '|' + code).digest('hex');
+
+// Doctor: request a password change for a patient.
+// Generates a 6-digit OTP the doctor shares with the patient (in person).
+// The patient must enter this OTP in the patient app to approve the change.
+const pcrRequestSchema = z.object({
+  mrn: z.string().min(3).max(40).transform(s => s.trim().toUpperCase()),
+});
+
+syncRouter.post('/password-change-request', authenticate, requireRole('doctor', 'admin'), validate(pcrRequestSchema), asyncHandler(async (req, res) => {
+  const { mrn } = req.valid;
+  const doctorId = req.auth.subjectId;
+
+  // Verify doctor owns this patient
+  const patRow = await db.prepare('SELECT k, v_enc FROM kv_store WHERE owner_id = ? AND k = ?')
+    .get(doctorId, 'pat_' + mrn);
+  if (!patRow) return res.status(404).json({ error: 'Patient not found in your records' });
+
+  // Cancel any existing pending requests for this MRN from this doctor
+  await db.prepare(`UPDATE password_change_requests SET status = 'expired', resolved_at = ?
+    WHERE doctor_id = ? AND mrn = ? AND status = 'pending'`)
+    .run(new Date().toISOString(), doctorId, mrn);
+
+  // Generate 6-digit OTP
+  const otp = String(randomInt(100000, 1000000));
+  const otpHash = hashPcrOtp(mrn, otp);
+
+  // Generate new password hash using server-side v2 format
+  const newPass = String(randomBytes(16).toString('base64url')).slice(0, 20);
+  const salt = randomBytes(16).toString('base64url');
+  const newPassHash = `pbkdf2v2:210000:${salt}:${pbkdf2Sync(newPass, salt, 210000, 32, 'sha256').toString('base64')}`;
+
+  const id = randomToken(16);
+  const now = new Date().toISOString();
+  const expires = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 min
+
+  await db.prepare(`
+    INSERT INTO password_change_requests (id, doctor_id, mrn, otp_hash, new_pass, new_pass_plain, status, created_at, expires_at)
+    VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+  `).run(id, doctorId, mrn, otpHash, newPassHash, newPass, now, expires);
+
+  // Notify patient via push
+  notifySubject(`${doctorId}::${mrn}`, {
+    title: '🔑 Password change requested',
+    body: `Your doctor has requested a password change. Open the app to approve it.`,
+    url: '/patient.html',
+  }).catch(() => {});
+
+  // Try to deliver OTP to the patient via email, then SMS, then fallback to doctor.
+  const pat = decryptPHI(patRow.v_enc);
+  let deliveryMethod = 'doctor'; // fallback: doctor shows OTP in person
+  let deliveryDetail = '';
+
+  // 1) Try email if patient has an email and server email is configured
+  if (pat.email && mailConfigured()) {
+    try {
+      await sendMail({
+        to: pat.email,
+        subject: `Your OncoConnect password change code: ${otp}`,
+        text: `Hello ${pat.name || ''},
+
+Your doctor has requested a password change for your OncoConnect account.
+
+Your verification code is: ${otp}
+
+Open the OncoConnect Patient App and enter this code to approve the change.
+This code expires in 30 minutes. If you didn't request this, contact your doctor.`,
+        html: `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;">
+          <h2 style="color:#059669;margin:0 0 6px;">OncoConnect</h2>
+          <p>Hello${pat.name ? ' ' + pat.name : ''},</p>
+          <p>Your doctor has requested a password change for your account.</p>
+          <p>Your verification code is:</p>
+          <div style="font-size:32px;font-weight:800;letter-spacing:6px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px;text-align:center;color:#059669;">${otp}</div>
+          <p>Open the <strong>OncoConnect Patient App</strong> and enter this code to approve the password change.</p>
+          <p style="color:#64748b;font-size:13px;">This code expires in 30 minutes. If you didn't request this, contact your doctor.</p>
+        </div>`,
+      });
+      deliveryMethod = 'email';
+      deliveryDetail = pat.email;
+    } catch (e) { /* email failed — try SMS next */ }
+  }
+
+  // 2) Try SMS if email didn't work and patient has a phone and SMS is configured
+  if (deliveryMethod === 'doctor' && pat.phone && await smsConfigured()) {
+    try {
+      await sendSms(pat.phone,
+        `OncoConnect: Your password change code is ${otp}. Enter it in the Patient App to approve. Expires in 30 min.`
+      );
+      deliveryMethod = 'sms';
+      deliveryDetail = pat.phone;
+    } catch (e) { /* SMS failed — fallback to doctor */ }
+  }
+
+  await writeAudit({
+    actorId: doctorId, actorRole: req.auth.role,
+    action: 'password_change.request', targetId: mrn,
+    detail: { delivery: deliveryMethod },
+    ip: req.ip,
+  });
+
+  if (deliveryMethod === 'doctor') {
+    // Fallback: return OTP to doctor so they can show it in person
+    res.json({ ok: true, otp, newPassword: newPass, delivery: 'doctor', expiresMin: 30,
+      message: 'Email/SMS not available. Share the OTP with the patient in person, then the new password after approval.' });
+  } else {
+    // OTP sent remotely — doctor only gets the new password (to share after approval)
+    res.json({ ok: true, newPassword: newPass, delivery: deliveryMethod, deliveryTo: deliveryDetail, expiresMin: 30,
+      message: `OTP sent to patient via ${deliveryMethod === 'email' ? 'email' : 'SMS'}. Share the new password after they approve.` });
+  }
+}));
+
+// Doctor: cancel a pending password change request
+const pcrCancelSchema = z.object({
+  requestId: z.string().min(1),
+});
+
+syncRouter.post('/password-change-cancel', authenticate, requireRole('doctor', 'admin'), validate(pcrCancelSchema), asyncHandler(async (req, res) => {
+  const { requestId } = req.valid;
+  const now = new Date().toISOString();
+
+  const result = await db.prepare(`UPDATE password_change_requests SET status = 'cancelled', resolved_at = ?
+    WHERE id = ? AND doctor_id = ? AND status = 'pending'`)
+    .run(now, requestId, req.auth.subjectId);
+
+  if (result.changes === 0) return res.status(404).json({ error: 'Request not found or already resolved' });
+
+  await writeAudit({
+    actorId: req.auth.subjectId, actorRole: req.auth.role,
+    action: 'password_change.cancel', targetId: requestId, ip: req.ip,
+  });
+  res.json({ ok: true, message: 'Request cancelled' });
+}));
+
+// Doctor: list pending password change requests for their patients
+syncRouter.get('/password-change-pending', authenticate, requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
+  const rows = await db.prepare(`SELECT id, mrn, status, created_at, expires_at, resolved_at
+    FROM password_change_requests WHERE doctor_id = ? ORDER BY created_at DESC`).all(req.auth.subjectId);
+  res.json({ ok: true, requests: rows });
+}));
+
+// Doctor: retrieve the new password for an approved request
+const pcrRetrieveSchema = z.object({
+  requestId: z.string().min(1),
+});
+
+syncRouter.post('/password-change-retrieve', authenticate, requireRole('doctor', 'admin'), validate(pcrRetrieveSchema), asyncHandler(async (req, res) => {
+  const { requestId } = req.valid;
+  const row = await db.prepare(`SELECT id, mrn, new_pass_plain, status, created_at
+    FROM password_change_requests WHERE id = ? AND doctor_id = ?`)
+    .get(requestId, req.auth.subjectId);
+
+  if (!row) return res.status(404).json({ error: 'Request not found' });
+  if (row.status !== 'approved') return res.status(400).json({ error: 'Request not yet approved by patient' });
+
+  // Return the plaintext password once, then clear it
+  const plain = row.new_pass_plain;
+  await db.prepare(`UPDATE password_change_requests SET new_pass_plain = NULL WHERE id = ?`).run(requestId);
+
+  res.json({ ok: true, mrn: row.mrn, status: row.status, newPassword: plain,
+    message: 'Password change was approved. Share this new password with the patient.' });
+}));
+
+// Patient: list their pending password change requests
+syncRouter.get('/patient/password-change-pending', authenticate, requireRole('kv-patient'), patientScope, asyncHandler(async (req, res) => {
+  const { ownerId, mrn } = req.patientScope;
+  const rows = await db.prepare(`SELECT id, doctor_id, created_at, expires_at
+    FROM password_change_requests WHERE doctor_id = ? AND mrn = ? AND status = 'pending'
+    AND expires_at > ?`).all(ownerId, mrn, new Date().toISOString());
+
+  // Enrich with doctor name if possible
+  const enriched = [];
+  for (const r of rows) {
+    const doc = await db.prepare('SELECT name_enc FROM users WHERE id = ?').get(r.doctor_id);
+    enriched.push({ ...r, doctorName: doc ? decryptPHI(doc.name_enc) : 'Your doctor' });
+  }
+  res.json({ ok: true, requests: enriched });
+}));
+
+// Patient: approve a password change by entering the OTP
+const pcrApproveSchema = z.object({
+  requestId: z.string().min(1),
+  otp: z.string().length(6).regex(/^\d+$/),
+});
+
+syncRouter.post('/patient/password-change-approve', authenticate, requireRole('kv-patient'), patientScope, validate(pcrApproveSchema), asyncHandler(async (req, res) => {
+  const { ownerId, mrn } = req.patientScope;
+  const { requestId, otp } = req.valid;
+  const now = new Date().toISOString();
+
+  // Find the pending request for this patient
+  const row = await db.prepare(`SELECT * FROM password_change_requests
+    WHERE id = ? AND doctor_id = ? AND mrn = ? AND status = 'pending'`)
+    .get(requestId, ownerId, mrn);
+
+  if (!row) return res.status(404).json({ error: 'No pending request found' });
+  if (new Date(row.expires_at) < new Date()) {
+    await db.prepare(`UPDATE password_change_requests SET status = 'expired', resolved_at = ? WHERE id = ?`)
+      .run(now, requestId);
+    return res.status(400).json({ error: 'Request expired. Ask your doctor to create a new one.' });
+  }
+
+  // Verify OTP
+  if (row.otp_hash !== hashPcrOtp(mrn, otp)) {
+    return res.status(401).json({ error: 'Invalid OTP code. Check with your doctor and try again.' });
+  }
+
+  // OTP correct — update the patient's password in kv_store
+  await db.prepare(`UPDATE password_change_requests SET status = 'approved', resolved_at = ? WHERE id = ?`)
+    .run(now, requestId);
+
+  // Update the patient record with the new password hash
+  const patRow = await db.prepare('SELECT v_enc FROM kv_store WHERE owner_id = ? AND k = ?')
+    .get(ownerId, 'pat_' + mrn);
+  if (patRow) {
+    const pat = decryptPHI(patRow.v_enc);
+    pat.pass = row.new_pass;
+    pat.updatedAt = Date.now();
+    await upsertKey(ownerId, 'pat_' + mrn, pat, now);
+  }
+
+  // Notify doctor via push
+  notifySubject(ownerId, {
+    title: '✅ Password change approved',
+    body: `Patient ${mrn} has approved the password change.`,
+    url: '/',
+  }).catch(() => {});
+
+  await writeAudit({
+    actorId: mrn, actorRole: 'kv-patient',
+    action: 'password_change.approve', targetId: ownerId, ip: req.ip,
+  });
+
+  res.json({ ok: true, message: 'Password change approved. Your doctor has been notified and can retrieve the new credentials.' });
 }));

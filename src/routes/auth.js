@@ -52,12 +52,14 @@ function clearLoginAttempts(email) {
 }
 
 // Periodic cleanup of stale lockout entries (every 5 minutes)
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of _loginAttempts) {
     if (now - entry.firstAttempt > WINDOW_MS * 2) _loginAttempts.delete(key);
   }
 }, 5 * 60 * 1000);
+process.on('SIGINT', () => clearInterval(cleanupInterval));
+process.on('SIGTERM', () => clearInterval(cleanupInterval));
 
 // ── Doctor registration ───────────────────────────────────────────
 const registerSchema = z.object({

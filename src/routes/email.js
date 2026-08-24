@@ -39,7 +39,7 @@ import { smsConfigured } from '../sms.js';
 
 emailRouter.get('/status', asyncHandler(async (req, res) => {
   if (req.query.verify === '1') return res.json(await verifyMail());
-  res.json({ configured: mailConfigured(), provider: mailProvider(), sms: smsConfigured() });
+  res.json({ configured: mailConfigured(), provider: mailProvider(), sms: await smsConfigured() });
 }));
 
 // ── Registration OTP ──────────────────────────────────────────────

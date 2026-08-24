@@ -128,3 +128,21 @@ CREATE TABLE IF NOT EXISTS patient_access (
 );
 CREATE INDEX IF NOT EXISTS idx_access_doctor ON patient_access(doctor_id);
 CREATE INDEX IF NOT EXISTS idx_access_owner ON patient_access(owner_id);
+
+-- ── Password change requests: doctor-initiated, patient OTP-approved ──
+CREATE TABLE IF NOT EXISTS password_change_requests (
+  id          TEXT PRIMARY KEY,             -- uuid
+  doctor_id   TEXT NOT NULL,                -- requesting doctor user id
+  mrn         TEXT NOT NULL,                -- patient MRN
+  otp_hash    TEXT NOT NULL,                -- sha256(mrn|otp) — never plaintext
+  new_pass     TEXT NOT NULL,                -- hashed new password (pbkdf2v2)
+  new_pass_plain TEXT,                       -- plaintext for doctor retrieval (cleared after read)
+  status      TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','cancelled','expired')),
+  created_at  TEXT NOT NULL,
+  expires_at  TEXT NOT NULL,
+  resolved_at TEXT,                         -- when approved/cancelled
+  FOREIGN KEY (doctor_id) REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_pcr_doctor ON password_change_requests(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_pcr_mrn ON password_change_requests(mrn);
+CREATE INDEX IF NOT EXISTS idx_pcr_status ON password_change_requests(status);

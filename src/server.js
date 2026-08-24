@@ -1,5 +1,6 @@
 // OncoConnect secure backend — long-lived server entry point.
 
+import 'dotenv/config';   // load .env before anything else
 import { app } from './app.js';
 import { config } from './config.js';
 import { startAppointmentReminders } from './push.js';
