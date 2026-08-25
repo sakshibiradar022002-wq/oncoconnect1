@@ -413,7 +413,7 @@ async function doLogin(){
   if(!mrn||!pass){showErr(errEl,'Enter MRN and password.');return}
   // ── Try server login first (works from any browser, pulls data from DB) ──
   try{
-    const result=await api('/api/sync/patient-login',{method:'POST',body:JSON.stringify({mrn, password:pass})});
+    const result=await api('/sync/patient-login',{method:'POST',body:JSON.stringify({mrn, password:pass})});
     if(result&&result.ok&&result.keys){
       mergeServerKeys(result.keys);
       const pat=LS.get('pat_'+mrn);
@@ -498,7 +498,7 @@ async function doLabLogin(){
   if(!user||!pass){showErr(errEl,'Enter username and password.');return}
   // ── Try server login first ──
   try{
-    const result=await api('/api/sync/lab-login',{method:'POST',body:JSON.stringify({username:user, password:pass})});
+    const result=await api('/sync/lab-login',{method:'POST',body:JSON.stringify({username:user, password:pass})});
     if(result&&result.ok&&result.keys){
       mergeServerKeys(result.keys);
       let foundLab=null,foundDocId=null;
@@ -579,7 +579,7 @@ document.addEventListener('visibilitychange',()=>{
 // ═══ PASSWORD CHANGE APPROVAL ═══
 async function checkPendingPCR(){
   try{
-    const r=await api('/api/sync/patient/password-change-pending');
+    const r=await api('/sync/patient/password-change-pending');
     const banner=document.getElementById('pat-pcr-banner');
     if(r.ok&&r.requests&&r.requests.length>0){
       banner.style.display='block';
@@ -598,7 +598,7 @@ async function approvePCR(){
   if(!reqs.length){showErr(errEl,'No pending requests found.');return;}
   const req=reqs[0];
   try{
-    const r=await api('/api/sync/patient/password-change-approve',{method:'POST',body:JSON.stringify({requestId:req.id,otp})});
+    const r=await api('/sync/patient/password-change-approve',{method:'POST',body:JSON.stringify({requestId:req.id,otp})});
     if(r.ok){
       okEl.style.display='block';
       okEl.textContent='✅ '+r.message;
@@ -664,14 +664,14 @@ function switchApptTab(tab){
 
 async function renderPatientAppointments(){
   try{
-    const r=await api('/api/schedule/slots?days=30');
+    const r=await api('/schedule/slots?days=30');
     if(r.ok)_slotData=r.slots||{};
   }catch(e){}
   _slotDateIdx=0;_selectedSlot=null;
   renderSlotDate();
   // Check for video rooms
   try{
-    const vr=await api('/api/telehealth/my-rooms');
+    const vr=await api('/telehealth/my-rooms');
     document.getElementById('video-call-btn-container').style.display=(vr.ok&&vr.rooms&&vr.rooms.length>0)?'block':'none';
   }catch(e){}
 }
@@ -704,13 +704,13 @@ async function confirmBookAppt(){
   const type=document.getElementById('book-appt-type').value;
   const notes=document.getElementById('book-appt-notes').value;
   try{
-    const r=await api('/api/schedule/book',{method:'POST',body:JSON.stringify({date:_selectedSlot.date,startTime:_selectedSlot.time,type,notes})});
+    const r=await api('/schedule/book',{method:'POST',body:JSON.stringify({date:_selectedSlot.date,startTime:_selectedSlot.time,type,notes})});
     if(r.ok){
       alert('✅ '+r.message);
       _selectedSlot=null;
       document.getElementById('slot-selected-info').style.display='none';
       // Refresh slots
-      const sr=await api('/api/schedule/slots?days=30');
+      const sr=await api('/schedule/slots?days=30');
       if(sr.ok)_slotData=sr.slots||{};
       renderSlotDate();
     }
@@ -720,7 +720,7 @@ async function confirmBookAppt(){
 async function renderMyAppts(){
   const el=document.getElementById('my-appt-list');
   try{
-    const r=await api('/api/schedule/my-appointments');
+    const r=await api('/schedule/my-appointments');
     if(!r.ok||!r.appointments||!r.appointments.length){el.innerHTML='<div class="empty-card">No upcoming appointments.</div>';return}
     const statusColors={pending:'var(--orange)',confirmed:'var(--green)',cancelled:'var(--red)',completed:'var(--blue)'};
     el.innerHTML=r.appointments.map(a=>{
@@ -740,7 +740,7 @@ async function renderMyAppts(){
 async function cancelPatAppt(id){
   if(!confirm('Cancel this appointment?'))return;
   try{
-    const r=await api('/api/schedule/cancel',{method:'POST',body:JSON.stringify({appointmentId:id})});
+    const r=await api('/schedule/cancel',{method:'POST',body:JSON.stringify({appointmentId:id})});
     if(r.ok){alert('✅ Appointment cancelled');renderMyAppts()}
   }catch(e){alert(e.message)}
 }
@@ -751,7 +751,7 @@ async function cancelPatAppt(id){
 async function renderPatientRx(){
   const el=document.getElementById('rx-list');
   try{
-    const r=await api('/api/rx/my');
+    const r=await api('/rx/my');
     if(!r.ok||!r.prescriptions||!r.prescriptions.length){el.innerHTML='<div class="empty-card">No prescriptions on file.</div>';return}
     const statusIcon={active:'✅',completed:'✔️',cancelled:'❌',expired:'⏰','pending-refill':'🔄'};
     const statusColor={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--blue)'};
@@ -778,7 +778,7 @@ async function renderPatientRx(){
 async function requestRefill(rxId){
   if(!confirm('Request a refill for this medication?'))return;
   try{
-    const r=await api('/api/rx/refill-request',{method:'POST',body:JSON.stringify({prescriptionId:rxId})});
+    const r=await api('/rx/refill-request',{method:'POST',body:JSON.stringify({prescriptionId:rxId})});
     if(r.ok){alert('✅ '+r.message);renderPatientRx()}
   }catch(e){alert(e.message)}
 }
@@ -790,7 +790,7 @@ let _pc=null,_localStream=null,_remoteStream=null,_signalInterval=null;
 
 async function checkForVideoRooms(){
   try{
-    const r=await api('/api/telehealth/my-rooms');
+    const r=await api('/telehealth/my-rooms');
     if(r.ok&&r.rooms&&r.rooms.length>0){
       const room=r.rooms[0];
       joinVideoCall(room.id);
@@ -803,7 +803,7 @@ async function joinVideoCall(roomCode){
     _localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
   }catch(e){alert('Camera/microphone access needed for video calls.');return}
   // Join room
-  await api('/api/telehealth/rooms/'+roomCode+'/join',{method:'POST'});
+  await api('/telehealth/rooms/'+roomCode+'/join',{method:'POST'});
   // Create video overlay
   const overlay=document.createElement('div');
   overlay.id='video-overlay';
@@ -827,11 +827,11 @@ async function joinVideoCall(roomCode){
   // Simple WebRTC signaling via polling
   _pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
   _localStream.getTracks().forEach(t=>_pc.addTrack(t,_localStream));
-  _pc.onicecandidate=e=>{if(e.candidate)api('/api/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'candidate',data:e.candidate})})};
+  _pc.onicecandidate=e=>{if(e.candidate)api('/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'candidate',data:e.candidate})})};
   _pc.ontrack=e=>{document.getElementById('remote-video').srcObject=e.streams[0]};
   const offer=await _pc.createOffer();
   await _pc.setLocalDescription(offer);
-  await api('/api/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'offer',data:offer})});
+  await api('/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'offer',data:offer})});
   // Poll for signaling messages
   let lastTs=Date.now();
   _signalInterval=setInterval(async()=>{

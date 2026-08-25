@@ -2535,7 +2535,7 @@ function rRxLiveAllergyCheck(name){
   if(!name||name.length<2||!selectedMRN){el.style.display='none';return;}
   _rxAllergyTimeout=setTimeout(async()=>{
     try{
-      const r=await api('/api/cds/allergy-check',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,medications:[name]})});
+      const r=await api('/cds/allergy-check',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,medications:[name]})});
       if(r.ok&&r.alerts&&r.alerts.length){
         el.style.display='block';
         el.innerHTML='<strong>⚠️ ALLERGY WARNING:</strong> '+r.alerts.map(a=>a.message).join(' | ');
@@ -2550,7 +2550,7 @@ function rRxLiveAllergyCheck(name){
       const allMeds=[name,...activeMeds];
       setTimeout(async()=>{
         try{
-          const r2=await api('/api/cds/interactions',{method:'POST',body:JSON.stringify({medications:allMeds})});
+          const r2=await api('/cds/interactions',{method:'POST',body:JSON.stringify({medications:allMeds})});
           if(r2.ok&&r2.interactions&&r2.interactions.length){
             intEl.style.display='block';
             intEl.innerHTML='<strong>⚠️ INTERACTIONS:</strong> '+r2.interactions.map(i=>i.drug_a+' ↔ '+i.drug_b+' ('+i.severity+')').join(' | ');
@@ -2569,7 +2569,7 @@ async function rRxPrescribeWithCDS(){
   // Run allergy check
   let allergyBlocked=false;
   try{
-    const r=await api('/api/cds/allergy-check',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,medications:[med]})});
+    const r=await api('/cds/allergy-check',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,medications:[med]})});
     if(r.ok&&r.alerts&&r.alerts.length){
       if(!confirm('⚠️ ALLERGY WARNING:\n'+r.alerts.map(a=>a.message).join('\n')+'\n\nProceed anyway?'))return;
       allergyBlocked=true;
@@ -2577,7 +2577,7 @@ async function rRxPrescribeWithCDS(){
   }catch(e){}
   // Create server prescription
   try{
-    const r=await api('/api/rx',{method:'POST',body:JSON.stringify({
+    const r=await api('/rx',{method:'POST',body:JSON.stringify({
       patientMrn:selectedMRN,medication:med,
       genericName:v('r-rx-generic')||undefined,
       dosage:dose,frequency:freq,
@@ -2620,7 +2620,7 @@ async function rRxLoadAllergySummary(){
   const tags=document.getElementById('r-rx-allergy-tags');
   if(!wrap||!tags)return;
   try{
-    const r=await api('/api/cds/allergies/'+selectedMRN);
+    const r=await api('/cds/allergies/'+selectedMRN);
     if(!r.ok||!r.allergies||!r.allergies.length){wrap.style.display='none';return;}
     const sevColors={mild:'var(--green)',moderate:'var(--orange)',severe:'var(--red)',anaphylaxis:'#dc2626'};
     tags.innerHTML=r.allergies.map(a=>{
@@ -2637,7 +2637,7 @@ async function rRxLoadServerPrescriptions(){
   const el=document.getElementById('r-rx-server-list');
   if(!el)return;
   try{
-    const r=await api('/api/rx/patient/'+selectedMRN);
+    const r=await api('/rx/patient/'+selectedMRN);
     if(!r.ok||!r.prescriptions||!r.prescriptions.length){el.innerHTML='<div class="empty-card">No e-prescriptions on file.</div>';return;}
     const statusColors={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--orange)'};
     el.innerHTML=r.prescriptions.map(rx=>`
@@ -3987,7 +3987,7 @@ async function disable2FA(){
 function renderCDSPanel(){
   // Populate patient dropdown
   const sel=document.getElementById('cds-patient');
-  const keys=Object.keys(localStorage).filter(k=>k.startsWith('cc_pat_')).map(k=>k.slice(3));
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('pat_'));
   sel.innerHTML='<option value="">— Select —</option>'+keys.map(k=>{const p=LS.get(k);return p?`<option value="${p.mrn}">${p.name} (${p.mrn})</option>`:''}).join('');
 }
 
@@ -3996,7 +3996,7 @@ async function checkInteractions(){
   const meds=medsStr.split(',').map(m=>m.trim()).filter(Boolean);
   if(meds.length<2){alert('Enter at least 2 medications');return}
   try{
-    const r=await api('/api/cds/interactions',{method:'POST',body:JSON.stringify({medications:meds})});
+    const r=await api('/cds/interactions',{method:'POST',body:JSON.stringify({medications:meds})});
     const el=document.getElementById('cds-interaction-results');
     if(!r.ok||!r.interactions||!r.interactions.length){el.innerHTML='<div style="padding:12px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:10px;color:var(--green);font-size:13px">✅ No known interactions found between these medications.</div>';return}
     const sevColors={severe:'var(--red)',moderate:'var(--orange)',mild:'var(--text-muted)'};
@@ -4018,7 +4018,7 @@ async function loadPatientAllergies(){
   const el=document.getElementById('cds-allergy-list');
   if(!mrn){el.innerHTML='';return}
   try{
-    const r=await api('/api/cds/allergies/'+mrn);
+    const r=await api('/cds/allergies/'+mrn);
     if(!r.ok||!r.allergies||!r.allergies.length){el.innerHTML='<div style="font-size:12px;color:var(--text-dim);margin-top:8px">No known allergies.</div>';return}
     const sevColors={mild:'var(--green)',moderate:'var(--orange)',severe:'var(--red)',anaphylaxis:'#dc2626'};
     el.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-top:8px;margin-bottom:4px">Known Allergies</div>'+r.allergies.map(a=>`
@@ -4038,14 +4038,14 @@ async function addAllergy(){
   const rxn=document.getElementById('cds-allergy-rxn').value;
   const sev=document.getElementById('cds-allergy-sev').value;
   if(!mrn||!drug){alert('Select patient and enter drug name');return}
-  try{await api('/api/cds/allergies',{method:'POST',body:JSON.stringify({mrn,drugName:drug,reaction:rxn,severity:sev})});document.getElementById('cds-allergy-drug').value='';document.getElementById('cds-allergy-rxn').value='';loadPatientAllergies()}catch(e){alert(e.message)}
+  try{await api('/cds/allergies',{method:'POST',body:JSON.stringify({mrn,drugName:drug,reaction:rxn,severity:sev})});document.getElementById('cds-allergy-drug').value='';document.getElementById('cds-allergy-rxn').value='';loadPatientAllergies()}catch(e){alert(e.message)}
 }
 
-async function removeAllergy(id){if(!confirm('Remove this allergy?'))return;try{await api('/api/cds/allergies/'+id,{method:'DELETE'});loadPatientAllergies()}catch(e){alert(e.message)}}
+async function removeAllergy(id){if(!confirm('Remove this allergy?'))return;try{await api('/cds/allergies/'+id,{method:'DELETE'});loadPatientAllergies()}catch(e){alert(e.message)}}
 
 async function showDrugInfo(name){
   try{
-    const r=await api('/api/cds/drug-info/'+name);
+    const r=await api('/cds/drug-info/'+name);
     const el=document.getElementById('cds-drug-info');
     if(!r.ok){el.innerHTML='<div style="font-size:12px;color:var(--text-dim)">Drug not found in database.</div>';return}
     const info=r.info||{};
@@ -4066,7 +4066,7 @@ async function showDrugInfo(name){
 // ═══════════════════════════════════════════════════════════════
 function renderDoctorRxPanel(){
   const sel=document.getElementById('rx-patient');
-  const keys=Object.keys(localStorage).filter(k=>k.startsWith('cc_pat_')).map(k=>k.slice(3));
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('pat_'));
   sel.innerHTML='<option value="">— Select —</option>'+keys.map(k=>{const p=LS.get(k);return p?`<option value="${p.mrn}">${p.name} (${p.mrn})</option>`:''}).join('');
   sel.onchange=()=>loadDoctorRxs(sel.value);
 }
@@ -4075,7 +4075,7 @@ async function loadDoctorRxs(mrn){
   const el=document.getElementById('rx-active-list');
   if(!mrn){el.innerHTML='<div class="empty-card">Select a patient to view prescriptions</div>';return}
   try{
-    const r=await api('/api/rx/patient/'+mrn);
+    const r=await api('/rx/patient/'+mrn);
     if(!r.ok||!r.prescriptions||!r.prescriptions.length){el.innerHTML='<div class="empty-card">No prescriptions for this patient.</div>';return}
     const statusColors={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--orange)'};
     el.innerHTML=r.prescriptions.map(rx=>`
@@ -4101,7 +4101,7 @@ async function createPrescription(){
   const freq=document.getElementById('rx-freq').value;
   if(!mrn||!med||!dose){alert('Select patient, enter medication and dosage');return}
   try{
-    const r=await api('/api/rx',{method:'POST',body:JSON.stringify({
+    const r=await api('/rx',{method:'POST',body:JSON.stringify({
       patientMrn:mrn,medication:med,genericName:document.getElementById('rx-generic').value||undefined,
       dosage:dose,frequency:freq,route:document.getElementById('rx-route').value,
       duration:document.getElementById('rx-dur').value||undefined,
@@ -4124,7 +4124,7 @@ async function createPrescription(){
 }
 
 async function updateRx(id,status){
-  try{await api('/api/rx',{method:'PATCH',body:JSON.stringify({prescriptionId:id,status})});
+  try{await api('/rx',{method:'PATCH',body:JSON.stringify({prescriptionId:id,status})});
   loadDoctorRxs(document.getElementById('rx-patient').value)}catch(e){alert(e.message)}
 }
 
@@ -4144,7 +4144,7 @@ async function rCdsLoadAllergies(mrn){
   const badge=document.getElementById('r-cds-allergy-count');
   if(!el)return;
   try{
-    const r=await api('/api/cds/allergies/'+mrn);
+    const r=await api('/cds/allergies/'+mrn);
     if(!r.ok||!r.allergies||!r.allergies.length){el.innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">No known allergies recorded on server.</div>';if(badge)badge.style.display='none';return;}
     const sevColors={mild:'var(--green)',moderate:'var(--orange)',severe:'var(--red)',anaphylaxis:'#dc2626'};
     el.innerHTML=r.allergies.map(a=>`
@@ -4166,7 +4166,7 @@ async function rCdsAddAllergy(){
   const sev=document.getElementById('r-cds-allergy-sev').value;
   if(!drug){alert('Enter a drug name');return}
   try{
-    await api('/api/cds/allergies',{method:'POST',body:JSON.stringify({mrn:selectedMRN,drugName:drug,reaction:rxn||undefined,severity:sev})});
+    await api('/cds/allergies',{method:'POST',body:JSON.stringify({mrn:selectedMRN,drugName:drug,reaction:rxn||undefined,severity:sev})});
     document.getElementById('r-cds-allergy-drug').value='';
     document.getElementById('r-cds-allergy-rxn').value='';
     rCdsLoadAllergies(selectedMRN);
@@ -4175,7 +4175,7 @@ async function rCdsAddAllergy(){
 
 async function rCdsRemoveAllergy(id){
   if(!confirm('Remove this allergy?'))return;
-  try{await api('/api/cds/allergies/'+id,{method:'DELETE'});rCdsLoadAllergies(selectedMRN)}catch(e){alert(e.message)}
+  try{await api('/cds/allergies/'+id,{method:'DELETE'});rCdsLoadAllergies(selectedMRN)}catch(e){alert(e.message)}
 }
 
 // ── Pre-fill meds from patient's active meds ──
@@ -4187,7 +4187,7 @@ function rCdsPrefillMeds(){
   const active=(p.meds||[]).filter(m=>m.status==='Active').map(m=>m.name).join(', ');
   const serverMeds=[];
   // Also try to get from server prescriptions
-  api('/api/rx/patient/'+selectedMRN).then(r=>{
+  api('/rx/patient/'+selectedMRN).then(r=>{
     if(r.ok&&r.prescriptions){
       const activeRx=r.prescriptions.filter(rx=>rx.status==='active').map(rx=>rx.medication);
       const all=[...new Set([...active.split(', ').filter(Boolean),...activeRx])];
@@ -4205,7 +4205,7 @@ async function rCdsCheckInteractions(){
   const el=document.getElementById('r-cds-interaction-results');
   el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px;">Checking...</div>';
   try{
-    const r=await api('/api/cds/interactions',{method:'POST',body:JSON.stringify({medications:meds})});
+    const r=await api('/cds/interactions',{method:'POST',body:JSON.stringify({medications:meds})});
     if(!r.ok||!r.interactions||!r.interactions.length){
       el.innerHTML='<div style="padding:12px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:10px;color:var(--green);font-size:13px">✅ No known interactions found between these medications.</div>';
       return;
@@ -4234,7 +4234,7 @@ async function rCdsCheckDosage(){
   const el=document.getElementById('r-cds-dose-results');
   el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px;">Validating...</div>';
   try{
-    const r=await api('/api/cds/dosage-check',{method:'POST',body:JSON.stringify({medication:med,dosage:dose,frequency:freq})});
+    const r=await api('/cds/dosage-check',{method:'POST',body:JSON.stringify({medication:med,dosage:dose,frequency:freq})});
     if(!r.ok){el.innerHTML='<div style="font-size:12px;color:var(--red)">Validation error</div>';return}
     if(!r.alerts||!r.alerts.length){
       el.innerHTML='<div style="padding:12px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:10px;color:var(--green);font-size:13px">✅ Dosage appears within standard range.</div>';
@@ -4273,7 +4273,7 @@ async function rCdsQuickPrescribe(){
   const warnEl=document.getElementById('r-cds-rx-warnings');
   warnEl.style.display='none';
   try{
-    const r=await api('/api/rx',{method:'POST',body:JSON.stringify({
+    const r=await api('/rx',{method:'POST',body:JSON.stringify({
       patientMrn:selectedMRN,medication:med,dosage:dose,frequency:freq,
       route:route,duration:dur||undefined,instructions:instr||undefined
     })});
@@ -4300,7 +4300,7 @@ async function rCdsQuickPrescribe(){
 // ── Drug info lookup (in patient context) ──
 async function rCdsShowDrugInfo(name){
   try{
-    const r=await api('/api/cds/drug-info/'+name);
+    const r=await api('/cds/drug-info/'+name);
     const el=document.getElementById('r-cds-drug-info');
     if(!r.ok){el.innerHTML='<div style="font-size:12px;color:var(--text-dim)">Drug not found in database.</div>';return}
     const info=r.info||{};
@@ -4329,7 +4329,7 @@ async function renderAuditPanel(){
   if(!mrn){
     // Show doctor's own recent activity
     try{
-      const r=await api('/api/features/audit?days='+days+'&limit=100');
+      const r=await api('/features/audit?days='+days+'&limit=100');
       if(!r.ok||!r.entries||!r.entries.length){el.innerHTML='<div class="empty-card">No audit entries found.</div>';return;}
       document.getElementById('audit-count').textContent=r.entries.length+' entries';
       el.innerHTML=r.entries.map(e=>auditEntryHTML(e)).join('');
@@ -4391,19 +4391,19 @@ async function rNotesSave(){
   const body={patientMrn:selectedMRN,noteType:document.getElementById('r-note-type').value,
     subjective:v('r-note-s'),objective:v('r-note-o'),assessment:v('r-note-a'),plan:v('r-note-p'),freeText:v('r-note-free')};
   try{
-    if(_rNoteId){await api('/api/features/notes/'+_rNoteId,{method:'PATCH',body:JSON.stringify(body)});}
-    else{await api('/api/features/notes',{method:'POST',body:JSON.stringify(body)});}
+    if(_rNoteId){await api('/features/notes/'+_rNoteId,{method:'PATCH',body:JSON.stringify(body)});}
+    else{await api('/features/notes',{method:'POST',body:JSON.stringify(body)});}
     _rNoteId=null;document.getElementById('r-notes-editor').style.display='none';rNotesLoad();
   }catch(e){alert(e.message)}
 }
 async function rNotesSign(){
   if(!_rNoteId){alert('Save the note first, then sign.');return;}
-  try{await api('/api/features/notes/'+_rNoteId,{method:'PATCH',body:JSON.stringify({signed:true})});rNotesLoad();}catch(e){alert(e.message)}
+  try{await api('/features/notes/'+_rNoteId,{method:'PATCH',body:JSON.stringify({signed:true})});rNotesLoad();}catch(e){alert(e.message)}
 }
 async function rNotesLoad(){
   if(!selectedMRN)return;const el=document.getElementById('r-notes-list');
   try{
-    const r=await api('/api/features/notes/'+selectedMRN);
+    const r=await api('/features/notes/'+selectedMRN);
     if(!r.ok||!r.notes||!r.notes.length){el.innerHTML='<div class="empty-card">No clinical notes yet.</div>';return;}
     el.innerHTML=r.notes.map(n=>`<div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-left:3px solid ${n.signed?'var(--green)':'var(--orange)'};border-radius:10px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -4431,7 +4431,7 @@ async function rChemoShowForm(){
   document.getElementById('r-chemo-form').style.display='block';
   document.getElementById('r-chemo-start').value=new Date().toISOString().split('T')[0];
   // Load protocols
-  try{const r=await api('/api/features/protocols');if(r.ok&&r.protocols){_chemoProtocols=r.protocols;const sel=document.getElementById('r-chemo-protocol');sel.innerHTML='<option value="">Select protocol...</option>'+r.protocols.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('');}}catch(e){}
+  try{const r=await api('/features/protocols');if(r.ok&&r.protocols){_chemoProtocols=r.protocols;const sel=document.getElementById('r-chemo-protocol');sel.innerHTML='<option value="">Select protocol...</option>'+r.protocols.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('');}}catch(e){}
 }
 function rChemoLoadProtocol(){
   const id=document.getElementById('r-chemo-protocol').value;
@@ -4447,12 +4447,12 @@ async function rChemoSave(){
   const proto=_chemoProtocols.find(p=>p.id===protoId);
   const body={patientMrn:selectedMRN,protocolName:proto?proto.name:v('r-chemo-protocol'),regimen:v('r-chemo-regimen'),totalCycles:parseInt(v('r-chemo-total'))||6,cycleLengthDays:parseInt(v('r-chemo-length'))||28,startDate:v('r-chemo-start'),notes:v('r-chemo-notes')};
   if(!body.protocolName||!body.startDate){alert('Select protocol and start date');return;}
-  try{await api('/api/features/chemo',{method:'POST',body:JSON.stringify(body)});document.getElementById('r-chemo-form').style.display='none';rChemoLoad();}catch(e){alert(e.message)}
+  try{await api('/features/chemo',{method:'POST',body:JSON.stringify(body)});document.getElementById('r-chemo-form').style.display='none';rChemoLoad();}catch(e){alert(e.message)}
 }
 async function rChemoLoad(){
   if(!selectedMRN)return;const el=document.getElementById('r-chemo-list');
   try{
-    const r=await api('/api/features/chemo/'+selectedMRN);
+    const r=await api('/features/chemo/'+selectedMRN);
     if(!r.ok||!r.cycles||!r.cycles.length){el.innerHTML='<div class="empty-card">No chemotherapy protocols started.</div>';return;}
     el.innerHTML=r.cycles.map(c=>{const pct=Math.round((c.current_cycle/c.total_cycles)*100);const statusCol={active:'var(--green)',completed:'var(--text-muted)',paused:'var(--orange)',discontinued:'var(--red)'}[c.status]||'var(--text-dim)';return `<div class="info-card" style="border-left:3px solid ${statusCol};">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
@@ -4473,10 +4473,10 @@ async function rChemoLoad(){
   }catch(e){el.innerHTML='<div class="empty-card">Error loading chemo cycles</div>'}
 }
 async function rChemoAdvance(id,current){
-  try{await api('/api/features/chemo/'+id,{method:'PATCH',body:JSON.stringify({currentCycle:current+1})});rChemoLoad();}catch(e){alert(e.message)}
+  try{await api('/features/chemo/'+id,{method:'PATCH',body:JSON.stringify({currentCycle:current+1})});rChemoLoad();}catch(e){alert(e.message)}
 }
 async function rChemoUpdateStatus(id,status){
-  try{await api('/api/features/chemo/'+id,{method:'PATCH',body:JSON.stringify({status})});rChemoLoad();}catch(e){alert(e.message)}
+  try{await api('/features/chemo/'+id,{method:'PATCH',body:JSON.stringify({status})});rChemoLoad();}catch(e){alert(e.message)}
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4487,12 +4487,12 @@ async function rRefSave(){
   if(!selectedMRN)return;
   const body={patientMrn:selectedMRN,toSpecialty:v('r-ref-specialty'),toProvider:v('r-ref-provider')||undefined,reason:v('r-ref-reason'),urgency:v('r-ref-urgency'),clinicalSummary:v('r-ref-summary')||undefined};
   if(!body.reason){alert('Enter referral reason');return;}
-  try{await api('/api/features/referrals',{method:'POST',body:JSON.stringify(body)});document.getElementById('r-ref-form').style.display='none';rRefLoad();}catch(e){alert(e.message)}
+  try{await api('/features/referrals',{method:'POST',body:JSON.stringify(body)});document.getElementById('r-ref-form').style.display='none';rRefLoad();}catch(e){alert(e.message)}
 }
 async function rRefLoad(){
   if(!selectedMRN)return;const el=document.getElementById('r-ref-list');
   try{
-    const r=await api('/api/features/referrals/'+selectedMRN);
+    const r=await api('/features/referrals/'+selectedMRN);
     if(!r.ok||!r.referrals||!r.referrals.length){el.innerHTML='<div class="empty-card">No referrals yet.</div>';return;}
     const urgencyCol={urgent:'var(--red)',expedited:'var(--orange)',routine:'var(--blue)'};
     const statusCol={pending:'var(--orange)',accepted:'var(--green)',completed:'var(--text-muted)',declined:'var(--red)'};
@@ -4510,7 +4510,7 @@ async function rRefLoad(){
   }catch(e){el.innerHTML='<div class="empty-card">Error loading referrals</div>'}
 }
 async function rRefUpdate(id,status){
-  try{await api('/api/features/referrals/'+id,{method:'PATCH',body:JSON.stringify({status})});rRefLoad();}catch(e){alert(e.message)}
+  try{await api('/features/referrals/'+id,{method:'PATCH',body:JSON.stringify({status})});rRefLoad();}catch(e){alert(e.message)}
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4524,7 +4524,7 @@ async function rDocsUpload(){
   reader.onload=async()=>{
     const b64=reader.result.split(',')[1];
     try{
-      await api('/api/features/documents',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,docType:document.getElementById('r-doc-type').value,filename:file.name,contentType:file.type,contentB64:b64})});
+      await api('/features/documents',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,docType:document.getElementById('r-doc-type').value,filename:file.name,contentType:file.type,contentB64:b64})});
       fileInput.value='';rDocsLoad();
     }catch(e){alert(e.message)}
   };
@@ -4533,7 +4533,7 @@ async function rDocsUpload(){
 async function rDocsLoad(){
   if(!selectedMRN)return;const el=document.getElementById('r-docs-list');
   try{
-    const r=await api('/api/features/documents/'+selectedMRN);
+    const r=await api('/features/documents/'+selectedMRN);
     if(!r.ok||!r.documents||!r.documents.length){el.innerHTML='<div class="empty-card">No documents uploaded.</div>';return;}
     const typeIcons={consent:'📄',pathology:'🔬',imaging_report:'🖼',referral_letter:'📬',other:'📎'};
     el.innerHTML=r.documents.map(d=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
@@ -4545,7 +4545,7 @@ async function rDocsLoad(){
 }
 async function rDocsDelete(id){
   if(!confirm('Delete this document?'))return;
-  try{await api('/api/features/documents/'+id,{method:'DELETE'});rDocsLoad();}catch(e){alert(e.message)}
+  try{await api('/features/documents/'+id,{method:'DELETE'});rDocsLoad();}catch(e){alert(e.message)}
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4556,12 +4556,12 @@ async function rOutSave(){
   if(!selectedMRN)return;
   const body={patientMrn:selectedMRN,outcomeType:v('r-out-type'),date:v('r-out-date'),value:v('r-out-value'),notes:v('r-out-notes')||undefined};
   if(!body.value||!body.date){alert('Enter date and value');return;}
-  try{await api('/api/features/outcomes',{method:'POST',body:JSON.stringify(body)});document.getElementById('r-out-form').style.display='none';rOutLoad();}catch(e){alert(e.message)}
+  try{await api('/features/outcomes',{method:'POST',body:JSON.stringify(body)});document.getElementById('r-out-form').style.display='none';rOutLoad();}catch(e){alert(e.message)}
 }
 async function rOutLoad(){
   if(!selectedMRN)return;const el=document.getElementById('r-out-list');
   try{
-    const r=await api('/api/features/outcomes/'+selectedMRN);
+    const r=await api('/features/outcomes/'+selectedMRN);
     if(!r.ok||!r.outcomes||!r.outcomes.length){el.innerHTML='<div class="empty-card">No outcomes recorded.</div>';return;}
     const typeIcons={response:'📊',survival:'💓',qol:'😊',toxicity:'⚠️',milestone:'🎯'};
     const typeColors={response:'var(--blue)',survival:'var(--green)',qol:'var(--cyan)',toxicity:'var(--red)',milestone:'var(--orange)'};
@@ -4575,7 +4575,7 @@ async function rOutLoad(){
 }
 async function rOutDelete(id){
   if(!confirm('Delete this outcome?'))return;
-  try{await api('/api/features/outcomes/'+id,{method:'DELETE'});rOutLoad();}catch(e){alert(e.message)}
+  try{await api('/features/outcomes/'+id,{method:'DELETE'});rOutLoad();}catch(e){alert(e.message)}
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4583,7 +4583,7 @@ async function rOutDelete(id){
 // ═══════════════════════════════════════════════════════════════
 async function renderBillingDashboard(){
   try{
-    const s=await api('/api/billing/stats');
+    const s=await api('/billing/stats');
     document.getElementById('billing-stats').innerHTML=`
       <div class="billing-stat-card"><div class="label">Total Revenue</div><div class="value" style="color:var(--green)">$${(s.totalRevenue||0).toLocaleString()}</div><div class="sub">All time</div></div>
       <div class="billing-stat-card"><div class="label">Outstanding</div><div class="value" style="color:var(--orange)">$${(s.totalOutstanding||0).toLocaleString()}</div><div class="sub">Unpaid balance</div></div>
@@ -4595,7 +4595,7 @@ async function renderBillingDashboard(){
 }
 async function loadBillingInvoices(){
   try{
-    const inv=await api('/api/billing/invoices');
+    const inv=await api('/billing/invoices');
     const el=document.getElementById('billing-invoices-list');
     if(!inv.length){el.innerHTML='<div class="empty-card">No invoices yet.</div>';return;}
     el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${inv.map(i=>`
@@ -4623,7 +4623,7 @@ function switchBillingTab(tab,btn){
 }
 async function loadBillingClaims(){
   try{
-    const cl=await api('/api/billing/claims');
+    const cl=await api('/billing/claims');
     const el=document.getElementById('billing-claims-list');
     if(!cl.length){el.innerHTML='<div class="empty-card">No claims yet.</div>';return;}
     el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${cl.map(c=>`
@@ -4640,7 +4640,7 @@ async function loadBillingClaims(){
 }
 async function loadBillingPayments(){
   try{
-    const p=await api('/api/billing/payments');
+    const p=await api('/billing/payments');
     const el=document.getElementById('billing-payments-list');
     if(!p.length){el.innerHTML='<div class="empty-card">No payments.</div>';return;}
     el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${p.map(x=>`
@@ -4658,7 +4658,7 @@ async function lookupICD10(){
   const q=document.getElementById('icd10-search').value;
   if(!q||q.length<2)return;
   try{
-    const codes=await api('/api/billing/codes/icd10?q='+encodeURIComponent(q));
+    const codes=await api('/billing/codes/icd10?q='+encodeURIComponent(q));
     document.getElementById('icd10-results').innerHTML=codes.map(c=>`<div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:10px;cursor:pointer;" onmouseover="this.style.background='var(--blue-pale)'" onmouseout="this.style.background=''">
       <span style="font-weight:700;color:var(--blue);font-family:var(--mono);min-width:60px;">${c.code}</span><span style="font-size:12px;color:var(--text-muted);">${c.desc}</span></div>`).join('')||'<div style="padding:12px;color:var(--text-dim);font-size:12px;">No results</div>';
   }catch(e){}
@@ -4667,7 +4667,7 @@ async function lookupCPT(){
   const q=document.getElementById('cpt-search').value;
   if(!q||q.length<2)return;
   try{
-    const codes=await api('/api/billing/codes/cpt?q='+encodeURIComponent(q));
+    const codes=await api('/billing/codes/cpt?q='+encodeURIComponent(q));
     document.getElementById('cpt-results').innerHTML=codes.map(c=>`<div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:10px;cursor:pointer;" onmouseover="this.style.background='var(--blue-pale)'" onmouseout="this.style.background=''">
       <span style="font-weight:700;color:var(--blue);font-family:var(--mono);min-width:70px;">${c.code}</span><div><span style="font-size:12px;color:var(--text-muted);">${c.desc}</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;">${c.category}</span></div></div>`).join('')||'<div style="padding:12px;color:var(--text-dim);font-size:12px;">No results</div>';
   }catch(e){}
@@ -4689,7 +4689,7 @@ function switchReportTab(tab,btn){
 }
 async function renderReportsPanel(){
   try{
-    const d=await api('/api/reports/panel-health');
+    const d=await api('/reports/panel-health');
     let html=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
       <div class="billing-stat-card"><div class="label">Total Patients</div><div class="value" style="color:var(--blue)">${d.totalPatients||0}</div></div>
       <div class="billing-stat-card"><div class="label">Active Treatments</div><div class="value" style="color:var(--cyan)">${d.activeTreatments||0}</div></div>
@@ -4713,7 +4713,7 @@ async function renderReportsPanel(){
 }
 async function renderFinancialReport(){
   try{
-    const d=await api('/api/reports/financial');
+    const d=await api('/reports/financial');
     document.getElementById('report-financial').innerHTML=`
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
         <div class="billing-stat-card"><div class="label">Total Revenue</div><div class="value" style="color:var(--green)">$${(d.totalRevenue||0).toLocaleString()}</div></div>
@@ -4725,7 +4725,7 @@ async function renderFinancialReport(){
 }
 async function renderOperationalReport(){
   try{
-    const d=await api('/api/reports/operational');
+    const d=await api('/reports/operational');
     document.getElementById('report-operational').innerHTML=`
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
         <div class="billing-stat-card"><div class="label">Total Appointments</div><div class="value">${d.totalAppointments||0}</div><div class="sub">${d.completedAppts||0} completed</div></div>
@@ -4737,7 +4737,7 @@ async function renderOperationalReport(){
 }
 async function renderQualityReport(){
   try{
-    const d=await api('/api/reports/quality');
+    const d=await api('/reports/quality');
     let html=`<div style="margin-bottom:16px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;">
       <div style="font-size:13px;font-weight:600;">Overall Compliance:</div>
       <div style="font-size:20px;font-weight:800;color:${(d.complianceRate||0)>=70?'var(--green)':'var(--orange)'}">${d.complianceRate||0}%</div>
@@ -4760,7 +4760,7 @@ async function renderQualityReport(){
 }
 async function renderCancerRegistryReport(){
   try{
-    const d=await api('/api/reports/cancer-registry');
+    const d=await api('/reports/cancer-registry');
     let html=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
       <div class="billing-stat-card"><div class="label">Total Patients</div><div class="value">${d.totalPatients||0}</div></div>
       <div class="billing-stat-card"><div class="label">With Biomarkers</div><div class="value" style="color:var(--blue)">${d.withBiomarkers||0}</div><div class="sub">${d.biomarkerRate||0}% rate</div></div>
@@ -4787,7 +4787,7 @@ async function renderCancerRegistryReport(){
 // ═══════════════════════════════════════════════════════════════
 async function renderSettingsPanel(){
   try{
-    const roles=await api('/api/hipaa/roles');
+    const roles=await api('/hipaa/roles');
     document.getElementById('settings-roles-list').innerHTML=roles.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
       <div style="width:10px;height:10px;border-radius:50%;background:${r.is_system?'var(--blue)':'var(--green)'};"></div>
       <div style="flex:1;min-width:0;">
@@ -4796,7 +4796,7 @@ async function renderSettingsPanel(){
       </div>
       <div style="font-size:10px;color:var(--text-dim);font-family:var(--mono);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.permissions||'')}</div>
     </div>`).join('');
-    const ret=await api('/api/hipaa/retention');
+    const ret=await api('/hipaa/retention');
     document.getElementById('settings-retention-list').innerHTML=ret.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:600;font-size:12px;">${esc(r.name)}</div>
@@ -4811,7 +4811,7 @@ async function addCustomRole(){
   const name=document.getElementById('new-role-name').value;
   if(!name){alert('Enter a role name');return;}
   try{
-    await api('/api/hipaa/roles',{method:'POST',body:JSON.stringify({name,description:'Custom role',permissions:['patient.view']})});
+    await api('/hipaa/roles',{method:'POST',body:JSON.stringify({name,description:'Custom role',permissions:['patient.view']})});
     document.getElementById('new-role-name').value='';
     renderSettingsPanel();
   }catch(e){alert('Error: '+e.message);}
@@ -4822,7 +4822,7 @@ async function addCustomRole(){
 // ═══════════════════════════════════════════════════════════════
 async function loadNCCNTab(mrn){
   try{
-    const bios=await api('/api/biomarkers/'+mrn);
+    const bios=await api('/biomarkers/'+mrn);
     const el=document.getElementById('nccn-bio-list');
     if(!bios||!bios.length){el.innerHTML='<div class="empty-card">No biomarker results yet.</div>';}
     else{
@@ -4833,7 +4833,7 @@ async function loadNCCNTab(mrn){
       </div>
       ${b.clinical_significance?`<div style="font-size:11px;color:var(--text-muted);padding:4px 12px 8px;border-bottom:1px solid var(--border);margin-bottom:6px;">💡 ${esc(b.clinical_significance)}</div>`:''}`).join('');
     }
-    const recs=await api('/api/nccn/recommendations/'+mrn);
+    const recs=await api('/nccn/recommendations/'+mrn);
     const rel=document.getElementById('nccn-recommendations');
     if(!recs||!recs.length){rel.innerHTML='<div class="empty-card">No matching protocols found.</div>';}
     else{
@@ -4847,7 +4847,7 @@ async function loadNCCNTab(mrn){
         <div style="font-size:12px;color:var(--text);line-height:1.5;">${esc(r.regimen)}</div>
       </div>`).join('');
     }
-    const doses=await api('/api/dosing/cumulative/'+mrn);
+    const doses=await api('/dosing/cumulative/'+mrn);
     const dl=document.getElementById('cum-dose-list');
     if(!doses||!doses.length){dl.innerHTML='<div class="empty-card">No cumulative doses tracked.</div>';}
     else{
@@ -4864,7 +4864,7 @@ async function loadNCCNTab(mrn){
 async function addBiomarker(){
   if(!selectedMRN){alert('No patient selected');return;}
   try{
-    const r=await api('/api/biomarkers',{method:'POST',body:JSON.stringify({
+    const r=await api('/biomarkers',{method:'POST',body:JSON.stringify({
       patientMrn:selectedMRN,
       biomarker:document.getElementById('nccn-bio-name').value,
       result:document.getElementById('nccn-bio-result').value,
@@ -4879,7 +4879,7 @@ async function addBiomarker(){
 async function filterNCCN(){
   const q=(document.getElementById('nccn-filter')?.value||'').toLowerCase();
   try{
-    const gl=await api('/api/nccn/guidelines'+(q?'?cancerType='+encodeURIComponent(q):''));
+    const gl=await api('/nccn/guidelines'+(q?'?cancerType='+encodeURIComponent(q):''));
     document.getElementById('nccn-protocol-list').innerHTML=gl.map(g=>`<div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
         <span style="font-weight:700;font-size:13px;">${esc(g.protocol_name)}</span>
@@ -4903,7 +4903,7 @@ function switchPatientBillingTab(tab,btn){
 }
 async function loadPatientBilling(mrn){
   try{
-    const inv=await api('/api/billing/invoices?patientMrn='+mrn);
+    const inv=await api('/billing/invoices?patientMrn='+mrn);
     const el=document.getElementById('pt-billing-invoices');
     if(!inv.length){el.innerHTML='<div class="empty-card">No invoices yet.</div>';return;}
     el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${inv.map(i=>`
@@ -4912,7 +4912,7 @@ async function loadPatientBilling(mrn){
         <div style="font-weight:700;">$${(i.total||0).toFixed(2)}</div>
         <span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;background:${i.status==='paid'?'rgba(34,197,94,.15);color:var(--green)':'rgba(100,116,139,.15);color:var(--text-muted)'}">${i.status.toUpperCase()}</span>
       </div>`).join('')}</div>`;
-    const cl=await api('/api/billing/claims?patientMrn='+mrn);
+    const cl=await api('/billing/claims?patientMrn='+mrn);
     const cel=document.getElementById('pt-billing-claims');
     if(!cl.length){cel.innerHTML='<div class="empty-card">No claims.</div>';return;}
     cel.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${cl.map(c=>`
@@ -4921,7 +4921,7 @@ async function loadPatientBilling(mrn){
         <div style="font-weight:700;">$${(c.total_charged||0).toFixed(2)}</div>
         <span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;background:${c.status==='paid'?'rgba(34,197,94,.15);color:var(--green)':'rgba(100,116,139,.15);color:var(--text-muted)'}">${c.status.toUpperCase()}</span>
       </div>`).join('')}</div>`;
-    const pay=await api('/api/billing/payments?patientMrn='+mrn);
+    const pay=await api('/billing/payments?patientMrn='+mrn);
     const pel=document.getElementById('pt-billing-payments');
     if(!pay.length){pel.innerHTML='<div class="empty-card">No payments.</div>';return;}
     pel.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${pay.map(x=>`
@@ -4929,7 +4929,7 @@ async function loadPatientBilling(mrn){
         <div style="flex:1;"><div style="font-weight:600;font-size:13px;">${esc(x.method||'Cash')}</div><div style="font-size:11px;color:var(--text-dim);">${x.date||''}</div></div>
         <div style="font-weight:700;color:var(--green);">+$${(x.amount||0).toFixed(2)}</div>
       </div>`).join('')}</div>`;
-    const ins=await api('/api/billing/insurance/'+mrn);
+    const ins=await api('/billing/insurance/'+mrn);
     const iel=document.getElementById('pt-billing-insurance');
     if(!ins.length){iel.innerHTML='<div class="empty-card">No insurance on file.</div>';return;}
     iel.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${ins.map(x=>`
@@ -4945,7 +4945,7 @@ async function createPatientInvoice(){
   const desc=prompt('Line item description (e.g. Office Visit Level 4, MRI Brain w/ contrast):'); if(!desc)return;
   const price=parseFloat(prompt('Amount ($):','150')); if(!price)return;
   try{
-    const r=await api('/api/billing/invoices',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,items:[{description:desc,unitPrice:price,quantity:1}],dueDate:new Date(Date.now()+30*86400000).toISOString().slice(0,10)})});
+    const r=await api('/billing/invoices',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,items:[{description:desc,unitPrice:price,quantity:1}],dueDate:new Date(Date.now()+30*86400000).toISOString().slice(0,10)})});
     alert('Invoice created: '+r.invoiceNumber+' for $'+r.total);
     loadPatientBilling(selectedMRN);
   }catch(e){alert('Error: '+e.message);}
@@ -4953,7 +4953,7 @@ async function createPatientInvoice(){
 async function addPatientInsurance(){
   if(!selectedMRN){alert('No patient selected');return;}
   try{
-    await api('/api/billing/insurance',{method:'POST',body:JSON.stringify({
+    await api('/billing/insurance',{method:'POST',body:JSON.stringify({
       patientMrn:selectedMRN,payerName:document.getElementById('ins-payer').value,
       planType:document.getElementById('ins-plan').value,memberId:document.getElementById('ins-member').value,
       groupNumber:document.getElementById('ins-group').value,copay:parseFloat(document.getElementById('ins-copay').value)||0,
@@ -4970,7 +4970,7 @@ async function addPatientInsurance(){
 // ═══════════════════════════════════════════════════════════════
 function renderTelehealthPanel(){
   const sel=document.getElementById('th-patient');
-  const keys=Object.keys(localStorage).filter(k=>k.startsWith('cc_pat_')).map(k=>k.slice(3));
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('pat_'));
   sel.innerHTML='<option value="">— Select —</option>'+keys.map(k=>{const p=LS.get(k);return p?`<option value="${p.mrn}">${p.name} (${p.mrn})</option>`:''}).join('');
   loadActiveRooms();
 }
@@ -4978,7 +4978,7 @@ function renderTelehealthPanel(){
 async function loadActiveRooms(){
   const el=document.getElementById('th-active-rooms');
   try{
-    const r=await api('/api/telehealth/rooms');
+    const r=await api('/telehealth/rooms');
     if(!r.ok||!r.rooms||!r.rooms.length){el.innerHTML='<div class="empty-card">No active video rooms</div>';return}
     el.innerHTML=r.rooms.map(room=>`
       <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--surface)">
@@ -5000,7 +5000,7 @@ async function startTelehealth(){
   const mrn=document.getElementById('th-patient').value;
   if(!mrn){alert('Select a patient');return}
   try{
-    const r=await api('/api/telehealth/rooms',{method:'POST',body:JSON.stringify({patientMrn:mrn})});
+    const r=await api('/telehealth/rooms',{method:'POST',body:JSON.stringify({patientMrn:mrn})});
     if(r.ok){
       document.getElementById('th-room-info').innerHTML=`<div style="padding:14px;background:var(--blue-pale);border:1px solid rgba(37,99,235,.2);border-radius:10px">
         <div style="font-weight:700;color:var(--blue);margin-bottom:6px">🎬 Video Room Created</div>
@@ -5038,7 +5038,7 @@ async function joinDoctorVideo(roomCode){
   document.getElementById('doc-local-video').srcObject=_docLocalStream;
   _docPc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
   _docLocalStream.getTracks().forEach(t=>_docPc.addTrack(t,_docLocalStream));
-  _docPc.onicecandidate=e=>{if(e.candidate)api('/api/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'candidate',data:e.candidate})})};
+  _docPc.onicecandidate=e=>{if(e.candidate)api('/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'candidate',data:e.candidate})})};
   _docPc.ontrack=e=>{document.getElementById('doc-remote-video').srcObject=e.streams[0]};
   // Wait for patient offer
   let lastTs=Date.now();
@@ -5049,7 +5049,7 @@ async function joinDoctorVideo(roomCode){
         await _docPc.setRemoteDescription(new RTCSessionDescription(m.data));
         const answer=await _docPc.createAnswer();
         await _docPc.setLocalDescription(answer);
-        await api('/api/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'answer',data:answer})});
+        await api('/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'answer',data:answer})});
       }
       if(m.type==='candidate'&&m.sender==='patient'&&m.data)await _docPc.addIceCandidate(new RTCIceCandidate(m.data));
     }}
@@ -5064,11 +5064,11 @@ async function endDoctorVideo(roomCode){
   if(_docLocalStream){_docLocalStream.getTracks().forEach(t=>t.stop());_docLocalStream=null}
   if(_docSignalInterval){clearInterval(_docSignalInterval);_docSignalInterval=null}
   const ov=document.getElementById('doc-video-overlay');if(ov)ov.remove();
-  try{await api('/api/telehealth/rooms/'+roomCode+'/end',{method:'POST'})}catch(e){}
+  try{await api('/telehealth/rooms/'+roomCode+'/end',{method:'POST'})}catch(e){}
   loadActiveRooms();
 }
 
-async function endDoctorRoom(code){if(!confirm('End this video room?'))return;try{await api('/api/telehealth/rooms/'+code+'/end',{method:'POST'});loadActiveRooms()}catch(e){alert(e.message)}}
+async function endDoctorRoom(code){if(!confirm('End this video room?'))return;try{await api('/telehealth/rooms/'+code+'/end',{method:'POST'});loadActiveRooms()}catch(e){alert(e.message)}}
 
 // ═══════════════════════════════════════════════════════════════
 // DOCTOR AVAILABILITY
@@ -5086,7 +5086,7 @@ let _availRows=[
 
 async function renderAvailabilityPanel(){
   try{
-    const r=await api('/api/schedule/availability');
+    const r=await api('/schedule/availability');
     if(r.ok&&r.availability&&r.availability.length){
       _availRows=r.availability.map(a=>({id:a.id,dayOfWeek:a.day_of_week,startTime:a.start_time,endTime:a.end_time,slotDuration:a.slot_duration,active:!!a.active}));
     }
@@ -5104,7 +5104,11 @@ function renderAvailRows(){
       <input type="time" value="${r.startTime}" onchange="_availRows[${i}].startTime=this.value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
       <input type="time" value="${r.endTime}" onchange="_availRows[${i}].endTime=this.value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
       <input type="number" value="${r.slotDuration}" min="10" max="120" onchange="_availRows[${i}].slotDuration=+this.value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;gap:6px;align-items:center">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--text-muted);">
+          <input type="checkbox" ${r.active?'checked':''} onchange="_availRows[${i}].active=this.checked" style="width:16px;height:16px;accent-color:var(--blue)">
+          ${r.active?'<span style="color:var(--green)">On</span>':'<span style="color:var(--text-dim)">Off</span>'}
+        </label>
         <button class="btn btn-ghost btn-sm" onclick="_availRows.splice(${i},1);renderAvailRows()" style="color:var(--red)">✕</button>
       </div>
     </div>
@@ -5114,7 +5118,7 @@ function renderAvailRows(){
 
 async function saveAvailability(){
   try{
-    await api('/api/schedule/availability',{method:'PUT',body:JSON.stringify({slots:_availRows.filter(r=>r.active)})});
+    await api('/schedule/availability',{method:'PUT',body:JSON.stringify({slots:_availRows.filter(r=>r.active)})});
     alert('✅ Schedule saved! Patients can now book during these times.');
   }catch(e){alert(e.message)}
 }
