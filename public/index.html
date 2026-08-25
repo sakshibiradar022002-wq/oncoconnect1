@@ -3991,7 +3991,7 @@ async function disable2FA(){
 function renderCDSPanel(){
   // Populate patient dropdown
   const sel=document.getElementById('cds-patient');
-  const keys=Object.keys(localStorage).filter(k=>k.startsWith('pat_'));
+  const keys=LS.keys('pat_');
   sel.innerHTML='<option value="">— Select —</option>'+keys.map(k=>{const p=LS.get(k);return p?`<option value="${p.mrn}">${p.name} (${p.mrn})</option>`:''}).join('');
 }
 
@@ -4070,7 +4070,7 @@ async function showDrugInfo(name){
 // ═══════════════════════════════════════════════════════════════
 function renderDoctorRxPanel(){
   const sel=document.getElementById('rx-patient');
-  const keys=Object.keys(localStorage).filter(k=>k.startsWith('pat_'));
+  const keys=LS.keys('pat_');
   sel.innerHTML='<option value="">— Select —</option>'+keys.map(k=>{const p=LS.get(k);return p?`<option value="${p.mrn}">${p.name} (${p.mrn})</option>`:''}).join('');
   sel.onchange=()=>loadDoctorRxs(sel.value);
 }
@@ -4974,7 +4974,7 @@ async function addPatientInsurance(){
 // ═══════════════════════════════════════════════════════════════
 function renderTelehealthPanel(){
   const sel=document.getElementById('th-patient');
-  const keys=Object.keys(localStorage).filter(k=>k.startsWith('pat_'));
+  const keys=LS.keys('pat_');
   sel.innerHTML='<option value="">— Select —</option>'+keys.map(k=>{const p=LS.get(k);return p?`<option value="${p.mrn}">${p.name} (${p.mrn})</option>`:''}).join('');
   loadActiveRooms();
 }
