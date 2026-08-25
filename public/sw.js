@@ -5,7 +5,7 @@
 //   - Everything else (fonts, CDN libs): stale-while-revalidate.
 
 const APP = self.location.pathname.includes('doctor') ? 'doctor' : 'patient';
-const CACHE = `oncoconnect-${APP}-v3`;
+const CACHE = `oncoconnect-${APP}-v4`;
 const SHELL = APP === 'doctor'
   ? ['/', '/index.html', '/sync-client.js', '/doctor.webmanifest', '/icons/doctor-192.png', '/icons/doctor-512.png']
   : ['/patient.html', '/sync-client.js', '/patient.webmanifest', '/icons/patient-192.png', '/icons/patient-512.png'];
@@ -34,6 +34,18 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (event.request.method !== 'GET') return;
+
+  // HTML pages: network-first so users always get the latest UI.
+  if (url.pathname.endsWith('.html') || url.pathname === '/') {
+    event.respondWith(
+      fetch(event.request).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(event.request, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   // Everything else: stale-while-revalidate — serve cache, refresh in background.
   event.respondWith(
