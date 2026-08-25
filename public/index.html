@@ -703,7 +703,11 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
             </div>
             <div id="avail-rows"></div>
           </div>
-          <button class="btn btn-primary" style="margin-top:14px" onclick="saveAvailability()">💾 Save Schedule</button>
+          <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
+            <button class="btn btn-primary" onclick="saveAvailability()">💾 Save Schedule</button>
+            <button class="btn btn-ghost" onclick="_availRows.push({dayOfWeek:1,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true});renderAvailRows()">+ Add Time Block</button>
+          </div>
+          <div id="avail-msg" style="display:none;padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:600;margin-top:10px;"></div>
         </div>
       </div>
 
@@ -4991,7 +4995,7 @@ async function loadActiveRooms(){
         </div>
       </div>
     `).join('');
-  }catch(e){}
+  }catch(e){el.innerHTML='<div class="empty-card">Server unavailable. Video rooms require an active connection.</div>'}
 }
 
 let _docPc=null,_docLocalStream=null,_docSignalInterval=null;
@@ -5010,7 +5014,7 @@ async function startTelehealth(){
       </div>`;
       loadActiveRooms();
     }
-  }catch(e){alert(e.message)}
+  }catch(e){alert('Failed to create video room: '+e.message+'. Make sure you are logged in with a server account.')}
 }
 
 async function joinDoctorVideo(roomCode){
@@ -5089,8 +5093,12 @@ async function renderAvailabilityPanel(){
     const r=await api('/schedule/availability');
     if(r.ok&&r.availability&&r.availability.length){
       _availRows=r.availability.map(a=>({id:a.id,dayOfWeek:a.day_of_week,startTime:a.start_time,endTime:a.end_time,slotDuration:a.slot_duration,active:!!a.active}));
+      LS.set('avail_'+(currentDoc?.docId||''),_availRows);
     }
-  }catch(e){}
+  }catch(e){
+    const saved=LS.get('avail_'+(currentDoc?.docId||''));
+    if(saved&&saved.length)_availRows=saved;
+  }
   renderAvailRows();
 }
 
@@ -5116,11 +5124,25 @@ function renderAvailRows(){
   `<button class="btn btn-ghost btn-sm" onclick="_availRows.push({dayOfWeek:1,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true});renderAvailRows()">+ Add Time Block</button>`;
 }
 
+function showAvailMsg(msg,type){
+  const el=document.getElementById('avail-msg');
+  if(!el)return;
+  el.textContent=msg;
+  el.style.background=type==='success'?'rgba(34,197,94,.1)':'rgba(245,158,11,.1)';
+  el.style.color=type==='success'?'var(--green)':'var(--orange)';
+  el.style.border='1px solid '+(type==='success'?'rgba(34,197,94,.25)':'rgba(245,158,11,.25)');
+  el.style.display='block';
+  setTimeout(()=>{el.style.display='none';},5000);
+}
 async function saveAvailability(){
+  const activeSlots=_availRows.filter(r=>r.active);
+  LS.set('avail_'+(currentDoc?.docId||''),_availRows);
   try{
-    await api('/schedule/availability',{method:'PUT',body:JSON.stringify({slots:_availRows.filter(r=>r.active)})});
-    alert('✅ Schedule saved! Patients can now book during these times.');
-  }catch(e){alert(e.message)}
+    await api('/schedule/availability',{method:'PUT',body:JSON.stringify({slots:activeSlots})});
+    showAvailMsg('✅ Schedule saved! Patients can book during these times.','success');
+  }catch(e){
+    showAvailMsg('⚠️ Saved locally (offline). Will sync when server is available.','warn');
+  }
 }
 </script>
 
