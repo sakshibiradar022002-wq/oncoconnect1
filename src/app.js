@@ -28,6 +28,7 @@ import { prescriptionRouter } from './routes/prescriptions.js';
 import { clinicalFeaturesRouter, seedProtocols } from './routes/clinical-features.js';
 import { telehealthRouter, startTelehealthCleanup } from './routes/telehealth.js';
 import { emailOtpRouter } from './routes/email-otp.js';
+import billingNccnHipaaRouter from './routes/billing-nccn-hipaa.js';
 import { initPush } from './push.js';
 import { observability, metricsSnapshot } from './observability.js';
 import { initSentry, sentryRequestHandler, sentryErrorHandler } from './observability/sentry.js';
@@ -141,6 +142,7 @@ app.use('/api/rx', apiLimiter, prescriptionRouter);
 app.use('/api/features', apiLimiter, clinicalFeaturesRouter);
 app.use('/api/telehealth', apiLimiter, telehealthRouter);
 app.use('/api/auth/otp', authLimiter, emailOtpRouter);
+app.use(apiLimiter, billingNccnHipaaRouter);
 
 // ── PWA assets: correct headers for manifests & service workers ───
 // One sw.js serves both apps; it reads its own URL to pick cache + shell.

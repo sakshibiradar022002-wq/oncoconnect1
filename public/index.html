@@ -85,6 +85,22 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
 .nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:55%;background:linear-gradient(180deg,var(--blue),var(--blue2));border-radius:0 6px 6px 0;box-shadow:0 0 8px rgba(74,144,226,0.3);}
 .nav-item .ni{width:18px;font-size:15px;text-align:center;flex-shrink:0;}
 .nav-badge{margin-left:auto;background:linear-gradient(135deg,var(--orange),#f59e0b);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;box-shadow:0 2px 8px rgba(245,158,11,0.3);}
+.sb-group-header{padding:22px 18px 8px;font-size:9px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--text-dim);}
+.sb-group-header:hover{color:var(--blue);}
+.sb-group-body{max-height:500px;overflow:hidden;transition:max-height .3s ease,padding .3s ease;}
+.sb-group-body.collapsed{max-height:0;padding:0;}
+.sb-chevron{transition:transform .2s;display:inline-block;}
+.sb-chevron.open{transform:rotate(90deg);}
+.sidebar{overflow-y:auto;overflow-x:hidden;}
+.sidebar::-webkit-scrollbar{width:4px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.billing-stat-card{padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;}
+.billing-stat-card .label{font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:600;}
+.billing-stat-card .value{font-size:22px;font-weight:800;color:var(--text);}
+.billing-stat-card .sub{font-size:11px;color:var(--text-muted);margin-top:4px;}
+.report-chart{padding:20px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;}
+.settings-section{padding:20px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;}
+.settings-section h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text);}
 .sidebar-bottom{margin-top:auto;border-top:1px solid var(--sidebar-border);padding:18px;}
 .status-row{display:flex;align-items:center;gap:8px;padding:6px 4px;margin-bottom:12px;}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
@@ -427,20 +443,62 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
         <div><div style="font-weight:800;font-size:13px;color:var(--text);">OncoConnect</div><div style="font-size:9px;color:var(--text-dim);font-family:var(--mono);">SOFTWARE</div></div>
       </div>
       <button class="nav-item" onclick="openPatientSearch()"><span class="ni">🔍</span>Search patients <span style="margin-left:auto;font-size:10px;opacity:.6;font-family:var(--mono);">Ctrl K</span></button>
-      <div class="sidebar-section">Dashboard</div>
-      <button class="nav-item active" onclick="showPanel('overview',this)"><span class="ni">⬡</span>Overview</button>
-      <button class="nav-item" onclick="showPanel('patients',this)"><span class="ni">👥</span>Patients</button>
-      <button class="nav-item" onclick="showPanel('calendars',this)"><span class="ni">📅</span>Health Calendar</button>
-      <button class="nav-item" onclick="showPanel('appt-calendar',this);renderApptCalendar()"><span class="ni">🗓</span>Appointments</button>
-      <button class="nav-item" onclick="showPanel('messages',this)"><span class="ni">💬</span>Messages<span class="nav-badge" id="msg-badge" style="display:none;"></span></button>
-      <button class="nav-item" onclick="showPanel('labs',this)"><span class="ni">🔬</span>Lab Management<span class="nav-badge" id="lab-badge" style="display:none;"></span></button>
-      <div class="sidebar-section" style="margin-top:8px;">Clinical Tools</div>
-      <button class="nav-item" onclick="showPanel('telehealth',this);renderTelehealthPanel()"><span class="ni">📹</span>Video Calls</button>
-      <button class="nav-item" onclick="showPanel('availability',this);renderAvailabilityPanel()"><span class="ni">🕐</span>Availability</button>
-      <div class="sidebar-section" style="margin-top:8px;">System</div>
-      <button class="nav-item" onclick="showPanel('audit',this);renderAuditPanel()"><span class="ni">📋</span>Audit Trail</button>
-      <button class="nav-item" onclick="showPanel('backup',this)"><span class="ni">💾</span>Data &amp; Backup</button>
-      <button class="nav-item" onclick="showPanel('broadcast',this)"><span class="ni">📧</span>Broadcast Email</button>
+
+      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
+        <span>OVERVIEW</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
+      </div>
+      <div class="sb-group-body">
+        <button class="nav-item active" onclick="showPanel('overview',this)"><span class="ni">⬡</span>Overview</button>
+        <button class="nav-item" onclick="showPanel('patients',this)"><span class="ni">👥</span>Patients</button>
+      </div>
+
+      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
+        <span>SCHEDULE</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
+      </div>
+      <div class="sb-group-body">
+        <button class="nav-item" onclick="showPanel('calendars',this)"><span class="ni">📅</span>Health Calendar</button>
+        <button class="nav-item" onclick="showPanel('appt-calendar',this);renderApptCalendar()"><span class="ni">🗓</span>Appointments</button>
+        <button class="nav-item" onclick="showPanel('availability',this);renderAvailabilityPanel()"><span class="ni">🕐</span>Availability</button>
+        <button class="nav-item" onclick="showPanel('telehealth',this);renderTelehealthPanel()"><span class="ni">📹</span>Video Calls</button>
+      </div>
+
+      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
+        <span>COMMUNICATION</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
+      </div>
+      <div class="sb-group-body">
+        <button class="nav-item" onclick="showPanel('messages',this)"><span class="ni">💬</span>Messages<span class="nav-badge" id="msg-badge" style="display:none;"></span></button>
+        <button class="nav-item" onclick="showPanel('broadcast',this)"><span class="ni">📧</span>Broadcast Email</button>
+      </div>
+
+      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
+        <span>CLINICAL</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
+      </div>
+      <div class="sb-group-body">
+        <button class="nav-item" onclick="showPanel('labs',this)"><span class="ni">🔬</span>Lab Management<span class="nav-badge" id="lab-badge" style="display:none;"></span></button>
+      </div>
+
+      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
+        <span>FINANCIAL</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
+      </div>
+      <div class="sb-group-body">
+        <button class="nav-item" onclick="showPanel('billing',this);renderBillingDashboard()"><span class="ni">💰</span>Billing &amp; Claims</button>
+      </div>
+
+      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
+        <span>ANALYTICS</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
+      </div>
+      <div class="sb-group-body">
+        <button class="nav-item" onclick="showPanel('reports',this);renderReportsPanel()"><span class="ni">📊</span>Reports</button>
+      </div>
+
+      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
+        <span>SYSTEM</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
+      </div>
+      <div class="sb-group-body">
+        <button class="nav-item" onclick="showPanel('settings',this);renderSettingsPanel()"><span class="ni">⚙️</span>Settings</button>
+        <button class="nav-item" onclick="showPanel('audit',this);renderAuditPanel()"><span class="ni">📋</span>Audit Trail</button>
+        <button class="nav-item" onclick="showPanel('backup',this)"><span class="ni">💾</span>Data &amp; Backup</button>
+      </div>
       <div style="padding:10px 14px 0;">
         <div style="font-size:10px;color:var(--text-dim);margin-bottom:5px;display:flex;justify-content:space-between;"><span>Storage</span><span id="storage-pct">0%</span></div>
         <div class="storage-bar-wrap"><div class="storage-bar-fill" id="storage-bar"></div></div>
@@ -807,6 +865,97 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
         <div id="bc-result" style="margin-top:16px;"></div>
       </div>
 
+      <!-- BILLING & CLAIMS -->
+      <div class="panel" id="panel-billing">
+        <div class="page-header"><div><div class="page-title">💰 Billing &amp; Claims</div><div class="page-sub">ICD-10/CPT coding, claims, insurance, payments</div></div></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;" id="billing-stats"></div>
+        <div style="display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:8px;margin-bottom:20px;width:fit-content;">
+          <button class="btn btn-ghost btn-sm active" onclick="switchBillingTab('invoices',this)">📄 Invoices</button>
+          <button class="btn btn-ghost btn-sm" onclick="switchBillingTab('claims',this)">📤 Claims</button>
+          <button class="btn btn-ghost btn-sm" onclick="switchBillingTab('payments',this)">💳 Payments</button>
+          <button class="btn btn-ghost btn-sm" onclick="switchBillingTab('insurance',this)">🏥 Insurance</button>
+          <button class="btn btn-ghost btn-sm" onclick="switchBillingTab('codes',this)">🔍 Code Lookup</button>
+        </div>
+        <div id="bv-invoices" class="billing-tab-content"><div id="billing-invoices-list"><div class="empty-card">No invoices yet. Create one from a patient record.</div></div></div>
+        <div id="bv-claims" class="billing-tab-content" style="display:none;"><div id="billing-claims-list"><div class="empty-card">No claims yet.</div></div></div>
+        <div id="bv-payments" class="billing-tab-content" style="display:none;"><div id="billing-payments-list"><div class="empty-card">No payments recorded.</div></div></div>
+        <div id="bv-insurance" class="billing-tab-content" style="display:none;"><div id="billing-insurance-list"><div class="empty-card">No insurance records.</div></div></div>
+        <div id="bv-codes" class="billing-tab-content" style="display:none;">
+          <div class="g2">
+            <div class="card">
+              <div class="card-title" style="margin-bottom:12px;">ICD-10 Code Lookup</div>
+              <div class="fg"><label>Search</label><input id="icd10-search" placeholder="e.g. C71, glioblastoma" oninput="lookupICD10()"></div>
+              <div id="icd10-results" style="max-height:300px;overflow-y:auto;"></div>
+            </div>
+            <div class="card">
+              <div class="card-title" style="margin-bottom:12px;">CPT Code Lookup</div>
+              <div class="fg"><label>Search</label><input id="cpt-search" placeholder="e.g. MRI, chemotherapy, biopsy" oninput="lookupCPT()"></div>
+              <div id="cpt-results" style="max-height:300px;overflow-y:auto;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORTS & ANALYTICS -->
+      <div class="panel" id="panel-reports">
+        <div class="page-header"><div><div class="page-title">📊 Reports &amp; Analytics</div><div class="page-sub">Panel health, financial, operational, quality metrics</div></div></div>
+        <div style="display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:8px;margin-bottom:20px;width:fit-content;">
+          <button class="btn btn-ghost btn-sm active" onclick="switchReportTab('panel',this)">👥 Panel Health</button>
+          <button class="btn btn-ghost btn-sm" onclick="switchReportTab('financial',this)">💰 Financial</button>
+          <button class="btn btn-ghost btn-sm" onclick="switchReportTab('operational',this)">⚙️ Operational</button>
+          <button class="btn btn-ghost btn-sm" onclick="switchReportTab('quality',this)">✅ Quality</button>
+          <button class="btn btn-ghost btn-sm" onclick="switchReportTab('registry',this)">📋 Cancer Registry</button>
+        </div>
+        <div id="rv-panel" class="report-tab-content"><div id="report-panel-health"></div></div>
+        <div id="rv-financial" class="report-tab-content" style="display:none;"><div id="report-financial"></div></div>
+        <div id="rv-operational" class="report-tab-content" style="display:none;"><div id="report-operational"></div></div>
+        <div id="rv-quality" class="report-tab-content" style="display:none;"><div id="report-quality"></div></div>
+        <div id="rv-registry" class="report-tab-content" style="display:none;"><div id="report-registry"></div></div>
+      </div>
+
+      <!-- SETTINGS & COMPLIANCE -->
+      <div class="panel" id="panel-settings">
+        <div class="page-header"><div><div class="page-title">⚙️ Settings &amp; Compliance</div><div class="page-sub">RBAC roles, session policies, data retention, HIPAA compliance</div></div></div>
+        <div class="g2">
+          <div class="settings-section">
+            <h3>🔐 Role-Based Access Control</h3>
+            <div id="settings-roles-list"></div>
+            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+              <div class="card-title" style="font-size:12px;margin-bottom:8px;">Add Custom Role</div>
+              <div class="g2"><div class="fg" style="margin:0;"><label>Role Name</label><input id="new-role-name" placeholder="e.g. Pharmacist"></div></div>
+              <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="addCustomRole()">+ Add Role</button>
+            </div>
+          </div>
+          <div class="settings-section">
+            <h3>⏱ Session Management</h3>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">HIPAA requires automatic session timeout after inactivity.</div>
+            <div class="fg"><label>Session Timeout (minutes)</label><input type="number" id="session-timeout" value="30" min="5" max="120"></div>
+            <div class="fg"><label>Max Failed Login Attempts</label><input type="number" id="max-login-attempts" value="5" min="3" max="10"></div>
+            <button class="btn btn-primary btn-sm" style="margin-top:8px;">💾 Save Policies</button>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="settings-section">
+            <h3>📦 Data Retention Policies</h3>
+            <div id="settings-retention-list"></div>
+          </div>
+          <div class="settings-section">
+            <h3>🚨 Break-the-Glass Access Log</h3>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Emergency access to restricted records. All actions are logged.</div>
+            <div id="settings-breakglass-log"></div>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>🔗 FHIR R4 Server</h3>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Configure external FHIR server for data exchange.</div>
+          <div class="g2">
+            <div class="fg" style="margin:0;"><label>FHIR Server Base URL</label><input id="fhir-server-base" placeholder="https://hapi.fhir.org/baseR4"></div>
+            <div class="fg" style="margin:0;"><label>API Key (optional)</label><input id="fhir-api-key" placeholder="Bearer token or API key" type="password"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:8px;">💾 Save FHIR Config</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -825,22 +974,29 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
   </div>
   <div class="record-body">
     <div class="record-nav">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:12px 14px 4px;">CLINICAL</div>
       <button class="rnav-item active" onclick="showRTab('rt-identity',this)">🪪 Identity</button>
       <button class="rnav-item" onclick="showRTab('rt-metrics',this)">📊 Metrics</button>
       <button class="rnav-item" onclick="showRTab('rt-diagnosis',this)">🔬 Diagnosis</button>
       <button class="rnav-item" onclick="showRTab('rt-molecular',this)">🧬 Molecular</button>
-      <button class="rnav-item" onclick="showRTab('rt-labs',this)">🧪 Labs</button>
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">TREATMENT</div>
       <button class="rnav-item" onclick="showRTab('rt-prescriptions',this)">💊 Prescriptions</button>
       <button class="rnav-item" onclick="showRTab('rt-clinical-support',this)">⚕️ Clinical Support</button>
       <button class="rnav-item" onclick="showRTab('rt-treatment',this)">⚡ Treatment</button>
-      <button class="rnav-item" onclick="showRTab('rt-appointments',this)">🗓 Appointments</button>
-      <button class="rnav-item" onclick="showRTab('rt-mdt',this)">📋 MDT Notes</button>
+      <button class="rnav-item" onclick="showRTab('rt-chemo',this)">🧪 Chemo Cycles</button>
+      <button class="rnav-item" onclick="showRTab('rt-nccn',this)">📋 NCCN &amp; Biomarkers</button>
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">CARE</div>
+      <button class="rnav-item" onclick="showRTab('rt-labs',this)">🧪 Labs</button>
       <button class="rnav-item" onclick="showRTab('rt-imaging',this)">🖼 Imaging</button>
       <button class="rnav-item" onclick="showRTab('rt-logs',this)">📋 Health Logs</button>
       <button class="rnav-item" onclick="showRTab('rt-notes',this)">📝 Clinical Notes</button>
-      <button class="rnav-item" onclick="showRTab('rt-chemo',this)">🧪 Chemo Cycles</button>
+      <button class="rnav-item" onclick="showRTab('rt-mdt',this)">📋 MDT Notes</button>
       <button class="rnav-item" onclick="showRTab('rt-referrals',this)">🔀 Referrals</button>
       <button class="rnav-item" onclick="showRTab('rt-docs',this)">📎 Documents</button>
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">FINANCIAL</div>
+      <button class="rnav-item" onclick="showRTab('rt-billing',this)">💰 Billing</button>
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">TRACKING</div>
+      <button class="rnav-item" onclick="showRTab('rt-appointments',this)">🗓 Appointments</button>
       <button class="rnav-item" onclick="showRTab('rt-outcomes',this)">📈 Outcomes</button>
       <button class="rnav-item" onclick="showRTab('rt-export',this)">📄 Export</button>
       <button class="rnav-item" onclick="showRTab('rt-creds',this)">🔑 Credentials</button>
@@ -1326,6 +1482,13 @@ function updateThemeUI(theme){
 })();
 
 // ── Navigation ──
+function toggleSbGroup(header){
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.sb-chevron');
+  if(!body || !body.classList.contains('sb-group-body')) return;
+  body.classList.toggle('collapsed');
+  if(chevron) chevron.classList.toggle('open');
+}
 function showPanel(id,btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
@@ -1534,7 +1697,7 @@ function openRecord(mrn){
   document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('active'));
   document.querySelector('.rnav-item').classList.add('active');
   document.getElementById('rt-identity').classList.add('active');
-  setTimeout(()=>{rCalcBP();rCalcBMI();rCalcAge();rCalcSpO2();rCalcTemp();calcEQD2();renderAllergyTags();renderLabsTable();renderMedList();renderRecordLogs(mrn);renderRecordAppts(mrn);renderQuickSummary();checkDrugAllergyWarning();rCalcEGFR();renderMDTNotes(mrn);renderImagingReports(mrn);renderDrugInteractionBanner(mrn);renderRecordClinicalSupport(mrn);rRxLoadAllergySummary();rRxLoadServerPrescriptions();rNotesLoad();rChemoLoad();rRefLoad();rDocsLoad();rOutLoad();},50);
+  setTimeout(()=>{rCalcBP();rCalcBMI();rCalcAge();rCalcSpO2();rCalcTemp();calcEQD2();renderAllergyTags();renderLabsTable();renderMedList();renderRecordLogs(mrn);renderRecordAppts(mrn);renderQuickSummary();checkDrugAllergyWarning();rCalcEGFR();renderMDTNotes(mrn);renderImagingReports(mrn);renderDrugInteractionBanner(mrn);renderRecordClinicalSupport(mrn);rRxLoadAllergySummary();rRxLoadServerPrescriptions();rNotesLoad();rChemoLoad();rRefLoad();rDocsLoad();rOutLoad();loadNCCNTab(mrn);loadPatientBilling(mrn);},50);
 }
 
 function buildRecordTabs(p){
@@ -2216,6 +2379,66 @@ function buildRecordTabs(p){
       <div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm" onclick="document.getElementById('r-out-form').style.display='none'">Cancel</button><button class="btn btn-primary btn-sm" onclick="rOutSave()">💾 Record</button></div>
     </div>
     <div id="r-out-list"></div>
+  </div>
+
+  <!-- ══ NCCN GUIDELINES & BIOMARKERS ══ -->
+  <div id="rt-nccn" class="rtab">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="rt-title" style="margin:0;padding:0;border:none;">📋 NCCN Guidelines & 🧬 Biomarkers</div>
+    </div>
+    <div class="g2" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px;">🧬 Patient Biomarkers</div>
+        <div id="nccn-bio-list"><div class="empty-card">No biomarker results yet.</div></div>
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
+          <div class="card-title" style="font-size:12px;margin-bottom:8px;">Add Biomarker</div>
+          <div class="g2"><div class="fg" style="margin:0;"><label>Biomarker</label><select id="nccn-bio-name"><option>MGMT</option><option>EGFR</option><option>BRAF</option><option>IDH1</option><option>IDH2</option><option>1p19q</option><option>TERT</option><option>ATRX</option><option>PTEN</option><option>Ki-67</option><option>H3K27M</option></select></div><div class="fg" style="margin:0;"><label>Result</label><select id="nccn-bio-result"><option>Methylated</option><option>Unmethylated</option><option>Mutant</option><option>Wild Type</option><option>Amplified</option><option>Deleted</option><option>Loss</option><option>High</option><option>Normal</option><option>Positive</option><option>Negative</option></select></div></div>
+          <div class="g2"><div class="fg" style="margin:0;"><label>Method</label><select id="nccn-bio-method"><option>IHC</option><option>FISH</option><option>NGS</option><option>PCR</option><option>Methylation Array</option><option>WGS</option></select></div><div class="fg" style="margin:0;"><label>Report Date</label><input type="date" id="nccn-bio-date"></div></div>
+          <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="addBiomarker()">+ Add Biomarker</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px;">📋 Recommended Protocols</div>
+        <div id="nccn-recommendations"><div class="empty-card">Add biomarkers to get NCCN-based recommendations.</div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title" style="margin-bottom:12px;">💊 Cumulative Dose Tracker</div>
+      <div id="cum-dose-list"><div class="empty-card">No cumulative doses tracked yet.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">📖 NCCN Protocol Library</div>
+      <div class="fg"><label>Filter by cancer type</label><input id="nccn-filter" placeholder="e.g. glioblastoma, meningioma" oninput="filterNCCN()"></div>
+      <div id="nccn-protocol-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ BILLING (per-patient) ══ -->
+  <div id="rt-billing" class="rtab">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="rt-title" style="margin:0;padding:0;border:none;">💰 Billing &amp; Insurance</div>
+      <button class="btn btn-primary btn-sm" onclick="createPatientInvoice()">+ New Invoice</button>
+    </div>
+    <div style="display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:8px;margin-bottom:16px;width:fit-content;">
+      <button class="btn btn-ghost btn-sm active" onclick="switchPatientBillingTab('invoices',this)">📄 Invoices</button>
+      <button class="btn btn-ghost btn-sm" onclick="switchPatientBillingTab('claims',this)">📤 Claims</button>
+      <button class="btn btn-ghost btn-sm" onclick="switchPatientBillingTab('payments',this)">💳 Payments</button>
+      <button class="btn btn-ghost btn-sm" onclick="switchPatientBillingTab('insurance',this)">🏥 Insurance</button>
+    </div>
+    <div id="pbv-invoices" class="pt-billing-tab"><div id="pt-billing-invoices"><div class="empty-card">No invoices for this patient.</div></div></div>
+    <div id="pbv-claims" class="pt-billing-tab" style="display:none;"><div id="pt-billing-claims"><div class="empty-card">No claims for this patient.</div></div></div>
+    <div id="pbv-payments" class="pt-billing-tab" style="display:none;"><div id="pt-billing-payments"><div class="empty-card">No payments recorded.</div></div></div>
+    <div id="pbv-insurance" class="pt-billing-tab" style="display:none;">
+      <div id="pt-billing-insurance"><div class="empty-card">No insurance on file.</div></div>
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+        <div class="card-title" style="font-size:12px;margin-bottom:8px;">Add Insurance</div>
+        <div class="g2"><div class="fg" style="margin:0;"><label>Payer Name</label><input id="ins-payer" placeholder="e.g. Blue Cross"></div><div class="fg" style="margin:0;"><label>Plan Type</label><select id="ins-plan"><option>HMO</option><option>PPO</option><option>EPO</option><option>Medicare</option><option>Medicaid</option><option>Tricare</option><option>Other</option></select></div></div>
+        <div class="g2"><div class="fg" style="margin:0;"><label>Member ID</label><input id="ins-member" placeholder="Member ID"></div><div class="fg" style="margin:0;"><label>Group Number</label><input id="ins-group" placeholder="Group #"></div></div>
+        <div class="g2"><div class="fg" style="margin:0;"><label>Copay ($)</label><input type="number" id="ins-copay" placeholder="0"></div><div class="fg" style="margin:0;"><label>Deductible ($)</label><input type="number" id="ins-deductible" placeholder="0"></div></div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:8px;"><input type="checkbox" id="ins-primary" checked> Primary insurance</label>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="addPatientInsurance()">+ Add Insurance</button>
+      </div>
+    </div>
   </div>
 
   <!-- ══ TAB 12: EXPORT ══ -->
@@ -4398,6 +4621,393 @@ async function rOutLoad(){
 async function rOutDelete(id){
   if(!confirm('Delete this outcome?'))return;
   try{await api('/api/features/outcomes/'+id,{method:'DELETE'});rOutLoad();}catch(e){alert(e.message)}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 💰 BILLING DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+async function renderBillingDashboard(){
+  try{
+    const s=await api('/api/billing/stats');
+    document.getElementById('billing-stats').innerHTML=`
+      <div class="billing-stat-card"><div class="label">Total Revenue</div><div class="value" style="color:var(--green)">$${(s.totalRevenue||0).toLocaleString()}</div><div class="sub">All time</div></div>
+      <div class="billing-stat-card"><div class="label">Outstanding</div><div class="value" style="color:var(--orange)">$${(s.totalOutstanding||0).toLocaleString()}</div><div class="sub">Unpaid balance</div></div>
+      <div class="billing-stat-card"><div class="label">Claims</div><div class="value">${s.totalClaims||0}</div><div class="sub">${s.pendingClaims||0} pending · ${s.deniedClaims||0} denied</div></div>
+      <div class="billing-stat-card"><div class="label">This Month</div><div class="value" style="color:var(--blue)">$${(s.revenueThisMonth||0).toLocaleString()}</div><div class="sub">${s.invoicesThisMonth||0} invoices</div></div>
+    `;
+    loadBillingInvoices();
+  }catch(e){console.error('billing stats',e);}
+}
+async function loadBillingInvoices(){
+  try{
+    const inv=await api('/api/billing/invoices');
+    const el=document.getElementById('billing-invoices-list');
+    if(!inv.length){el.innerHTML='<div class="empty-card">No invoices yet.</div>';return;}
+    el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${inv.map(i=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:13px;">${esc(i.invoice_number)}</div>
+          <div style="font-size:11px;color:var(--text-dim);">MRN: ${esc(i.patient_mrn)} · ${i.due_date ? 'Due: '+i.due_date : ''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-weight:700;font-size:14px;">$${(i.total||0).toFixed(2)}</div>
+          <div style="font-size:11px;color:var(--text-dim);">Balance: $${(i.balance_due||0).toFixed(2)}</div>
+        </div>
+        <span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;background:${i.status==='paid'?'rgba(34,197,94,.15);color:var(--green)':i.status==='overdue'?'rgba(239,68,68,.15);color:var(--red)':'rgba(100,116,139,.15);color:var(--text-muted)'}">${i.status.toUpperCase()}</span>
+      </div>
+    `).join('')}</div>`;
+  }catch(e){}
+}
+function switchBillingTab(tab,btn){
+  document.querySelectorAll('.billing-tab-content').forEach(t=>t.style.display='none');
+  document.getElementById('bv-'+tab).style.display='';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='claims')loadBillingClaims();
+  if(tab==='payments')loadBillingPayments();
+}
+async function loadBillingClaims(){
+  try{
+    const cl=await api('/api/billing/claims');
+    const el=document.getElementById('billing-claims-list');
+    if(!cl.length){el.innerHTML='<div class="empty-card">No claims yet.</div>';return;}
+    el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${cl.map(c=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:13px;">${esc(c.claim_number)}</div>
+          <div style="font-size:11px;color:var(--text-dim);">${esc(c.payer_name)} · ${esc(c.patient_mrn)}</div>
+        </div>
+        <div style="font-weight:700;font-size:14px;">$${(c.total_charged||0).toFixed(2)}</div>
+        <span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;background:${c.status==='approved'||c.status==='paid'?'rgba(34,197,94,.15);color:var(--green)':c.status==='denied'?'rgba(239,68,68,.15);color:var(--red)':'rgba(100,116,139,.15);color:var(--text-muted)'}">${c.status.toUpperCase()}</span>
+      </div>
+    `).join('')}</div>`;
+  }catch(e){}
+}
+async function loadBillingPayments(){
+  try{
+    const p=await api('/api/billing/payments');
+    const el=document.getElementById('billing-payments-list');
+    if(!p.length){el.innerHTML='<div class="empty-card">No payments.</div>';return;}
+    el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${p.map(x=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:13px;">${esc(x.method||'Cash')} payment</div>
+          <div style="font-size:11px;color:var(--text-dim);">MRN: ${esc(x.patient_mrn)} · ${x.date||''}</div>
+        </div>
+        <div style="font-weight:700;font-size:14px;color:var(--green);">+$${(x.amount||0).toFixed(2)}</div>
+      </div>
+    `).join('')}</div>`;
+  }catch(e){}
+}
+async function lookupICD10(){
+  const q=document.getElementById('icd10-search').value;
+  if(!q||q.length<2)return;
+  try{
+    const codes=await api('/api/billing/codes/icd10?q='+encodeURIComponent(q));
+    document.getElementById('icd10-results').innerHTML=codes.map(c=>`<div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:10px;cursor:pointer;" onmouseover="this.style.background='var(--blue-pale)'" onmouseout="this.style.background=''">
+      <span style="font-weight:700;color:var(--blue);font-family:var(--mono);min-width:60px;">${c.code}</span><span style="font-size:12px;color:var(--text-muted);">${c.desc}</span></div>`).join('')||'<div style="padding:12px;color:var(--text-dim);font-size:12px;">No results</div>';
+  }catch(e){}
+}
+async function lookupCPT(){
+  const q=document.getElementById('cpt-search').value;
+  if(!q||q.length<2)return;
+  try{
+    const codes=await api('/api/billing/codes/cpt?q='+encodeURIComponent(q));
+    document.getElementById('cpt-results').innerHTML=codes.map(c=>`<div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:10px;cursor:pointer;" onmouseover="this.style.background='var(--blue-pale)'" onmouseout="this.style.background=''">
+      <span style="font-weight:700;color:var(--blue);font-family:var(--mono);min-width:70px;">${c.code}</span><div><span style="font-size:12px;color:var(--text-muted);">${c.desc}</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;">${c.category}</span></div></div>`).join('')||'<div style="padding:12px;color:var(--text-dim);font-size:12px;">No results</div>';
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 📊 REPORTS & ANALYTICS
+// ═══════════════════════════════════════════════════════════════
+function switchReportTab(tab,btn){
+  document.querySelectorAll('.report-tab-content').forEach(t=>t.style.display='none');
+  document.getElementById('rv-'+tab).style.display='';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='panel')renderReportsPanel();
+  if(tab==='financial')renderFinancialReport();
+  if(tab==='operational')renderOperationalReport();
+  if(tab==='quality')renderQualityReport();
+  if(tab==='registry')renderCancerRegistryReport();
+}
+async function renderReportsPanel(){
+  try{
+    const d=await api('/api/reports/panel-health');
+    let html=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+      <div class="billing-stat-card"><div class="label">Total Patients</div><div class="value" style="color:var(--blue)">${d.totalPatients||0}</div></div>
+      <div class="billing-stat-card"><div class="label">Active Treatments</div><div class="value" style="color:var(--cyan)">${d.activeTreatments||0}</div></div>
+      <div class="billing-stat-card"><div class="label">Labs (30d)</div><div class="value" style="color:var(--orange)">${d.recentLabResults||0}</div></div>
+      <div class="billing-stat-card"><div class="label">Active Chemo</div><div class="value" style="color:var(--green)">${d.chemoActive||0}</div></div>
+    </div>`;
+    if(d.byPhase&&d.byPhase.length){
+      html+=`<div class="report-chart" style="margin-bottom:16px;"><div style="font-weight:700;font-size:13px;margin-bottom:12px;">Patients by Phase</div>`;
+      const max=Math.max(...d.byPhase.map(x=>x.count));
+      html+=d.byPhase.map(x=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div style="width:120px;font-size:11px;color:var(--text-muted);text-align:right;">${esc(x.phase)}</div>
+        <div style="flex:1;height:18px;background:var(--surface);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${(x.count/max*100)}%;background:linear-gradient(90deg,var(--blue),var(--blue2));border-radius:4px;"></div>
+        </div>
+        <div style="width:30px;font-size:12px;font-weight:600;">${x.count}</div>
+      </div>`).join('');
+      html+=`</div>`;
+    }
+    document.getElementById('report-panel-health').innerHTML=html;
+  }catch(e){console.error(e);}
+}
+async function renderFinancialReport(){
+  try{
+    const d=await api('/api/reports/financial');
+    document.getElementById('report-financial').innerHTML=`
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+        <div class="billing-stat-card"><div class="label">Total Revenue</div><div class="value" style="color:var(--green)">$${(d.totalRevenue||0).toLocaleString()}</div></div>
+        <div class="billing-stat-card"><div class="label">This Month</div><div class="value" style="color:var(--blue)">$${(d.revenueThisMonth||0).toLocaleString()}</div></div>
+        <div class="billing-stat-card"><div class="label">Outstanding</div><div class="value" style="color:var(--orange)">$${(d.totalOutstanding||0).toLocaleString()}</div></div>
+        <div class="billing-stat-card"><div class="label">Claims</div><div class="value">${d.claimsSubmitted||0}</div><div class="sub" style="color:var(--green)">${d.claimsApproved||0} approved · <span style="color:var(--red)">${d.claimsDenied||0} denied</span></div></div>
+      </div>`;
+  }catch(e){}
+}
+async function renderOperationalReport(){
+  try{
+    const d=await api('/api/reports/operational');
+    document.getElementById('report-operational').innerHTML=`
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+        <div class="billing-stat-card"><div class="label">Total Appointments</div><div class="value">${d.totalAppointments||0}</div><div class="sub">${d.completedAppts||0} completed</div></div>
+        <div class="billing-stat-card"><div class="label">Cancelled</div><div class="value" style="color:var(--orange)">${d.cancelledAppts||0}</div></div>
+        <div class="billing-stat-card"><div class="label">No-Shows</div><div class="value" style="color:var(--red)">${d.noShowAppts||0}</div></div>
+        <div class="billing-stat-card"><div class="label">Referrals</div><div class="value">${d.totalReferrals||0}</div><div class="sub">${d.pendingReferrals||0} pending</div></div>
+      </div>`;
+  }catch(e){}
+}
+async function renderQualityReport(){
+  try{
+    const d=await api('/api/reports/quality');
+    let html=`<div style="margin-bottom:16px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;">
+      <div style="font-size:13px;font-weight:600;">Overall Compliance:</div>
+      <div style="font-size:20px;font-weight:800;color:${(d.complianceRate||0)>=70?'var(--green)':'var(--orange)'}">${d.complianceRate||0}%</div>
+    </div>`;
+    if(d.measures){
+      html+=d.measures.map(m=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+        <div style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;background:${m.value>=m.target?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)'};">${m.value>=m.target?'✅':'⚠️'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:13px;">${m.name}</div>
+          <div style="font-size:11px;color:var(--text-dim);">${m.description}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-weight:700;font-size:14px;color:${m.value>=m.target?'var(--green)':'var(--red)'}">${m.value}%</div>
+          <div style="font-size:10px;color:var(--text-dim);">Target: ${m.target}%</div>
+        </div>
+      </div>`).join('');
+    }
+    document.getElementById('report-quality').innerHTML=html;
+  }catch(e){}
+}
+async function renderCancerRegistryReport(){
+  try{
+    const d=await api('/api/reports/cancer-registry');
+    let html=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+      <div class="billing-stat-card"><div class="label">Total Patients</div><div class="value">${d.totalPatients||0}</div></div>
+      <div class="billing-stat-card"><div class="label">With Biomarkers</div><div class="value" style="color:var(--blue)">${d.withBiomarkers||0}</div><div class="sub">${d.biomarkerRate||0}% rate</div></div>
+      <div class="billing-stat-card"><div class="label">Histologies</div><div class="value">${(d.byHistology||[]).length}</div></div>
+    </div>`;
+    if(d.byHistology&&d.byHistology.length){
+      html+=`<div class="report-chart"><div style="font-weight:700;font-size:13px;margin-bottom:12px;">Cases by Histology</div>`;
+      const max=Math.max(...d.byHistology.map(x=>x.count));
+      html+=d.byHistology.map(x=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div style="width:160px;font-size:11px;color:var(--text-muted);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(x.diagnosis||'Unknown')}</div>
+        <div style="flex:1;height:18px;background:var(--surface);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${(x.count/max*100)}%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:4px;"></div>
+        </div>
+        <div style="width:30px;font-size:12px;font-weight:600;">${x.count}</div>
+      </div>`).join('');
+      html+=`</div>`;
+    }
+    document.getElementById('report-registry').innerHTML=html;
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ⚙️ SETTINGS & COMPLIANCE
+// ═══════════════════════════════════════════════════════════════
+async function renderSettingsPanel(){
+  try{
+    const roles=await api('/api/hipaa/roles');
+    document.getElementById('settings-roles-list').innerHTML=roles.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${r.is_system?'var(--blue)':'var(--green)'};"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:12px;">${esc(r.name)}</div>
+        <div style="font-size:10px;color:var(--text-dim);">${esc(r.description||'')} ${r.is_system?'(System)':''}</div>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);font-family:var(--mono);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.permissions||'')}</div>
+    </div>`).join('');
+    const ret=await api('/api/hipaa/retention');
+    document.getElementById('settings-retention-list').innerHTML=ret.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:12px;">${esc(r.name)}</div>
+        <div style="font-size:10px;color:var(--text-dim);">${esc(r.data_type)} · Retain ${r.retain_years} years</div>
+      </div>
+      <label style="font-size:10px;display:flex;align-items:center;gap:4px;"><input type="checkbox" ${r.auto_archive?'checked':''}> Archive</label>
+    </div>`).join('');
+    document.getElementById('settings-breakglass-log').innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">No break-the-glass events recorded.</div>';
+  }catch(e){console.error('settings',e);}
+}
+async function addCustomRole(){
+  const name=document.getElementById('new-role-name').value;
+  if(!name){alert('Enter a role name');return;}
+  try{
+    await api('/api/hipaa/roles',{method:'POST',body:JSON.stringify({name,description:'Custom role',permissions:['patient.view']})});
+    document.getElementById('new-role-name').value='';
+    renderSettingsPanel();
+  }catch(e){alert('Error: '+e.message);}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 📋 NCCN & BIOMARKERS (per-patient)
+// ═══════════════════════════════════════════════════════════════
+async function loadNCCNTab(mrn){
+  try{
+    const bios=await api('/api/biomarkers/'+mrn);
+    const el=document.getElementById('nccn-bio-list');
+    if(!bios||!bios.length){el.innerHTML='<div class="empty-card">No biomarker results yet.</div>';}
+    else{
+      el.innerHTML=bios.map(b=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+        <span style="font-weight:700;color:var(--blue);font-size:12px;min-width:60px;">${esc(b.biomarker)}</span>
+        <span style="font-size:12px;color:var(--text);">${esc(b.result)}</span>
+        <span style="font-size:10px;color:var(--text-dim);margin-left:auto;">${esc(b.method||'')} · ${b.report_date?.slice(0,10)||''}</span>
+      </div>
+      ${b.clinical_significance?`<div style="font-size:11px;color:var(--text-muted);padding:4px 12px 8px;border-bottom:1px solid var(--border);margin-bottom:6px;">💡 ${esc(b.clinical_significance)}</div>`:''}`).join('');
+    }
+    const recs=await api('/api/nccn/recommendations/'+mrn);
+    const rel=document.getElementById('nccn-recommendations');
+    if(!recs||!recs.length){rel.innerHTML='<div class="empty-card">No matching protocols found.</div>';}
+    else{
+      rel.innerHTML=recs.map(r=>`<div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="font-weight:700;font-size:13px;color:var(--blue);">${esc(r.protocol_name)}</span>
+          <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(37,99,235,.1);color:var(--blue);">Level ${esc(r.evidence_level||'')}</span>
+          <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(100,116,139,.1);color:var(--text-muted);">Score: ${r.relevanceScore}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${esc(r.cancer_type)}${r.histology?' · '+esc(r.histology):''}${r.stage?' · Stage '+esc(r.stage):''}</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.5;">${esc(r.regimen)}</div>
+      </div>`).join('');
+    }
+    const doses=await api('/api/dosing/cumulative/'+mrn);
+    const dl=document.getElementById('cum-dose-list');
+    if(!doses||!doses.length){dl.innerHTML='<div class="empty-card">No cumulative doses tracked.</div>';}
+    else{
+      dl.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;"><span>Drug</span><span>Cumulative Dose</span><span>Unit</span><span>Status</span></div>`+doses.map(d=>`<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:4px;align-items:center;">
+        <span style="font-weight:600;font-size:12px;">${esc(d.drug_name)}</span>
+        <span style="font-size:12px;">${d.cumulative_dose}</span>
+        <span style="font-size:11px;color:var(--text-dim);">${esc(d.dose_unit||'mg')}</span>
+        <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${d.max_lifetime&&d.cumulative_dose>=d.max_lifetime*0.9?'rgba(239,68,68,.15);color:var(--red)':'rgba(34,197,94,.15);color:var(--green)'};">${d.max_lifetime?d.cumulative_dose+'/'+d.max_lifetime:'No limit set'}</span>
+      </div>`).join('');
+    }
+    filterNCCN();
+  }catch(e){console.error('NCCN tab',e);}
+}
+async function addBiomarker(){
+  if(!selectedMRN){alert('No patient selected');return;}
+  try{
+    const r=await api('/api/biomarkers',{method:'POST',body:JSON.stringify({
+      patientMrn:selectedMRN,
+      biomarker:document.getElementById('nccn-bio-name').value,
+      result:document.getElementById('nccn-bio-result').value,
+      method:document.getElementById('nccn-bio-method').value,
+      reportDate:document.getElementById('nccn-bio-date').value||undefined
+    })});
+    if(r.clinicalSignificance)alert('💡 '+r.clinicalSignificance);
+    if(r.recommendedProtocols&&r.recommendedProtocols.length)alert('📋 Recommended protocols: '+r.recommendedProtocols.join(', '));
+    loadNCCNTab(selectedMRN);
+  }catch(e){alert('Error: '+e.message);}
+}
+async function filterNCCN(){
+  const q=(document.getElementById('nccn-filter')?.value||'').toLowerCase();
+  try{
+    const gl=await api('/api/nccn/guidelines'+(q?'?cancerType='+encodeURIComponent(q):''));
+    document.getElementById('nccn-protocol-list').innerHTML=gl.map(g=>`<div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span style="font-weight:700;font-size:13px;">${esc(g.protocol_name)}</span>
+        <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(37,99,235,.1);color:var(--blue);">${esc(g.evidence_level||'')}</span>
+        <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(100,116,139,.1);color:var(--text-muted);">${esc(g.category||'')}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">${esc(g.cancer_type)}${g.histology?' · '+esc(g.histology):''}</div>
+      <div style="font-size:12px;color:var(--text);">${esc(g.regimen)}</div>
+    </div>`).join('')||'<div style="padding:12px;color:var(--text-dim);font-size:12px;">No protocols found</div>';
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 💰 PATIENT BILLING (per-patient)
+// ═══════════════════════════════════════════════════════════════
+function switchPatientBillingTab(tab,btn){
+  document.querySelectorAll('.pt-billing-tab').forEach(t=>t.style.display='none');
+  document.getElementById('pbv-'+tab).style.display='';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+async function loadPatientBilling(mrn){
+  try{
+    const inv=await api('/api/billing/invoices?patientMrn='+mrn);
+    const el=document.getElementById('pt-billing-invoices');
+    if(!inv.length){el.innerHTML='<div class="empty-card">No invoices yet.</div>';return;}
+    el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${inv.map(i=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+        <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">${esc(i.invoice_number)}</div><div style="font-size:11px;color:var(--text-dim);">${i.due_date?'Due: '+i.due_date:''}</div></div>
+        <div style="font-weight:700;">$${(i.total||0).toFixed(2)}</div>
+        <span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;background:${i.status==='paid'?'rgba(34,197,94,.15);color:var(--green)':'rgba(100,116,139,.15);color:var(--text-muted)'}">${i.status.toUpperCase()}</span>
+      </div>`).join('')}</div>`;
+    const cl=await api('/api/billing/claims?patientMrn='+mrn);
+    const cel=document.getElementById('pt-billing-claims');
+    if(!cl.length){cel.innerHTML='<div class="empty-card">No claims.</div>';return;}
+    cel.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${cl.map(c=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+        <div style="flex:1;"><div style="font-weight:600;font-size:13px;">${esc(c.claim_number)}</div><div style="font-size:11px;color:var(--text-dim);">${esc(c.payer_name)}</div></div>
+        <div style="font-weight:700;">$${(c.total_charged||0).toFixed(2)}</div>
+        <span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;background:${c.status==='paid'?'rgba(34,197,94,.15);color:var(--green)':'rgba(100,116,139,.15);color:var(--text-muted)'}">${c.status.toUpperCase()}</span>
+      </div>`).join('')}</div>`;
+    const pay=await api('/api/billing/payments?patientMrn='+mrn);
+    const pel=document.getElementById('pt-billing-payments');
+    if(!pay.length){pel.innerHTML='<div class="empty-card">No payments.</div>';return;}
+    pel.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${pay.map(x=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+        <div style="flex:1;"><div style="font-weight:600;font-size:13px;">${esc(x.method||'Cash')}</div><div style="font-size:11px;color:var(--text-dim);">${x.date||''}</div></div>
+        <div style="font-weight:700;color:var(--green);">+$${(x.amount||0).toFixed(2)}</div>
+      </div>`).join('')}</div>`;
+    const ins=await api('/api/billing/insurance/'+mrn);
+    const iel=document.getElementById('pt-billing-insurance');
+    if(!ins.length){iel.innerHTML='<div class="empty-card">No insurance on file.</div>';return;}
+    iel.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${ins.map(x=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:${x.is_primary?'var(--blue)':'var(--text-dim)'};"></div>
+        <div style="flex:1;"><div style="font-weight:600;font-size:13px;">${esc(x.payer_name)}</div><div style="font-size:11px;color:var(--text-dim);">${esc(x.plan_type||'')} · ID: ${esc(x.member_id||'N/A')}</div></div>
+        ${x.copay!=null?`<div style="font-size:11px;color:var(--text-dim);">Copay: $${x.copay}</div>`:''}
+      </div>`).join('')}</div>`;
+  }catch(e){console.error('patient billing',e);}
+}
+async function createPatientInvoice(){
+  if(!selectedMRN){alert('No patient selected');return;}
+  const desc=prompt('Line item description (e.g. Office Visit Level 4, MRI Brain w/ contrast):'); if(!desc)return;
+  const price=parseFloat(prompt('Amount ($):','150')); if(!price)return;
+  try{
+    const r=await api('/api/billing/invoices',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,items:[{description:desc,unitPrice:price,quantity:1}],dueDate:new Date(Date.now()+30*86400000).toISOString().slice(0,10)})});
+    alert('Invoice created: '+r.invoiceNumber+' for $'+r.total);
+    loadPatientBilling(selectedMRN);
+  }catch(e){alert('Error: '+e.message);}
+}
+async function addPatientInsurance(){
+  if(!selectedMRN){alert('No patient selected');return;}
+  try{
+    await api('/api/billing/insurance',{method:'POST',body:JSON.stringify({
+      patientMrn:selectedMRN,payerName:document.getElementById('ins-payer').value,
+      planType:document.getElementById('ins-plan').value,memberId:document.getElementById('ins-member').value,
+      groupNumber:document.getElementById('ins-group').value,copay:parseFloat(document.getElementById('ins-copay').value)||0,
+      deductible:parseFloat(document.getElementById('ins-deductible').value)||0,
+      isPrimary:document.getElementById('ins-primary').checked
+    })});
+    ['ins-payer','ins-member','ins-group','ins-copay','ins-deductible'].forEach(id=>document.getElementById(id).value='');
+    loadPatientBilling(selectedMRN);
+  }catch(e){alert('Error: '+e.message);}
 }
 
 // ═══════════════════════════════════════════════════════════════
