@@ -41,7 +41,7 @@ labs only their tasks, patients only their own record.
 | Tampering with clinical records | Low | High | Hash-chained tamper-evident audit trail; integrity check in Governance tab | Low |
 | Loss of encryption key | Low | High | Key held only in env; documented backup + rotation script; loss = unrecoverable (documented) | Medium |
 | Availability / outage during care | Medium | Medium | Health checks + auto-restart; offline-capable PWA; graceful degradation (core flows survive analytics/export failure); email/push retry with backoff | Low |
-| Sending OTP/reminder to wrong address | Low | Medium | Email validated; OTP hashed, single-use, expiring, rate-limited | Low |
+| Sending reminder to wrong address | Low | Medium | Email validated; reminders sent only to registered addresses | Low |
 
 ## 4. Residual risk & sign-off
 

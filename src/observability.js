@@ -19,7 +19,6 @@ function flowFor(method, path) {
   if (path.startsWith('/api/sync/patient-login') || path.startsWith('/api/sync/lab-login')) return 'auth.portal_login';
   if (path.startsWith('/api/auth/login')) return 'auth.login';
   if (path.startsWith('/api/auth/register')) return 'auth.register';
-  if (path.startsWith('/api/email/otp')) return 'email.otp';
   if (path.startsWith('/api/email/send')) return 'email.send';
   if (path.startsWith('/api/sync/patient')) return method === 'PUT' ? 'diary.patient_push' : 'sync.patient_pull';
   if (path.startsWith('/api/sync/lab')) return 'sync.lab';

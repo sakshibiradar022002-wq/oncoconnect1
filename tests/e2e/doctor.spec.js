@@ -19,12 +19,11 @@ test.describe('Doctor App — OncoConnect Pro', () => {
     await page.fill('#rg-hosp', 'Test Hospital');
     await page.fill('#rg-pass', doctorPassword);
 
-    // Click "Send Verification Code"
-    await page.click('button:has-text("Send Verification Code")');
+    // Click "Create Account"
+    await page.click('button:has-text("Create Account")');
 
-    // In dev mode, OTP fallback shows the code or we skip
-    // For this test, just verify we got to step 2
-    await expect(page.locator('#reg-step-2')).toBeVisible({ timeout: 5000 });
+    // Verify account creation success message appears
+    await expect(page.locator('#reg-ok')).toContainText('Account created', { timeout: 5000 });
   });
 
   test('doctor login flow', async ({ page }) => {

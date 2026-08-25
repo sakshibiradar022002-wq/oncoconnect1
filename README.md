@@ -220,8 +220,7 @@ Check it from the app: Data & Backup → Email Setup shows a live status line
 (`/api/email/status?verify=1` runs a real SMTP handshake). With no email
 configured the app falls back to EmailJS (browser-side, keys in the same
 panel) and finally to dev mode, which shows the verification code on screen.
-OTP codes are generated and verified server-side, stored hashed, single-use,
-10-minute expiry, rate-limited.
+
 
 
 ## Deploying

@@ -1,11 +1,7 @@
-// Email endpoints: registration OTP (pre-auth, rate-limited) and doctor
-// notifications (authenticated). The OTP is generated and verified
-// SERVER-side — the browser never sees the code unless email is
-// unconfigured, in which case we return it as devCode to preserve the
-// existing on-screen dev fallback.
+// Email endpoints: doctor notifications (authenticated) and appointment
+// reminders. No OTP or pre-auth email flows — registration is direct.
 
 import { Router } from 'express';
-import { createHash, randomInt } from 'node:crypto';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { db, writeAudit } from '../db/index.js';
@@ -16,13 +12,6 @@ import { getReminderStatus, triggerReminderCheck } from '../reminders.js';
 
 export const emailRouter = Router();
 
-const otpLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 8, // 8 OTP requests / 15 min / IP — codes go to inboxes, keep it tight
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many code requests, please try again later' },
-});
 const sendLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 30, // 30 outbound mails / hour / IP for authenticated senders
@@ -31,76 +20,16 @@ const sendLimiter = rateLimit({
   message: { error: 'Email rate limit reached, please try again later' },
 });
 
-const hashCode = (email, code) =>
-  createHash('sha256').update(email.toLowerCase() + '|' + code).digest('hex');
-
 // ── Status: lets the UI show whether server email is live ─────────
 import { smsConfigured } from '../sms.js';
 
 emailRouter.get('/status', asyncHandler(async (req, res) => {
   if (req.query.verify === '1') return res.json(await verifyMail());
-  res.json({ configured: mailConfigured(), provider: mailProvider(), sms: await smsConfigured() });
-}));
-
-// ── Registration OTP ──────────────────────────────────────────────
-const otpSchema = z.object({
-  email: z.string().email().toLowerCase(),
-  name: z.string().max(120).optional(),
-});
-
-emailRouter.post('/otp', otpLimiter, validate(otpSchema), asyncHandler(async (req, res) => {
-  const { email, name } = req.valid;
-  const code = String(randomInt(100000, 1000000));
-  const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-  await db.prepare('DELETE FROM email_otps WHERE email = ?').run(email);
-  await db.prepare('INSERT INTO email_otps (email, code_hash, expires_at, attempts) VALUES (?, ?, ?, 0)')
-    .run(email, hashCode(email, code), expires);
-
-  if (!mailConfigured()) {
-    // Dev fallback: no mail server — hand the code back so the UI can show
-    // it on screen, exactly like the old client-side flow.
-    return res.json({ sent: false, devCode: code, expiresMin: 10 });
-  }
-  await sendMail({
-    to: email,
-    subject: `${code} is your OncoConnect verification code`,
-    text: `Hello${name ? ' ' + name : ''},\n\nYour OncoConnect verification code is: ${code}\n\nIt expires in 10 minutes. If you didn't request this, ignore this email.`,
-    html: `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;">
-      <h2 style="color:#2C5EAD;margin:0 0 6px;">OncoConnect</h2>
-      <p>Hello${name ? ' ' + name : ''},</p>
-      <p>Your verification code is:</p>
-      <div style="font-size:32px;font-weight:800;letter-spacing:6px;background:#F1F8FD;border:1px solid #C4E2F5;border-radius:10px;padding:14px;text-align:center;">${code}</div>
-      <p style="color:#64748b;font-size:13px;">It expires in 10 minutes. If you didn't request this, ignore this email.</p>
-    </div>`,
+  res.json({ 
+    configured: mailConfigured(), 
+    provider: mailProvider(), 
+    sms: await smsConfigured(),
   });
-  await writeAudit({ actorId: email, actorRole: 'anon', action: 'email.otp_sent', ip: req.ip });
-  res.json({ sent: true, expiresMin: 10 });
-}));
-
-const verifySchema = z.object({
-  email: z.string().email().toLowerCase(),
-  code: z.string().min(6).max(6),
-});
-
-emailRouter.post('/otp/verify', otpLimiter, validate(verifySchema), asyncHandler(async (req, res) => {
-  const { email, code } = req.valid;
-  const row = await db.prepare('SELECT * FROM email_otps WHERE email = ?').get(email);
-  if (!row) return res.status(400).json({ error: 'No code pending for this email. Request a new one.' });
-  if (new Date(row.expires_at) < new Date()) {
-    await db.prepare('DELETE FROM email_otps WHERE email = ?').run(email);
-    return res.status(400).json({ error: 'Code expired. Request a new one.' });
-  }
-  if (row.attempts >= 5) {
-    await db.prepare('DELETE FROM email_otps WHERE email = ?').run(email);
-    return res.status(429).json({ error: 'Too many wrong attempts. Request a new code.' });
-  }
-  if (row.code_hash !== hashCode(email, code)) {
-    await db.prepare('UPDATE email_otps SET attempts = attempts + 1 WHERE email = ?').run(email);
-    return res.status(400).json({ error: 'Incorrect code.' });
-  }
-  await db.prepare('DELETE FROM email_otps WHERE email = ?').run(email); // single-use
-  res.json({ ok: true });
 }));
 
 // ── Authenticated outbound mail (appointment reminders, tests) ────
@@ -136,4 +65,177 @@ emailRouter.post('/reminders/check', authenticate, asyncHandler(async (req, res)
   }
   await triggerReminderCheck();
   res.json({ ok: true, message: 'Reminder check triggered' });
+}));
+
+// ═══════════════════════════════════════════════════════════════════
+// Bulk email broadcast — send emails to all registered doctors/patients
+// ═══════════════════════════════════════════════════════════════════
+import { decryptPHI } from '../crypto.js';
+
+async function requireAdminOrFirstDoctor(req, res, next) {
+  if (req.auth.role === 'admin') return next();
+  const first = await db.prepare('SELECT id FROM users ORDER BY created_at ASC LIMIT 1').get();
+  if (first && first.id === req.auth.subjectId) return next();
+  res.status(403).json({ error: 'Admin access required for broadcast' });
+}
+
+// GET /api/email/contacts — list all registered doctors and patients with emails
+emailRouter.get('/contacts', authenticate, requireAdminOrFirstDoctor, asyncHandler(async (req, res) => {
+  const filter = req.query.filter; // 'doctors', 'patients', or undefined (all)
+  const contacts = [];
+
+  // Doctors from the users table (email is plaintext)
+  if (!filter || filter === 'doctors') {
+    const doctors = await db.prepare(
+      "SELECT id, email, name_enc FROM users WHERE email IS NOT NULL AND role IN ('doctor','admin')"
+    ).all();
+    for (const d of doctors) {
+      contacts.push({
+        type: 'doctor',
+        email: d.email,
+        name: decryptPHI(d.name_enc) || 'Doctor',
+      });
+    }
+  }
+
+  // Patients from kv_store (encrypted, key = pat_<MRN>)
+  if (!filter || filter === 'patients') {
+    const rows = await db.prepare("SELECT v_enc FROM kv_store WHERE k LIKE 'pat_%'").all();
+    for (const r of rows) {
+      try {
+        const pat = decryptPHI(r.v_enc);
+        if (pat && pat.email) {
+          contacts.push({
+            type: 'patient',
+            email: pat.email,
+            name: pat.name || 'Patient',
+            mrn: pat.mrn || '—',
+          });
+        }
+      } catch { /* skip corrupted entries */ }
+    }
+  }
+
+  res.json({ ok: true, count: contacts.length, contacts });
+}));
+
+// Broadcast email schema
+const broadcastSchema = z.object({
+  to: z.enum(['all', 'doctors', 'patients']),
+  subject: z.string().min(1).max(200),
+  text: z.string().min(1).max(10000),
+  html: z.string().max(50000).optional(),
+});
+
+// POST /api/email/broadcast — send email to all/filtered registered users
+const broadcastLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5, // 5 broadcasts per hour per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Broadcast rate limit reached (5/hour). Please try again later.' },
+});
+
+emailRouter.post('/broadcast', authenticate, requireAdminOrFirstDoctor, broadcastLimiter, validate(broadcastSchema), asyncHandler(async (req, res) => {
+  if (!mailConfigured()) {
+    return res.status(503).json({
+      error: 'Email is not configured. Set RESEND_API_KEY (free at resend.com) or GMAIL_USER + GMAIL_APP_PASSWORD.',
+    });
+  }
+
+  const { to, subject, text, html } = req.valid;
+
+  // Collect recipient emails
+  const recipients = [];
+  const seen = new Set(); // deduplicate emails
+
+  if (to === 'all' || to === 'doctors') {
+    const doctors = await db.prepare(
+      "SELECT email, name_enc FROM users WHERE email IS NOT NULL AND role IN ('doctor','admin')"
+    ).all();
+    for (const d of doctors) {
+      const email = d.email.toLowerCase();
+      if (!seen.has(email)) {
+        seen.add(email);
+        recipients.push({ email, name: decryptPHI(d.name_enc) || 'Doctor', type: 'doctor' });
+      }
+    }
+  }
+
+  if (to === 'all' || to === 'patients') {
+    const rows = await db.prepare("SELECT v_enc FROM kv_store WHERE k LIKE 'pat_%'").all();
+    for (const r of rows) {
+      try {
+        const pat = decryptPHI(r.v_enc);
+        if (pat && pat.email) {
+          const email = pat.email.toLowerCase();
+          if (!seen.has(email)) {
+            seen.add(email);
+            recipients.push({ email, name: pat.name || 'Patient', type: 'patient' });
+          }
+        }
+      } catch { /* skip corrupted entries */ }
+    }
+  }
+
+  if (recipients.length === 0) {
+    return res.json({ ok: true, sent: 0, failed: 0, total: 0, message: 'No recipients with email addresses found.' });
+  }
+
+  // Send emails sequentially with a small delay between them
+  // (avoids hitting provider rate limits and is polite to SMTP servers)
+  let sent = 0;
+  let failed = 0;
+  const errors = [];
+  const SEND_DELAY_MS = 200; // 200ms between sends
+
+  for (const recipient of recipients) {
+    try {
+      // Personalize the greeting if possible
+      const personalizedText = text.replace(/\{name\}/gi, recipient.name);
+      const personalizedHtml = html
+        ? html.replace(/\{name\}/gi, recipient.name)
+        : `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
+            <h2 style="color:#2C5EAD;margin:0 0 6px;">OncoConnect</h2>
+            <p>Hello ${recipient.name},</p>
+            <div style="white-space:pre-wrap;line-height:1.6;">${personalizedText}</div>
+            <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;">
+            <p style="color:#94a3b8;font-size:11px;">This message was sent via OncoConnect Neuro-Oncology EMR.</p>
+          </div>`;
+
+      await sendMail({
+        to: recipient.email,
+        subject,
+        text: personalizedText,
+        html: personalizedHtml,
+      });
+      sent++;
+    } catch (err) {
+      failed++;
+      errors.push({ email: recipient.email, error: err.message });
+    }
+    // Small delay between sends to respect rate limits
+    if (sent + failed < recipients.length) {
+      await new Promise(r => setTimeout(r, SEND_DELAY_MS));
+    }
+  }
+
+  await writeAudit({
+    actorId: req.auth.subjectId,
+    actorRole: req.auth.role,
+    action: 'email.broadcast',
+    detail: { to, subject, sent, failed, total: recipients.length },
+    ip: req.ip,
+  });
+
+  res.json({
+    ok: true,
+    sent,
+    failed,
+    total: recipients.length,
+    message: failed > 0
+      ? `Sent ${sent} of ${recipients.length} emails (${failed} failed). Check errors for details.`
+      : `Successfully sent ${sent} email(s) to all ${to === 'all' ? 'doctors and patients' : to}.`,
+    errors: errors.length > 0 ? errors : undefined,
+  });
 }));

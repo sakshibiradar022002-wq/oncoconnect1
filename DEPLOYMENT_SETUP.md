@@ -161,7 +161,7 @@ curl https://onco-connect-run.preview.emergentagent.com/api/admin/users
 | Authentication | ✅ | Works after DB is configured |
 | Sync (offline-first) | ✅ | Works after DB is configured |
 | Push notifications | ✅ | Works (optional setup) |
-| Email (OTP, reminders) | ⚠️ | Needs Resend/Gmail config |
+| Email (reminders) | ⚠️ | Needs Resend/Gmail config |
 
 ---
 

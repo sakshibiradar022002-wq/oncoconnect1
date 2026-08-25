@@ -74,14 +74,6 @@ CREATE TABLE IF NOT EXISTS push_subs (
 );
 CREATE INDEX IF NOT EXISTS idx_push_subject ON push_subs(subject_id);
 
--- ── Email OTPs: server-generated registration codes (hashed, single-use) ──
-CREATE TABLE IF NOT EXISTS email_otps (
-  email      TEXT PRIMARY KEY,             -- lowercased address being verified
-  code_hash  TEXT NOT NULL,                -- sha256(email|code) — never plaintext
-  expires_at TEXT NOT NULL,
-  attempts   INTEGER NOT NULL DEFAULT 0
-);
-
 -- ── Team members: doctors can invite colleagues to share patients ──
 CREATE TABLE IF NOT EXISTS team_members (
   id         TEXT PRIMARY KEY,             -- uuid

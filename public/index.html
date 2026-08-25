@@ -384,29 +384,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
           <div id="rg-pass-bar" style="height:4px;border-radius:2px;background:var(--border2);margin-top:6px;overflow:hidden;"><div id="rg-pass-fill" style="height:100%;width:0%;border-radius:2px;transition:all .3s;"></div></div>
           <div id="rg-pass-label" style="font-size:11px;color:var(--text-dim);margin-top:3px;"></div>
         </div>
-        <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="startEmailVerification()">Send Verification Code →</button>
-        <div id="reg-email-status" style="font-size:11px;text-align:center;margin-top:6px;color:var(--text-dim);"></div>
-      </div>
-      <div id="reg-step-2" style="display:none;">
-        <div style="text-align:center;margin-bottom:20px;">
-          <div style="font-size:28px;margin-bottom:8px;">📧</div>
-          <div style="font-weight:700;font-size:15px;color:var(--text);">Check your email</div>
-          <div style="font-size:12.5px;color:var(--text-muted);margin-top:4px;" id="reg-email-sent-label">We sent a 6-digit code to your email</div>
-        </div>
-        <div class="fg" style="margin-bottom:6px;">
-          <label>Enter 6-digit verification code</label>
-          <input id="rg-otp" type="text" maxlength="6" placeholder="000000" style="font-size:28px;font-family:var(--mono);text-align:center;letter-spacing:8px;font-weight:700;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length===6)verifyAndCreate()">
-        </div>
-        <div id="rg-otp-status" style="font-size:12px;min-height:16px;margin-bottom:12px;text-align:center;"></div>
-        <div id="rg-otp-fallback" style="display:none;background:rgba(217,119,6,.08);border:1.5px solid rgba(217,119,6,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;color:var(--orange);">
-          ⚠ <strong>Dev mode</strong> — email not configured. Your code: <span id="rg-otp-shown" style="font-family:var(--mono);font-size:16px;font-weight:800;letter-spacing:4px;display:block;margin-top:4px;color:var(--text);"></span>
-        </div>
-        <button class="btn btn-primary btn-full" onclick="verifyAndCreate()">✓ Verify & Create Account</button>
-        <div style="display:flex;justify-content:space-between;margin-top:10px;">
-          <button onclick="backToStep1()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12.5px;font-family:inherit;">← Change email</button>
-          <button onclick="resendOTP()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:12.5px;font-family:inherit;" id="resend-btn">Resend code</button>
-        </div>
-        <div id="resend-timer" style="font-size:11px;color:var(--text-dim);text-align:right;margin-top:2px;"></div>
+        <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="createAccount()">Create Account →</button>
       </div>
     </div>
     <div style="margin-top:16px;text-align:center;font-size:11px;color:var(--text-dim);">🔒 Data stored locally on this device</div>
@@ -432,6 +410,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
       <button class="nav-item" onclick="showPanel('labs',this)"><span class="ni">🔬</span>Lab Management<span class="nav-badge" id="lab-badge" style="display:none;"></span></button>
       <div class="sidebar-section" style="margin-top:8px;">System</div>
       <button class="nav-item" onclick="showPanel('backup',this)"><span class="ni">💾</span>Data &amp; Backup</button>
+      <button class="nav-item" onclick="showPanel('broadcast',this)"><span class="ni">📧</span>Broadcast Email</button>
       <div style="padding:10px 14px 0;">
         <div style="font-size:10px;color:var(--text-dim);margin-bottom:5px;display:flex;justify-content:space-between;"><span>Storage</span><span id="storage-pct">0%</span></div>
         <div class="storage-bar-wrap"><div class="storage-bar-fill" id="storage-bar"></div></div>
@@ -639,6 +618,40 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
           <button class="btn btn-danger btn-full" onclick="clearAllData()">🗑 Clear All Data</button>
         </div>
       </div>
+
+      <!-- BROADCAST EMAIL -->
+      <div class="panel" id="panel-broadcast">
+        <div class="page-header"><div><div class="page-title">📧 Broadcast Email</div><div class="page-sub">Send free emails to all registered patients &amp; doctors — powered by Resend (100/day free)</div></div></div>
+        <div id="bc-email-status" class="card" style="margin-bottom:18px;"></div>
+        <div class="g2" style="margin-bottom:18px;">
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-title" style="margin-bottom:10px;">📋 Recipients</div>
+            <div class="fg" style="margin:0;"><label>Send to</label>
+              <select id="bc-to" onchange="loadBroadcastContacts()" style="width:100%;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;color:var(--text);font-family:inherit;font-size:13px;">
+                <option value="all">All (Doctors + Patients)</option>
+                <option value="doctors">Doctors only</option>
+                <option value="patients">Patients only</option>
+              </select>
+            </div>
+            <div id="bc-contacts-list" style="max-height:200px;overflow-y:auto;margin-top:10px;"></div>
+            <div id="bc-contacts-count" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></div>
+          </div>
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-title" style="margin-bottom:10px;">✍ Compose</div>
+            <div class="fg" style="margin:0;"><label>Subject *</label><input id="bc-subject" placeholder="e.g. Clinic hours update, Health advisory..."></div>
+            <div class="fg" style="margin-top:10px;"><label>Message * <span style="font-weight:400;color:var(--text-dim);">(use {name} to personalize)</span></label>
+              <textarea id="bc-body" rows="7" placeholder="Hello {name},&#10;&#10;We wanted to inform you about...&#10;&#10;Best regards,&#10;Your care team" style="width:100%;padding:12px 16px;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;color:var(--text);font-family:inherit;font-size:13px;resize:vertical;outline:none;"></textarea>
+            </div>
+            <div id="bc-msg" class="msg" style="margin-top:10px;"></div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-primary" id="bc-send-btn" onclick="sendBroadcastEmail()">📧 Send Email to All</button>
+              <button class="btn btn-ghost" onclick="previewBroadcast()">👁 Preview</button>
+            </div>
+          </div>
+        </div>
+        <div id="bc-result" style="margin-top:16px;"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -876,7 +889,7 @@ function flash(msg){const d=document.createElement('div');d.style.cssText='posit
 async function pushToServer(changes){try{await api('/sync',{method:'PUT',body:JSON.stringify({changes})})}catch(e){console.warn('[sync] push failed:',e.message)}}
 
 // ── Auth ──
-function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('a-login').style.display=tab==='login'?'block':'none';document.getElementById('a-register').style.display=tab==='register'?'block':'none';if(tab==='register')checkEmailStatus();}
+function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('a-login').style.display=tab==='login'?'block':'none';document.getElementById('a-register').style.display=tab==='register'?'block':'none';}
 function showMsg(id,msg,type='err'){const el=document.getElementById(id);if(!el)return;el.innerHTML=msg;el.className='msg '+type;el.style.display='block';if(type==='err')setTimeout(()=>{if(el)el.style.display='none';},5000);}
 function clearRegMsg(){['reg-msg','reg-ok'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
 
@@ -903,83 +916,18 @@ function checkPassStrength(pass){
   const l=levels[Math.min(score,5)];fill.style.width=l.w;fill.style.background=l.col;label.textContent=l.txt;label.style.color=l.col;
 }
 
-// OTP
-let _pendingOTP=null,_otpExpiry=null,_otpEmail=null,_resendTimer=null;
-
-function genOTP(){const a=new Uint8Array(6);crypto.getRandomValues(a);return Array.from(a,b=>b%10).join('');}
-
-async function startEmailVerification(){
+// Account creation — direct, no OTP verification step
+async function createAccount(){
   const name=v('rg-name').trim(),email=v('rg-email').toLowerCase().trim(),pass=v('rg-pass');
   if(!name){showMsg('reg-msg','Name is required.');return;}
   if(!email||!email.includes('@')){showMsg('reg-msg','Enter a valid email.');return;}
   if(pass.length<10||!/[A-Za-z]/.test(pass)||!/\d/.test(pass)){showMsg('reg-msg','Password: 10+ chars, letter + number required.');return;}
   // Check server for existing email (also keep local check for offline)
   if(LS.get('doc_email_'+email.replace(/[^a-z0-9]/g,'_'))){showMsg('reg-msg','Account exists locally. <a href="#" onclick="switchATab(\'login\',document.querySelector(\'.ts-btn\'));return false;" style="color:var(--blue);">Sign in?</a>');return;}
-  _otpEmail=email;_otpExpiry=Date.now()+600000;
-  // Server-side OTP via /api/email/otp (uses Resend/Gmail if configured)
-  try{
-    showMsg('reg-msg','Sending verification code…','ok');
-    const r=await api('/email/otp',{method:'POST',body:JSON.stringify({email,name})});
-    document.getElementById('reg-step-1').style.display='none';
-    document.getElementById('reg-step-2').style.display='block';
-    document.getElementById('reg-email-sent-label').textContent='We sent a 6-digit code to '+email;
-    const fb=document.getElementById('rg-otp-fallback');
-    if(r.sent){fb.style.display='none';}
-    else{fb.style.display='block';document.getElementById('rg-otp-shown').textContent=r.devCode;}
-    startResendTimer();
-    document.getElementById('rg-otp').focus();
-    showMsg('reg-msg','','ok');
-  }catch(e){
-    showMsg('reg-msg','Failed to send code: '+((e.message||'').includes('503')?'Email not configured on server. Set RESEND_API_KEY.':e.message||'Server error'));
-  }
-}
-
-function startResendTimer(){
-  let secs=60;const btn=document.getElementById('resend-btn'),lbl=document.getElementById('resend-timer');
-  btn.disabled=true;btn.style.opacity='.4';
-  clearInterval(_resendTimer);
-  _resendTimer=setInterval(()=>{
-    secs--;lbl.textContent='Resend in '+secs+'s';
-    if(secs<=0){clearInterval(_resendTimer);btn.disabled=false;btn.style.opacity='1';lbl.textContent='';}
-  },1000);
-}
-
-async function resendOTP(){
-  _otpExpiry=Date.now()+600000;
-  try{
-    const r=await api('/email/otp',{method:'POST',body:JSON.stringify({email:_otpEmail})});
-    const fb=document.getElementById('rg-otp-fallback');
-    if(r.sent){fb.style.display='none';}
-    else{fb.style.display='block';document.getElementById('rg-otp-shown').textContent=r.devCode;}
-  }catch(e){showMsg('reg-msg','Failed to resend: '+e.message);}
-  startResendTimer();
-}
-
-function backToStep1(){document.getElementById('reg-step-1').style.display='block';document.getElementById('reg-step-2').style.display='none';}
-
-// Check server email config on register tab open
-async function checkEmailStatus(){
-  const el=document.getElementById('reg-email-status');if(!el)return;
-  try{const r=await api('/email/status?verify=1');
-    if(r.configured&&r.ok)el.innerHTML='<span style="color:var(--green);">\u2713 Server email is live ('+r.provider+')</span>';
-    else if(r.configured&&!r.ok)el.innerHTML='<span style="color:var(--orange);">\u26a0 Email configured but not working: '+(r.error||'check credentials')+'</span>';
-    else el.innerHTML='<span style="color:var(--orange);">\u26a0 Email not configured — code shown on screen (dev mode)</span>';
-  }catch(e){el.innerHTML='';}
-}
-
-async function verifyAndCreate(){
-  const code=v('rg-otp'),statusEl=document.getElementById('rg-otp-status');
-  if(Date.now()>_otpExpiry){statusEl.innerHTML='<span style="color:var(--red);">Code expired. Please resend.</span>';return;}
-  // Verify OTP via server (checks against hashed code in DB)
-  try{
-    await api('/email/otp/verify',{method:'POST',body:JSON.stringify({email:_otpEmail,code})});
-  }catch(e){statusEl.innerHTML='<span style="color:var(--red);">'+(e.message||'Verification failed')+'</span>';return;}
-  // Create account — server first, then local fallback
-  const pass=v('rg-pass'),name=v('rg-name').trim(),email=v('rg-email').toLowerCase().trim(),spec=v('rg-spec'),hosp=v('rg-hosp').trim();
-  let serverOk=false;
+  const spec=v('rg-spec'),hosp=v('rg-hosp').trim();
+  showMsg('reg-msg','Creating account…','ok');
   try{
     const r=await api('/auth/register',{method:'POST',body:JSON.stringify({name,email,password:pass,specialty:spec,institution:hosp})});
-    serverOk=true;
     showMsg('reg-ok',r.message||'Account created! Redirecting to sign in…','ok');
   }catch(e){
     // Server unreachable — save locally for offline mode
@@ -1144,6 +1092,7 @@ function showPanel(id,btn){
   if(id==='messages')renderChatConvos();
   if(id==='labs'){populateLabDropdowns();refreshLabList();renderLabTaskQueue();}
   if(id==='backup')refreshStorageInfo();
+  if(id==='broadcast'){checkBroadcastEmailStatus();loadBroadcastContacts();}
 }
 function closeRecord(){document.getElementById('record-shell').classList.remove('open');selectedMRN=null;}
 function openOverlay(id){document.getElementById(id).classList.add('open');}
@@ -2103,6 +2052,89 @@ function importBackup(input){const file=input.files[0];if(!file)return;const rea
 function clearAllData(){if(!confirm('DELETE ALL OncoConnect data? This cannot be undone.'))return;Object.keys(localStorage).filter(k=>k.startsWith('cc_')).forEach(k=>localStorage.removeItem(k));flash('All data cleared');refreshAll();}
 function saveEmailJSConfig(){const cfg={publicKey:v('ejs-pubkey'),serviceId:v('ejs-service'),verifyTemplate:v('ejs-tmpl-verify'),apptTemplate:v('ejs-tmpl-appt')};LS.set('email_config',cfg);flash('Email config saved');}
 function testEmailJS(){alert('Test email — configure EmailJS keys first.');}
+
+// ── Broadcast Email (free via Resend / Gmail) ──
+async function checkBroadcastEmailStatus(){
+  const el=document.getElementById('bc-email-status');if(!el)return;
+  try{
+    const r=await api('/email/status?verify=1');
+    if(r.configured&&r.ok){
+      el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">✅</span><div><div style="font-weight:700;font-size:13px;color:var(--green);">Server email is live (${r.provider})</div><div style="font-size:11px;color:var(--text-muted);">You can send free emails — Resend free tier: 100/day, 3,000/month</div></div></div>`;
+    }else{
+      el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">⚠️</span><div><div style="font-weight:700;font-size:13px;color:var(--orange);">Email not fully configured</div><div style="font-size:11px;color:var(--text-muted);">${r.error||'Set RESEND_API_KEY or GMAIL_USER + GMAIL_APP_PASSWORD on your server.'}</div></div></div>`;
+    }
+  }catch(e){
+    el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">❌</span><div><div style="font-weight:700;font-size:13px;color:var(--red);">Cannot check email status</div><div style="font-size:11px;color:var(--text-muted);">${e.message}</div></div></div>`;
+  }
+}
+async function loadBroadcastContacts(){
+  const filter=document.getElementById('bc-to').value;
+  const listEl=document.getElementById('bc-contacts-list');
+  const countEl=document.getElementById('bc-contacts-count');
+  listEl.innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:8px;">Loading contacts...</div>';
+  countEl.textContent='';
+  try{
+    const r=await api('/email/contacts?filter='+filter);
+    if(!r.contacts||r.contacts.length===0){
+      listEl.innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:8px;">No contacts with email addresses found.</div>';
+      return;
+    }
+    const doctors=r.contacts.filter(c=>c.type==='doctor');
+    const patients=r.contacts.filter(c=>c.type==='patient');
+    let html='';
+    if(doctors.length){
+      html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-dim);padding:6px 0;">👨‍⚕️ Doctors (${doctors.length})</div>`;
+      html+=doctors.map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;"><span style="background:var(--blue-pale);color:var(--blue);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;">DOC</span><span style="font-weight:500;">${esc(c.name)}</span><span style="color:var(--text-dim);margin-left:auto;font-family:var(--mono);font-size:11px;">${esc(c.email)}</span></div>`).join('');
+    }
+    if(patients.length){
+      html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-dim);padding:6px 0;margin-top:6px;">🤒 Patients (${patients.length})</div>`;
+      html+=patients.map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;"><span style="background:rgba(6,182,212,.07);color:var(--cyan);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;">PAT</span><span style="font-weight:500;">${esc(c.name)}</span><span style="color:var(--text-dim);font-size:11px;">${esc(c.mrn||'')}</span><span style="color:var(--text-dim);margin-left:auto;font-family:var(--mono);font-size:11px;">${esc(c.email)}</span></div>`).join('');
+    }
+    listEl.innerHTML=html;
+    countEl.textContent=`Total: ${r.count} recipient(s) with email addresses`;
+  }catch(e){
+    listEl.innerHTML=`<div style="font-size:12px;color:var(--red);padding:8px;">Error: ${esc(e.message)}</div>`;
+  }
+}
+async function sendBroadcastEmail(){
+  const to=document.getElementById('bc-to').value;
+  const subject=v('bc-subject');
+  const body=v('bc-body');
+  const msgEl=document.getElementById('bc-msg');
+  const resultEl=document.getElementById('bc-result');
+  if(!subject){msgEl.className='msg err';msgEl.textContent='Enter a subject line.';msgEl.style.display='block';return;}
+  if(!body){msgEl.className='msg err';msgEl.textContent='Enter a message body.';msgEl.style.display='block';return;}
+  const btn=document.getElementById('bc-send-btn');
+  btn.disabled=true;btn.textContent='⏳ Sending...';
+  msgEl.style.display='none';resultEl.innerHTML='';
+  try{
+    const r=await api('/email/broadcast',{method:'POST',body:JSON.stringify({to,subject,text:body})});
+    msgEl.className='msg ok';msgEl.textContent=r.message;msgEl.style.display='block';
+    let resultHtml=`<div class="card"><div class="card-title" style="margin-bottom:12px;">📊 Send Results</div>`;
+    resultHtml+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;">`;
+    resultHtml+=`<div style="text-align:center;padding:14px;background:var(--blue-pale);border-radius:10px;"><div style="font-size:24px;font-weight:800;color:var(--blue);">${r.sent||0}</div><div style="font-size:11px;color:var(--text-muted);">Sent</div></div>`;
+    resultHtml+=`<div style="text-align:center;padding:14px;background:rgba(220,38,38,.05);border-radius:10px;"><div style="font-size:24px;font-weight:800;color:var(--red);">${r.failed||0}</div><div style="font-size:11px;color:var(--text-muted);">Failed</div></div>`;
+    resultHtml+=`<div style="text-align:center;padding:14px;background:rgba(16,185,129,.05);border-radius:10px;"><div style="font-size:24px;font-weight:800;color:var(--green);">${r.total||0}</div><div style="font-size:11px;color:var(--text-muted);">Total</div></div>`;
+    resultHtml+=`</div>`;
+    if(r.errors&&r.errors.length){
+      resultHtml+=`<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Failed recipients:</div>`;
+      r.errors.forEach(e=>{resultHtml+=`<div style="font-size:11px;color:var(--red);padding:3px 0;">${esc(e.email)}: ${esc(e.error)}</div>`;});
+    }
+    resultHtml+=`</div>`;
+    resultEl.innerHTML=resultHtml;
+  }catch(e){
+    msgEl.className='msg err';msgEl.textContent='Error: '+e.message;msgEl.style.display='block';
+  }finally{
+    btn.disabled=false;btn.textContent='📧 Send Email to All';
+  }
+}
+function previewBroadcast(){
+  const body=v('bc-body');
+  if(!body){alert('Write a message first.');return;}
+  const preview=body.replace(/\{name\}/gi,'John Doe');
+  const win=window.open('','_blank','width=600,height=500');
+  win.document.write(`<html><head><title>Email Preview</title><style>body{font-family:system-ui,sans-serif;max-width:520px;margin:40px auto;padding:24px;}</style></head><body><h2 style="color:#2C5EAD;">OncoConnect</h2><p>Hello John Doe,</p><div style="white-space:pre-wrap;line-height:1.6;">${preview}</div><hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;"><p style="color:#94a3b8;font-size:11px;">This message was sent via OncoConnect Neuro-Oncology EMR.</p></body></html>`);
+}
 function refreshStorageInfo(){let total=0;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('cc_'))total+=localStorage.getItem(k).length;}const pct=Math.min(100,Math.round(total/5242880*100));document.getElementById('storage-pct').textContent=pct+'%';document.getElementById('storage-bar').style.width=pct+'%';if(pct>80)document.getElementById('storage-bar').style.background='var(--orange)';}
 function openPatientSearch(){const q=prompt('Search patients by name or MRN:');if(!q)return;const pats=getMyPatients().filter(p=>p.name?.toLowerCase().includes(q.toLowerCase())||p.mrn?.toLowerCase().includes(q.toLowerCase()));if(pats.length===1)openRecord(pats[0].mrn);else if(pats.length>1){showPanel('patients',document.querySelectorAll('.nav-item')[1]);document.getElementById('pat-search').value=q;renderPatList();}}
 

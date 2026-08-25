@@ -1,4 +1,4 @@
-// Server-side email — the primary channel for OTP codes and reminders.
+// Server-side email — sends appointment reminders and doctor notifications.
 //
 // Three ways to configure, in priority order:
 //
