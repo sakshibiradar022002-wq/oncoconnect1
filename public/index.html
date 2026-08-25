@@ -817,6 +817,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
       <button class="rnav-item" onclick="showRTab('rt-molecular',this)">🧬 Molecular</button>
       <button class="rnav-item" onclick="showRTab('rt-labs',this)">🧪 Labs</button>
       <button class="rnav-item" onclick="showRTab('rt-prescriptions',this)">💊 Prescriptions</button>
+      <button class="rnav-item" onclick="showRTab('rt-clinical-support',this)">⚕️ Clinical Support</button>
       <button class="rnav-item" onclick="showRTab('rt-treatment',this)">⚡ Treatment</button>
       <button class="rnav-item" onclick="showRTab('rt-appointments',this)">🗓 Appointments</button>
       <button class="rnav-item" onclick="showRTab('rt-mdt',this)">📋 MDT Notes</button>
@@ -1514,7 +1515,7 @@ function openRecord(mrn){
   document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('active'));
   document.querySelector('.rnav-item').classList.add('active');
   document.getElementById('rt-identity').classList.add('active');
-  setTimeout(()=>{rCalcBP();rCalcBMI();rCalcAge();rCalcSpO2();rCalcTemp();calcEQD2();renderAllergyTags();renderLabsTable();renderMedList();renderRecordLogs(mrn);renderRecordAppts(mrn);renderQuickSummary();checkDrugAllergyWarning();rCalcEGFR();renderMDTNotes(mrn);renderImagingReports(mrn);renderDrugInteractionBanner(mrn);},50);
+  setTimeout(()=>{rCalcBP();rCalcBMI();rCalcAge();rCalcSpO2();rCalcTemp();calcEQD2();renderAllergyTags();renderLabsTable();renderMedList();renderRecordLogs(mrn);renderRecordAppts(mrn);renderQuickSummary();checkDrugAllergyWarning();rCalcEGFR();renderMDTNotes(mrn);renderImagingReports(mrn);renderDrugInteractionBanner(mrn);renderRecordClinicalSupport(mrn);rRxLoadAllergySummary();rRxLoadServerPrescriptions();},50);
 }
 
 function buildRecordTabs(p){
@@ -1801,25 +1802,178 @@ function buildRecordTabs(p){
     <table class="lab-table" id="r-labs-table"><thead><tr><th>Date</th><th>Test</th><th>Value</th><th>Ref Range</th><th>Status</th><th></th></tr></thead><tbody id="r-labs-body"></tbody></table>
   </div>
 
-  <!-- ══ TAB 6: PRESCRIPTIONS ══ -->
+  <!-- ══ TAB 6: PRESCRIPTIONS (Merged E-Prescribing & Medication Management) ══ -->
   <div id="rt-prescriptions" class="rtab">
-    <div id="r-drug-interaction-banner" style="display:none;background:rgba(220,38,38,.06);border:1.5px solid rgba(220,38,38,.2);border-radius:8px;padding:11px 14px;margin-bottom:14px;font-size:12.5px;color:var(--red);line-height:1.7;"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-      <div class="rt-title" style="margin:0;padding:0;border:none;">Medications</div>
-      <button class="btn btn-primary btn-sm" onclick="showMedForm()">+ Add Medication</button>
-    </div>
-    <div id="r-med-form" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;">
-      <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
-        <div class="fg" style="margin:0;"><label>Drug Name</label><input id="r-med-name" placeholder="e.g. Temozolomide"></div>
-        <div class="fg" style="margin:0;"><label>Dose</label><input id="r-med-dose" placeholder="150 mg/m²"></div>
-        <div class="fg" style="margin:0;"><label>Route</label><select id="r-med-route"><option>PO</option><option>IV</option><option>SC</option><option>IM</option><option>IT</option></select></div>
-        <div class="fg" style="margin:0;"><label>Frequency</label><select id="r-med-freq"><option>OD</option><option>BID</option><option>TID</option><option>Weekly</option><option>Monthly</option><option>PRN</option></select></div>
-        <div class="fg" style="margin:0;"><label>Indication</label><input id="r-med-indication" placeholder="e.g. Anti-epileptic"></div>
-        <div class="fg" style="margin:0;"><label>Status</label><select id="r-med-status"><option>Active</option><option>On Hold</option><option>Discontinued</option></select></div>
+    <!-- Page Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div>
+        <div style="font-size:1.25rem;font-weight:800;color:var(--text);letter-spacing:-.5px;">💊 Prescriptions</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">E-prescribing & medication management</div>
       </div>
-      <div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm" onclick="hideMedForm()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveMed()">Save</button></div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="rRxLoadServerPrescriptions();rRxLoadAllergySummary();">🔄 Refresh</button>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('r-rx-create-form').style.display=document.getElementById('r-rx-create-form').style.display==='none'?'block':'none'">+ New Prescription</button>
+      </div>
     </div>
-    <div id="r-med-list"></div>
+
+    <!-- Drug Interaction Banner -->
+    <div id="r-drug-interaction-banner" style="display:none;background:rgba(220,38,38,.06);border:1.5px solid rgba(220,38,38,.2);border-radius:8px;padding:11px 14px;margin-bottom:14px;font-size:12.5px;color:var(--red);line-height:1.7;"></div>
+
+    <!-- CDS Allergy Summary -->
+    <div id="r-rx-allergy-summary" style="display:none;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);border-radius:10px;padding:12px 16px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:16px;">⚠️</span>
+        <span style="font-weight:700;font-size:13px;color:var(--red);">Known Patient Allergies</span>
+      </div>
+      <div id="r-rx-allergy-tags" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Auto-check runs before every new prescription.</div>
+    </div>
+
+    <!-- Create Prescription Form -->
+    <div id="r-rx-create-form" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px;">
+      <div style="font-weight:700;font-size:13px;margin-bottom:12px;">✍️ New Prescription</div>
+      <div class="g2">
+        <div class="fg" style="margin:0 0 10px;"><label>Medication *</label><input id="r-med-name" placeholder="e.g. Temozolomide" oninput="rRxLiveAllergyCheck(this.value)"></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Generic Name</label><input id="r-rx-generic" placeholder="Optional generic name"></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Dosage *</label><input id="r-med-dose" placeholder="e.g. 150 mg/m²"></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Frequency *</label><select id="r-med-freq"><option>QD</option><option>BID</option><option>TID</option><option>QID</option><option>PRN</option><option>Monthly</option><option>Cycle Day 1-5</option></select></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Route</label><select id="r-med-route"><option value="oral">Oral</option><option value="iv">IV</option><option value="im">IM</option><option value="subcutaneous">Subcutaneous</option><option value="intrathecal">Intrathecal</option><option value="topical">Topical</option></select></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Duration</label><input id="r-med-dur" placeholder="e.g. 30 days"></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Indication</label><input id="r-med-indication" placeholder="e.g. Anti-epileptic"></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Quantity</label><input id="r-med-qty" type="number" placeholder="# pills"></div>
+      </div>
+      <div class="g2">
+        <div class="fg" style="margin:0 0 10px;"><label>Pharmacy</label><input id="r-med-pharmacy" placeholder="Pharmacy name/address"></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Refills</label><input id="r-med-refills" type="number" value="0" min="0" max="12"></div>
+      </div>
+      <div class="fg" style="margin:0 0 10px;"><label>Special Instructions</label><textarea id="r-med-instructions" rows="2" placeholder="e.g. Take with food, avoid sunlight"></textarea></div>
+      <!-- Live CDS allergy check -->
+      <div id="r-med-allergy-check" style="display:none;padding:8px 12px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:8px;margin-bottom:10px;font-size:12px;color:var(--red);"></div>
+      <!-- CDS interaction check -->
+      <div id="r-med-interaction-check" style="display:none;padding:8px 12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:8px;margin-bottom:10px;font-size:12px;color:var(--orange);"></div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('r-rx-create-form').style.display='none';document.getElementById('r-med-allergy-check').style.display='none';document.getElementById('r-med-interaction-check').style.display='none';">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="rRxPrescribeWithCDS()">💊 Prescribe with CDS Check</button>
+        <div style="margin-left:auto;">
+          <button class="btn btn-ghost btn-sm" onclick="showRTab('rt-clinical-support',document.querySelectorAll('.rnav-item')[6])" style="font-size:11px;">⚕️ Full Clinical Support</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active E-Prescriptions (Server) -->
+    <div class="g2" style="margin-bottom:18px;">
+      <div class="info-card">
+        <div class="info-card-title" style="display:flex;align-items:center;justify-content:space-between;">📋 Active E-Prescriptions <button class="btn btn-ghost btn-sm" onclick="rRxLoadServerPrescriptions()" style="padding:3px 8px;font-size:10px;">Refresh</button></div>
+        <div id="r-rx-server-list"><div class="empty-card">No prescriptions yet.</div></div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-title">💊 Medication List (Local)</div>
+        <div id="r-med-list"><div class="empty-card">No local medications recorded.</div></div>
+      </div>
+    </div>
+
+    <!-- Quick Drug Reference -->
+    <div class="info-card">
+      <div class="info-card-title">📖 Quick Drug Reference</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+        <div style="cursor:pointer;font-size:11px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center;transition:all .2s;" onclick="rCdsShowDrugInfo('temozolomide')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>TMZ</strong><br><span style="font-size:9px;color:var(--text-dim)">Temozolomide</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center;transition:all .2s;" onclick="rCdsShowDrugInfo('bevacizumab')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Bevacizumab</strong><br><span style="font-size:9px;color:var(--text-dim)">Avastin</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center;transition:all .2s;" onclick="rCdsShowDrugInfo('carboplatin')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Carboplatin</strong><br><span style="font-size:9px;color:var(--text-dim)">Platinum</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center;transition:all .2s;" onclick="rCdsShowDrugInfo('levetiracetam')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Levetiracetam</strong><br><span style="font-size:9px;color:var(--text-dim)">Keppra</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center;transition:all .2s;" onclick="rCdsShowDrugInfo('dexamethasone')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Dexa</strong><br><span style="font-size:9px;color:var(--text-dim)">Decadron</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center;transition:all .2s;" onclick="rCdsShowDrugInfo('lomustine')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Lomustine</strong><br><span style="font-size:9px;color:var(--text-dim)">CCNU</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center;transition:all .2s;" onclick="rCdsShowDrugInfo('procarbazine')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Procarbazine</strong><br><span style="font-size:9px;color:var(--text-dim)">Matulane</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center;transition:all .2s;" onclick="rCdsShowDrugInfo('valproic-acid')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Valproic Acid</strong><br><span style="font-size:9px;color:var(--text-dim)">Depakote</span></div>
+      </div>
+      <div id="r-cds-drug-info" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 6B: CLINICAL SUPPORT (per-patient) ══ -->
+  <div id="rt-clinical-support" class="rtab">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="rt-title" style="margin:0;padding:0;border:none;">⚕️ Clinical Decision Support</div>
+    </div>
+
+    <!-- Allergy Management -->
+    <div class="g2" style="margin-bottom:20px;">
+      <div class="info-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="info-card-title" style="margin:0;border:none;padding:0;">⚠️ Patient Allergies</div>
+          <span id="r-cds-allergy-count" style="background:rgba(239,68,68,.1);color:var(--red);font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;display:none;">0</span>
+        </div>
+        <div id="r-cds-allergy-list" style="margin-bottom:12px;"></div>
+        <div style="border-top:1px solid var(--border);padding-top:12px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim);margin-bottom:8px;">Add Server Allergy</div>
+          <div class="g2">
+            <div class="fg" style="margin:0;"><label>Drug Name</label><input id="r-cds-allergy-drug" placeholder="e.g. penicillin"></div>
+            <div class="fg" style="margin:0;"><label>Reaction</label><input id="r-cds-allergy-rxn" placeholder="e.g. rash, anaphylaxis"></div>
+          </div>
+          <div class="fg" style="margin-top:8px;"><label>Severity</label><select id="r-cds-allergy-sev"><option value="mild">Mild</option><option value="moderate" selected>Moderate</option><option value="severe">Severe</option><option value="anaphylaxis">Anaphylaxis</option></select></div>
+          <button class="btn btn-primary btn-sm" onclick="rCdsAddAllergy()">+ Add Allergy</button>
+        </div>
+      </div>
+
+      <!-- Drug Interaction Checker -->
+      <div class="info-card">
+        <div class="info-card-title">🔍 Drug Interaction Check</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Checks interactions between medications. Pre-filled with patient's active meds.</div>
+        <div class="fg"><label>Medications (comma-separated, min 2)</label><textarea id="r-cds-meds" rows="2" placeholder="e.g. temozolomide, valproic acid, dexamethasone"></textarea></div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-primary btn-sm" onclick="rCdsCheckInteractions()">🔍 Check Interactions</button>
+          <button class="btn btn-ghost btn-sm" onclick="rCdsPrefillMeds()">Auto-fill from active meds</button>
+        </div>
+        <div id="r-cds-interaction-results" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
+    <!-- Dosage Check + Quick Prescribe -->
+    <div class="g2" style="margin-bottom:20px;">
+      <div class="info-card">
+        <div class="info-card-title">💊 Dosage Validation</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Validate dose against neuro-oncology reference ranges.</div>
+        <div class="g2">
+          <div class="fg" style="margin:0 0 8px;"><label>Medication</label><input id="r-cds-dose-med" placeholder="e.g. temozolomide"></div>
+          <div class="fg" style="margin:0 0 8px;"><label>Dosage</label><input id="r-cds-dose-val" placeholder="e.g. 150 mg"></div>
+        </div>
+        <div class="fg"><label>Frequency</label><input id="r-cds-dose-freq" placeholder="e.g. QD x 5 days"></div>
+        <button class="btn btn-primary btn-sm" onclick="rCdsCheckDosage()">✅ Validate Dosage</button>
+        <div id="r-cds-dose-results" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-title">🚀 Clinical Prescribe</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Create a prescription with automatic allergy + interaction checks.</div>
+        <div class="fg"><label>Medication *</label><input id="r-cds-rx-med" placeholder="e.g. Temozolomide"></div>
+        <div class="g2">
+          <div class="fg" style="margin:0 0 8px;"><label>Dosage *</label><input id="r-cds-rx-dose" placeholder="e.g. 150 mg/m²"></div>
+          <div class="fg" style="margin:0 0 8px;"><label>Frequency *</label><select id="r-cds-rx-freq"><option>QD</option><option>BID</option><option>TID</option><option>QID</option><option>PRN</option><option>Monthly</option><option>Cycle Day 1-5</option></select></div>
+        </div>
+        <div class="g2">
+          <div class="fg" style="margin:0 0 8px;"><label>Route</label><select id="r-cds-rx-route"><option value="oral">Oral</option><option value="iv">IV</option><option value="im">IM</option><option value="subcutaneous">Subcutaneous</option><option value="intrathecal">Intrathecal</option><option value="topical">Topical</option></select></div>
+          <div class="fg" style="margin:0 0 8px;"><label>Duration</label><input id="r-cds-rx-dur" placeholder="e.g. 30 days"></div>
+        </div>
+        <div class="fg"><label>Special Instructions</label><textarea id="r-cds-rx-instr" rows="2" placeholder="e.g. Take on empty stomach"></textarea></div>
+        <div id="r-cds-rx-warnings" style="display:none;margin-bottom:12px;"></div>
+        <button class="btn btn-primary btn-full" onclick="rCdsQuickPrescribe()">⚕️ Prescribe with CDS Check</button>
+      </div>
+    </div>
+
+    <!-- Drug Info Reference -->
+    <div class="info-card">
+      <div class="info-card-title">📖 Quick Drug Reference</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
+        <div style="cursor:pointer;font-size:11px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;transition:all .2s;" onclick="rCdsShowDrugInfo('temozolomide')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Temozolomide</strong><br><span style="font-size:10px;color:var(--text-dim)">TMZ · Temodar</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;transition:all .2s;" onclick="rCdsShowDrugInfo('bevacizumab')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Bevacizumab</strong><br><span style="font-size:10px;color:var(--text-dim)">Anti-VEGF · Avastin</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;transition:all .2s;" onclick="rCdsShowDrugInfo('carboplatin')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Carboplatin</strong><br><span style="font-size:10px;color:var(--text-dim)">Platinum agent</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;transition:all .2s;" onclick="rCdsShowDrugInfo('lomustine')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Lomustine</strong><br><span style="font-size:10px;color:var(--text-dim)">CCNU · Nitrosourea</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;transition:all .2s;" onclick="rCdsShowDrugInfo('procarbazine')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Procarbazine</strong><br><span style="font-size:10px;color:var(--text-dim)">MAO inhibitor</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;transition:all .2s;" onclick="rCdsShowDrugInfo('levetiracetam')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Levetiracetam</strong><br><span style="font-size:10px;color:var(--text-dim)">Antiepileptic · Keppra</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;transition:all .2s;" onclick="rCdsShowDrugInfo('dexamethasone')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Dexamethasone</strong><br><span style="font-size:10px;color:var(--text-dim)">Steroid · Decadron</span></div>
+        <div style="cursor:pointer;font-size:11px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;transition:all .2s;" onclick="rCdsShowDrugInfo('valproic-acid')" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><strong>Valproic Acid</strong><br><span style="font-size:10px;color:var(--text-dim)">Antiepileptic · Depakote</span></div>
+      </div>
+      <div id="r-cds-drug-info" style="margin-top:14px;"></div>
+    </div>
   </div>
 
   <!-- ══ TAB 7: TREATMENT ══ -->
@@ -2091,10 +2245,143 @@ const LAB_TESTS=[
 {group:'Other',name:'HbA1c'},{group:'Other',name:'Vitamin D'},{group:'Other',name:'B12'}
 ];
 
-// ── Medications ──
-function showMedForm(){document.getElementById('r-med-form').style.display='block';}
-function hideMedForm(){document.getElementById('r-med-form').style.display='none';}
-function saveMed(){const med={name:v('r-med-name'),dose:v('r-med-dose'),route:v('r-med-route'),freq:v('r-med-freq'),indication:v('r-med-indication'),status:v('r-med-status'),addedAt:Date.now()};if(!med.name){alert('Enter drug name.');return;}rMeds.push(med);hideMedForm();renderMedList();checkDrugAllergyWarning();renderDrugInteractionBanner(selectedMRN);}
+// ── Prescriptions (merged E-Prescribing & Medication Management) ──
+
+// ── Save local medication (legacy) ──
+function showMedForm(){document.getElementById('r-rx-create-form').style.display='block';}
+function hideMedForm(){document.getElementById('r-rx-create-form').style.display='none';document.getElementById('r-med-allergy-check').style.display='none';document.getElementById('r-med-interaction-check').style.display='none';}
+function saveMed(){const med={name:v('r-med-name'),dose:v('r-med-dose'),route:v('r-med-route'),freq:v('r-med-freq'),indication:v('r-med-indication'),status:'Active',addedAt:Date.now()};if(!med.name){alert('Enter drug name.');return;}rMeds.push(med);hideMedForm();renderMedList();checkDrugAllergyWarning();renderDrugInteractionBanner(selectedMRN);}
+
+// ── Live allergy check on med input ──
+let _rxAllergyTimeout=null;
+function rRxLiveAllergyCheck(name){
+  const el=document.getElementById('r-med-allergy-check');
+  if(!el)return;
+  clearTimeout(_rxAllergyTimeout);
+  if(!name||name.length<2||!selectedMRN){el.style.display='none';return;}
+  _rxAllergyTimeout=setTimeout(async()=>{
+    try{
+      const r=await api('/api/cds/allergy-check',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,medications:[name]})});
+      if(r.ok&&r.alerts&&r.alerts.length){
+        el.style.display='block';
+        el.innerHTML='<strong>⚠️ ALLERGY WARNING:</strong> '+r.alerts.map(a=>a.message).join(' | ');
+      }else{el.style.display='none';}
+    }catch(e){el.style.display='none';}
+  },400);
+  // Also check interactions with current meds
+  const intEl=document.getElementById('r-med-interaction-check');
+  if(intEl){
+    const activeMeds=(rMeds||[]).filter(m=>m.status==='Active').map(m=>m.name).filter(Boolean);
+    if(activeMeds.length>=1){
+      const allMeds=[name,...activeMeds];
+      setTimeout(async()=>{
+        try{
+          const r2=await api('/api/cds/interactions',{method:'POST',body:JSON.stringify({medications:allMeds})});
+          if(r2.ok&&r2.interactions&&r2.interactions.length){
+            intEl.style.display='block';
+            intEl.innerHTML='<strong>⚠️ INTERACTIONS:</strong> '+r2.interactions.map(i=>i.drug_a+' ↔ '+i.drug_b+' ('+i.severity+')').join(' | ');
+          }else{intEl.style.display='none';}
+        }catch(e){intEl.style.display='none';}
+      },500);
+    }
+  }
+}
+
+// ── Prescribe with full CDS check (server e-prescription) ──
+async function rRxPrescribeWithCDS(){
+  if(!selectedMRN)return;
+  const med=v('r-med-name');const dose=v('r-med-dose');const freq=v('r-med-freq');
+  if(!med||!dose){alert('Enter medication and dosage');return}
+  // Run allergy check
+  let allergyBlocked=false;
+  try{
+    const r=await api('/api/cds/allergy-check',{method:'POST',body:JSON.stringify({patientMrn:selectedMRN,medications:[med]})});
+    if(r.ok&&r.alerts&&r.alerts.length){
+      if(!confirm('⚠️ ALLERGY WARNING:\n'+r.alerts.map(a=>a.message).join('\n')+'\n\nProceed anyway?'))return;
+      allergyBlocked=true;
+    }
+  }catch(e){}
+  // Create server prescription
+  try{
+    const r=await api('/api/rx',{method:'POST',body:JSON.stringify({
+      patientMrn:selectedMRN,medication:med,
+      genericName:v('r-rx-generic')||undefined,
+      dosage:dose,frequency:freq,
+      route:v('r-med-route'),duration:v('r-med-dur')||undefined,
+      quantity:parseInt(v('r-med-qty'))||undefined,
+      refills:parseInt(v('r-med-refills'))||0,
+      pharmacy:v('r-med-pharmacy')||undefined,
+      instructions:v('r-med-instructions')||undefined
+    })});
+    if(r.ok){
+      // Also add to local med list
+      rMeds.push({name:med,dose:dose,route:v('r-med-route'),freq:freq,indication:v('r-med-indication'),status:'Active',addedAt:Date.now()});
+      // Show warnings if any
+      if(r.warnings&&r.warnings.length){
+        alert('✅ Prescription created.\n\n⚠️ '+r.warnings.length+' safety warning(s) flagged:\n'+r.warnings.map(w=>w.message).join('\n'));
+      }else{
+        alert('✅ Prescription created: '+med+' '+dose);
+      }
+      // Clear form
+      document.getElementById('r-med-name').value='';
+      document.getElementById('r-med-dose').value='';
+      document.getElementById('r-med-instructions').value='';
+      document.getElementById('r-med-allergy-check').style.display='none';
+      document.getElementById('r-med-interaction-check').style.display='none';
+      document.getElementById('r-rx-create-form').style.display='none';
+      // Refresh lists
+      renderMedList();
+      rRxLoadServerPrescriptions();
+      rRxLoadAllergySummary();
+      checkDrugAllergyWarning();
+      renderDrugInteractionBanner(selectedMRN);
+    }
+  }catch(e){alert(e.message)}
+}
+
+// ── Load allergy summary in prescriptions tab ──
+async function rRxLoadAllergySummary(){
+  if(!selectedMRN)return;
+  const wrap=document.getElementById('r-rx-allergy-summary');
+  const tags=document.getElementById('r-rx-allergy-tags');
+  if(!wrap||!tags)return;
+  try{
+    const r=await api('/api/cds/allergies/'+selectedMRN);
+    if(!r.ok||!r.allergies||!r.allergies.length){wrap.style.display='none';return;}
+    const sevColors={mild:'var(--green)',moderate:'var(--orange)',severe:'var(--red)',anaphylaxis:'#dc2626'};
+    tags.innerHTML=r.allergies.map(a=>{
+      const c=sevColors[a.severity]||'var(--red)';
+      return `<span style="display:inline-flex;align-items:center;gap:4px;background:${c}11;border:1px solid ${c}44;color:${c};padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;">⚠ ${a.drug_name} <span style="font-size:9px;text-transform:uppercase;opacity:.8;">${a.severity}</span></span>`;
+    }).join('');
+    wrap.style.display='block';
+  }catch(e){wrap.style.display='none';}
+}
+
+// ── Load server-side prescriptions ──
+async function rRxLoadServerPrescriptions(){
+  if(!selectedMRN)return;
+  const el=document.getElementById('r-rx-server-list');
+  if(!el)return;
+  try{
+    const r=await api('/api/rx/patient/'+selectedMRN);
+    if(!r.ok||!r.prescriptions||!r.prescriptions.length){el.innerHTML='<div class="empty-card">No e-prescriptions on file.</div>';return;}
+    const statusColors={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--orange)'};
+    el.innerHTML=r.prescriptions.map(rx=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:13px;">💊 ${rx.medication}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${rx.dosage} · ${rx.frequency} · ${rx.route||'oral'}${rx.duration?' · '+rx.duration:''}</div>
+          ${rx.instructions?`<div style="font-size:11px;color:var(--text-dim);margin-top:2px;">📝 ${rx.instructions}</div>`:''}
+          ${rx.pharmacy?`<div style="font-size:11px;color:var(--text-dim);">🏪 ${rx.pharmacy}</div>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;font-weight:700;color:${statusColors[rx.status]};text-transform:uppercase;">${rx.status}</span>
+          <span style="font-size:10px;color:var(--text-dim);">${rx.created_at?.split('T')[0]||''}</span>
+        </div>
+      </div>
+    `).join('');
+  }catch(e){el.innerHTML='<div class="empty-card">Error loading prescriptions.</div>'}
+}
 function renderMedList(){const el=document.getElementById('r-med-list');if(!rMeds.length){el.innerHTML='<div class="empty-card">No medications recorded.</div>';return;}const sorted=[...rMeds].sort((a,b)=>a.status==='Active'?-1:b.status==='Active'?1:0);el.innerHTML=sorted.map((m,i)=>{const idx=rMeds.indexOf(m);const sc={Active:'var(--green)','On Hold':'var(--orange)',Discontinued:'var(--red)'}[m.status]||'var(--text-dim)';return `<div class="med-item"><div><div style="font-weight:600;">💊 ${esc(m.name)}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${esc(m.dose)} · ${m.route} · ${m.freq}</div></div><span class="badge" style="background:${sc}22;color:${sc};">${m.status}</span></div>`;}).join('');}
 
 // ── Drug Interactions (banner list) ──
@@ -3565,6 +3852,195 @@ async function createPrescription(){
 async function updateRx(id,status){
   try{await api('/api/rx',{method:'PATCH',body:JSON.stringify({prescriptionId:id,status})});
   loadDoctorRxs(document.getElementById('rx-patient').value)}catch(e){alert(e.message)}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PER-PATIENT CLINICAL SUPPORT (rt-clinical-support tab)
+// ═══════════════════════════════════════════════════════════════
+
+function renderRecordClinicalSupport(mrn){
+  if(!mrn)return;
+  rCdsLoadAllergies(mrn);
+  rCdsPrefillMeds();
+}
+
+// ── Load server allergies for this patient ──
+async function rCdsLoadAllergies(mrn){
+  const el=document.getElementById('r-cds-allergy-list');
+  const badge=document.getElementById('r-cds-allergy-count');
+  if(!el)return;
+  try{
+    const r=await api('/api/cds/allergies/'+mrn);
+    if(!r.ok||!r.allergies||!r.allergies.length){el.innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">No known allergies recorded on server.</div>';if(badge)badge.style.display='none';return;}
+    const sevColors={mild:'var(--green)',moderate:'var(--orange)',severe:'var(--red)',anaphylaxis:'#dc2626'};
+    el.innerHTML=r.allergies.map(a=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.12);border-radius:8px;margin-bottom:5px;font-size:12px;">
+        <span style="font-weight:700;color:var(--red)">⚠ ${a.drug_name}</span>
+        ${a.reaction?`<span style="color:var(--text-muted)">— ${a.reaction}</span>`:''}
+        <span style="margin-left:auto;font-size:10px;font-weight:700;color:${sevColors[a.severity]};text-transform:uppercase">${a.severity}</span>
+        <button onclick="rCdsRemoveAllergy('${a.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;" title="Remove">✕</button>
+      </div>
+    `).join('');
+    if(badge){badge.textContent=r.allergies.length;badge.style.display='inline';}
+  }catch(e){el.innerHTML='<div style="font-size:11px;color:var(--red)">Error loading allergies</div>'}
+}
+
+async function rCdsAddAllergy(){
+  if(!selectedMRN)return;
+  const drug=document.getElementById('r-cds-allergy-drug').value;
+  const rxn=document.getElementById('r-cds-allergy-rxn').value;
+  const sev=document.getElementById('r-cds-allergy-sev').value;
+  if(!drug){alert('Enter a drug name');return}
+  try{
+    await api('/api/cds/allergies',{method:'POST',body:JSON.stringify({mrn:selectedMRN,drugName:drug,reaction:rxn||undefined,severity:sev})});
+    document.getElementById('r-cds-allergy-drug').value='';
+    document.getElementById('r-cds-allergy-rxn').value='';
+    rCdsLoadAllergies(selectedMRN);
+  }catch(e){alert(e.message)}
+}
+
+async function rCdsRemoveAllergy(id){
+  if(!confirm('Remove this allergy?'))return;
+  try{await api('/api/cds/allergies/'+id,{method:'DELETE'});rCdsLoadAllergies(selectedMRN)}catch(e){alert(e.message)}
+}
+
+// ── Pre-fill meds from patient's active meds ──
+function rCdsPrefillMeds(){
+  const el=document.getElementById('r-cds-meds');
+  if(!el||!selectedMRN)return;
+  const p=LS.get('pat_'+selectedMRN);
+  if(!p)return;
+  const active=(p.meds||[]).filter(m=>m.status==='Active').map(m=>m.name).join(', ');
+  const serverMeds=[];
+  // Also try to get from server prescriptions
+  api('/api/rx/patient/'+selectedMRN).then(r=>{
+    if(r.ok&&r.prescriptions){
+      const activeRx=r.prescriptions.filter(rx=>rx.status==='active').map(rx=>rx.medication);
+      const all=[...new Set([...active.split(', ').filter(Boolean),...activeRx])];
+      el.value=all.join(', ');
+    }
+  }).catch(()=>{el.value=active;});
+  el.value=active;
+}
+
+// ── Drug interaction check ──
+async function rCdsCheckInteractions(){
+  const medsStr=document.getElementById('r-cds-meds').value;
+  const meds=medsStr.split(',').map(m=>m.trim()).filter(Boolean);
+  if(meds.length<2){alert('Enter at least 2 medications');return}
+  const el=document.getElementById('r-cds-interaction-results');
+  el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px;">Checking...</div>';
+  try{
+    const r=await api('/api/cds/interactions',{method:'POST',body:JSON.stringify({medications:meds})});
+    if(!r.ok||!r.interactions||!r.interactions.length){
+      el.innerHTML='<div style="padding:12px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:10px;color:var(--green);font-size:13px">✅ No known interactions found between these medications.</div>';
+      return;
+    }
+    const sevColors={severe:'var(--red)',moderate:'var(--orange)',mild:'var(--text-muted)'};
+    el.innerHTML=r.interactions.map(i=>`
+      <div style="padding:12px;background:rgba(${i.severity==='severe'?'239,68,68':i.severity==='moderate'?'245,158,11':'100,116,139'},.06);border:1px solid rgba(${i.severity==='severe'?'239,68,68':i.severity==='moderate'?'245,158,11':'100,116,139'},.2);border-radius:10px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-weight:700;font-size:13px">${i.drug_a} ↔ ${i.drug_b}</span>
+          <span style="font-size:10px;font-weight:700;color:${sevColors[i.severity]};text-transform:uppercase">${i.severity}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${i.description}</div>
+        ${i.recommendation?`<div style="font-size:11px;color:var(--blue);font-weight:600">💡 ${i.recommendation}</div>`:''}
+        ${i._existingMed?`<div style="font-size:10px;color:var(--orange);margin-top:4px;">⚠ Conflicts with existing active medication: <strong>${i._existingMed}</strong></div>`:''}
+      </div>
+    `).join('');
+  }catch(e){el.innerHTML='<div style="font-size:12px;color:var(--red)">Error: '+e.message+'</div>'}
+}
+
+// ── Dosage validation ──
+async function rCdsCheckDosage(){
+  const med=document.getElementById('r-cds-dose-med').value;
+  const dose=document.getElementById('r-cds-dose-val').value;
+  const freq=document.getElementById('r-cds-dose-freq').value;
+  if(!med||!dose||!freq){alert('Enter medication, dosage, and frequency');return}
+  const el=document.getElementById('r-cds-dose-results');
+  el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px;">Validating...</div>';
+  try{
+    const r=await api('/api/cds/dosage-check',{method:'POST',body:JSON.stringify({medication:med,dosage:dose,frequency:freq})});
+    if(!r.ok){el.innerHTML='<div style="font-size:12px;color:var(--red)">Validation error</div>';return}
+    if(!r.alerts||!r.alerts.length){
+      el.innerHTML='<div style="padding:12px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:10px;color:var(--green);font-size:13px">✅ Dosage appears within standard range.</div>';
+      if(r.reference){
+        const ref=r.reference;
+        el.innerHTML+=`<div style="margin-top:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12px;">
+          <div style="font-weight:700;margin-bottom:4px;">📋 Reference: ${med}${ref.brand?' ('+ref.brand+')':''}</div>
+          ${ref.commonDoses?`<div>Common doses: <strong>${ref.commonDoses.join(', ')}</strong> ${ref.unit||''}</div>`:''}
+          ${ref.frequency?`<div>Frequency: ${ref.frequency}</div>`:''}
+          ${ref.notes?`<div style="margin-top:6px;color:var(--text-muted);font-style:italic;">${ref.notes}</div>`:''}
+          ${ref.blackBox?`<div style="margin-top:6px;color:var(--red);font-weight:700;">⚠️ BLACK BOX: ${ref.blackBox}</div>`:''}
+        </div>`;
+      }
+      return;
+    }
+    const sevColors={severe:'var(--red)',moderate:'var(--orange)',mild:'var(--text-muted)'};
+    el.innerHTML=r.alerts.map(a=>`
+      <div style="padding:10px;background:rgba(${a.severity==='severe'?'239,68,68':'245,158,11'},.06);border:1px solid rgba(${a.severity==='severe'?'239,68,68':'245,158,11'},.2);border-radius:8px;margin-bottom:6px;font-size:12px;">
+        <span style="font-weight:700;color:${sevColors[a.severity]};text-transform:uppercase;font-size:10px;">${a.severity}</span>
+        <div style="margin-top:4px;color:var(--text);">${a.message}</div>
+      </div>
+    `).join('');
+  }catch(e){el.innerHTML='<div style="font-size:12px;color:var(--red)">Error: '+e.message+'</div>'}
+}
+
+// ── Quick prescribe with CDS checks ──
+async function rCdsQuickPrescribe(){
+  if(!selectedMRN)return;
+  const med=document.getElementById('r-cds-rx-med').value;
+  const dose=document.getElementById('r-cds-rx-dose').value;
+  const freq=document.getElementById('r-cds-rx-freq').value;
+  const route=document.getElementById('r-cds-rx-route').value;
+  const dur=document.getElementById('r-cds-rx-dur').value;
+  const instr=document.getElementById('r-cds-rx-instr').value;
+  if(!med||!dose){alert('Enter medication and dosage');return}
+  const warnEl=document.getElementById('r-cds-rx-warnings');
+  warnEl.style.display='none';
+  try{
+    const r=await api('/api/rx',{method:'POST',body:JSON.stringify({
+      patientMrn:selectedMRN,medication:med,dosage:dose,frequency:freq,
+      route:route,duration:dur||undefined,instructions:instr||undefined
+    })});
+    if(r.ok){
+      if(r.warnings&&r.warnings.length){
+        warnEl.style.display='block';
+        warnEl.innerHTML=`<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:12px;margin-bottom:8px;">
+          <div style="font-weight:700;font-size:12px;color:var(--orange);margin-bottom:6px">⚠️ CDS Safety Warnings (${r.warnings.length})</div>
+          ${r.warnings.map(w=>`<div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">${w.type==='allergy'?'🔴':'🟡'} ${w.message}${w.recommendation?' — 💡 '+w.recommendation:''}</div>`).join('')}
+        </div>`;
+      }
+      // Clear form
+      document.getElementById('r-cds-rx-med').value='';
+      document.getElementById('r-cds-rx-dose').value='';
+      document.getElementById('r-cds-rx-instr').value='';
+      // Reload patient's med list in prescriptions tab if open
+      renderMedList();
+      alert('✅ Prescription created for ' + med);
+      renderRecordClinicalSupport(selectedMRN);
+    }
+  }catch(e){alert(e.message)}
+}
+
+// ── Drug info lookup (in patient context) ──
+async function rCdsShowDrugInfo(name){
+  try{
+    const r=await api('/api/cds/drug-info/'+name);
+    const el=document.getElementById('r-cds-drug-info');
+    if(!r.ok){el.innerHTML='<div style="font-size:12px;color:var(--text-dim)">Drug not found in database.</div>';return}
+    const info=r.info||{};
+    el.innerHTML=`<div style="padding:16px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:10px;margin-top:0;">
+      <div style="font-weight:800;font-size:15px;margin-bottom:4px">${name}${info.brand?' <span style="color:var(--text-muted);font-weight:400;font-size:12px">('+info.brand+')</span>':''}</div>
+      ${info.unit?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Dose unit: <strong>${info.unit}</strong></div>`:''}
+      ${info.frequency?`<div style="font-size:12px;margin-bottom:3px;"><span style="color:var(--text-dim)">Frequency:</span> ${info.frequency}</div>`:''}
+      ${info.commonDoses?`<div style="font-size:12px;margin-bottom:3px;"><span style="color:var(--text-dim)">Common doses:</span> ${info.commonDoses.join(', ')} ${info.unit||''}</div>`:''}
+      ${info.notes?`<div style="font-size:12px;color:var(--text-muted);margin-top:8px;padding:8px 12px;background:var(--surface);border-radius:8px;">📋 ${info.notes}</div>`:''}
+      ${info.blackBox?`<div style="font-size:12px;color:var(--red);margin-top:8px;padding:8px 12px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:8px;font-weight:600;">⚠️ BLACK BOX: ${info.blackBox}</div>`:''}
+      ${info.interactions&&info.interactions.length?`<div style="margin-top:8px;"><div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Known Interactions</div>${info.interactions.map(i=>`<div style="font-size:11px;color:var(--orange);padding:2px 0;">• ${i}</div>`).join('')}</div>`:''}
+      ${r.interactions&&r.interactions.length?`<div style="margin-top:8px;"><div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">DB Interactions</div>${r.interactions.map(i=>`<div style="font-size:11px;color:${i.severity==='severe'?'var(--red)':'var(--orange)'};padding:2px 0;">• ${i.drug_a} ↔ ${i.drug_b} (${i.severity})</div>`).join('')}</div>`:''}
+    </div>`;
+  }catch(e){}
 }
 
 // ═══════════════════════════════════════════════════════════════
