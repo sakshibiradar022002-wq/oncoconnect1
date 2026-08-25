@@ -88,12 +88,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
 .nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:55%;background:linear-gradient(180deg,var(--blue),var(--blue2));border-radius:0 6px 6px 0;box-shadow:0 0 8px rgba(74,144,226,0.3);}
 .nav-item .ni{width:18px;font-size:15px;text-align:center;flex-shrink:0;}
 .nav-badge{margin-left:auto;background:linear-gradient(135deg,var(--orange),#f59e0b);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;box-shadow:0 2px 8px rgba(245,158,11,0.3);}
-.sb-group-header{padding:22px 18px 8px;font-size:9px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--text-dim);}
-.sb-group-header:hover{color:var(--blue);}
-.sb-group-body{max-height:500px;overflow:hidden;transition:max-height .3s ease,padding .3s ease;}
-.sb-group-body.collapsed{max-height:0;padding:0;}
-.sb-chevron{transition:transform .2s;display:inline-block;}
-.sb-chevron.open{transform:rotate(90deg);}
+
 
 .billing-stat-card{padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;}
 .billing-stat-card .label{font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:600;}
@@ -446,61 +441,30 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
       <div class="sidebar-scroll">
       <button class="nav-item" onclick="openPatientSearch()"><span class="ni">🔍</span>Search patients <span style="margin-left:auto;font-size:10px;opacity:.6;font-family:var(--mono);">Ctrl K</span></button>
 
-      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
-        <span>OVERVIEW</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
-      </div>
-      <div class="sb-group-body">
-        <button class="nav-item active" onclick="showPanel('overview',this)"><span class="ni">⬡</span>Overview</button>
-        <button class="nav-item" onclick="showPanel('patients',this)"><span class="ni">👥</span>Patients</button>
-      </div>
+      <div class="sidebar-section">Overview</div>
+      <button class="nav-item active" onclick="showPanel('overview',this)"><span class="ni">📊</span>Dashboard</button>
+      <button class="nav-item" onclick="showPanel('patients',this)"><span class="ni">👥</span>Patients</button>
 
-      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
-        <span>SCHEDULE</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
-      </div>
-      <div class="sb-group-body">
-        <button class="nav-item" onclick="showPanel('calendars',this)"><span class="ni">📅</span>Health Calendar</button>
-        <button class="nav-item" onclick="showPanel('appt-calendar',this);renderApptCalendar()"><span class="ni">🗓</span>Appointments</button>
-        <button class="nav-item" onclick="showPanel('availability',this);renderAvailabilityPanel()"><span class="ni">🕐</span>Availability</button>
-        <button class="nav-item" onclick="showPanel('telehealth',this);renderTelehealthPanel()"><span class="ni">📹</span>Video Calls</button>
-      </div>
+      <div class="sidebar-section">Schedule</div>
+      <button class="nav-item" onclick="showPanel('appt-calendar',this);renderApptCalendar()"><span class="ni">📅</span>Appointments</button>
+      <button class="nav-item" onclick="showPanel('availability',this);renderAvailabilityPanel()"><span class="ni">🕐</span>Availability</button>
+      <button class="nav-item" onclick="showPanel('telehealth',this);renderTelehealthPanel()"><span class="ni">📹</span>Video Calls</button>
 
-      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
-        <span>COMMUNICATION</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
-      </div>
-      <div class="sb-group-body">
-        <button class="nav-item" onclick="showPanel('messages',this)"><span class="ni">💬</span>Messages<span class="nav-badge" id="msg-badge" style="display:none;"></span></button>
-        <button class="nav-item" onclick="showPanel('broadcast',this)"><span class="ni">📧</span>Broadcast Email</button>
-      </div>
+      <div class="sidebar-section">Communication</div>
+      <button class="nav-item" onclick="showPanel('messages',this)"><span class="ni">💬</span>Messages<span class="nav-badge" id="msg-badge" style="display:none;"></span></button>
 
-      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
-        <span>CLINICAL</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
-      </div>
-      <div class="sb-group-body">
-        <button class="nav-item" onclick="showPanel('labs',this)"><span class="ni">🔬</span>Lab Management<span class="nav-badge" id="lab-badge" style="display:none;"></span></button>
-      </div>
+      <div class="sidebar-section">Clinical</div>
+      <button class="nav-item" onclick="showPanel('labs',this)"><span class="ni">🔬</span>Labs<span class="nav-badge" id="lab-badge" style="display:none;"></span></button>
 
-      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
-        <span>FINANCIAL</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
-      </div>
-      <div class="sb-group-body">
-        <button class="nav-item" onclick="showPanel('billing',this);renderBillingDashboard()"><span class="ni">💰</span>Billing &amp; Claims</button>
-      </div>
+      <div class="sidebar-section">Financial</div>
+      <button class="nav-item" onclick="showPanel('billing',this);renderBillingDashboard()"><span class="ni">💰</span>Billing</button>
 
-      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
-        <span>ANALYTICS</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
-      </div>
-      <div class="sb-group-body">
-        <button class="nav-item" onclick="showPanel('reports',this);renderReportsPanel()"><span class="ni">📊</span>Reports</button>
-      </div>
+      <div class="sidebar-section">Analytics</div>
+      <button class="nav-item" onclick="showPanel('reports',this);renderReportsPanel()"><span class="ni">📊</span>Reports</button>
 
-      <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
-        <span>SYSTEM</span><span class="sb-chevron" style="font-size:10px;transition:transform .2s;">▸</span>
-      </div>
-      <div class="sb-group-body">
-        <button class="nav-item" onclick="showPanel('settings',this);renderSettingsPanel()"><span class="ni">⚙️</span>Settings</button>
-        <button class="nav-item" onclick="showPanel('audit',this);renderAuditPanel()"><span class="ni">📋</span>Audit Trail</button>
-        <button class="nav-item" onclick="showPanel('backup',this)"><span class="ni">💾</span>Data &amp; Backup</button>
-      </div>
+      <div class="sidebar-section">System</div>
+      <button class="nav-item" onclick="showPanel('settings',this);renderSettingsPanel()"><span class="ni">⚙️</span>Settings</button>
+      <button class="nav-item" onclick="showPanel('audit',this);renderAuditPanel()"><span class="ni">📋</span>Audit Trail</button>
       <div style="padding:10px 14px 0;">
         <div style="font-size:10px;color:var(--text-dim);margin-bottom:5px;display:flex;justify-content:space-between;"><span>Storage</span><span id="storage-pct">0%</span></div>
         <div class="storage-bar-wrap"><div class="storage-bar-fill" id="storage-bar"></div></div>
@@ -975,34 +939,26 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
       <button class="btn btn-primary btn-sm" onclick="saveRecord()">⬆ Save Record</button>
     </div>
   </div>
-  <div class="record-body">
-    <div class="record-nav">
-      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:12px 14px 4px;">CLINICAL</div>
+  <div class="record-body">      <div class="record-nav">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:12px 14px 4px;">Clinical</div>
       <button class="rnav-item active" onclick="showRTab('rt-identity',this)">🪪 Identity</button>
       <button class="rnav-item" onclick="showRTab('rt-metrics',this)">📊 Metrics</button>
       <button class="rnav-item" onclick="showRTab('rt-diagnosis',this)">🔬 Diagnosis</button>
-      <button class="rnav-item" onclick="showRTab('rt-molecular',this)">🧬 Molecular</button>
-      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">TREATMENT</div>
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">Treatment</div>
       <button class="rnav-item" onclick="showRTab('rt-prescriptions',this)">💊 Prescriptions</button>
-      <button class="rnav-item" onclick="showRTab('rt-clinical-support',this)">⚕️ Clinical Support</button>
+      <button class="rnav-item" onclick="showRTab('rt-clinical-support',this)">⚕️ CDS</button>
       <button class="rnav-item" onclick="showRTab('rt-treatment',this)">⚡ Treatment</button>
-      <button class="rnav-item" onclick="showRTab('rt-chemo',this)">🧪 Chemo Cycles</button>
-      <button class="rnav-item" onclick="showRTab('rt-nccn',this)">📋 NCCN &amp; Biomarkers</button>
-      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">CARE</div>
+      <button class="rnav-item" onclick="showRTab('rt-chemo',this)">🧪 Chemo</button>
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">Care</div>
       <button class="rnav-item" onclick="showRTab('rt-labs',this)">🧪 Labs</button>
       <button class="rnav-item" onclick="showRTab('rt-imaging',this)">🖼 Imaging</button>
-      <button class="rnav-item" onclick="showRTab('rt-logs',this)">📋 Health Logs</button>
-      <button class="rnav-item" onclick="showRTab('rt-notes',this)">📝 Clinical Notes</button>
-      <button class="rnav-item" onclick="showRTab('rt-mdt',this)">📋 MDT Notes</button>
-      <button class="rnav-item" onclick="showRTab('rt-referrals',this)">🔀 Referrals</button>
-      <button class="rnav-item" onclick="showRTab('rt-docs',this)">📎 Documents</button>
-      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">FINANCIAL</div>
-      <button class="rnav-item" onclick="showRTab('rt-billing',this)">💰 Billing</button>
-      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">TRACKING</div>
-      <button class="rnav-item" onclick="showRTab('rt-appointments',this)">🗓 Appointments</button>
+      <button class="rnav-item" onclick="showRTab('rt-notes',this)">📝 Notes</button>
+      <button class="rnav-item" onclick="showRTab('rt-docs',this)">📎 Docs</button>
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);padding:14px 14px 4px;">Tracking</div>
+      <button class="rnav-item" onclick="showRTab('rt-appointments',this)">🗓 Appts</button>
       <button class="rnav-item" onclick="showRTab('rt-outcomes',this)">📈 Outcomes</button>
+      <button class="rnav-item" onclick="showRTab('rt-billing',this)">💰 Billing</button>
       <button class="rnav-item" onclick="showRTab('rt-export',this)">📄 Export</button>
-      <button class="rnav-item" onclick="showRTab('rt-creds',this)">🔑 Credentials</button>
     </div>
     <div class="record-content" id="record-content"></div>
   </div>
@@ -1485,13 +1441,7 @@ function updateThemeUI(theme){
 })();
 
 // ── Navigation ──
-function toggleSbGroup(header){
-  const body = header.nextElementSibling;
-  const chevron = header.querySelector('.sb-chevron');
-  if(!body || !body.classList.contains('sb-group-body')) return;
-  body.classList.toggle('collapsed');
-  if(chevron) chevron.classList.toggle('open');
-}
+
 function showPanel(id,btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
