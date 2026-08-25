@@ -1,15 +1,18 @@
 {
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/patient.html", "destination": "/api/index" },
-    { "source": "/admin.html", "destination": "/api/index" },
-    { "source": "/patient(.*)", "destination": "/api/index" },
-    { "source": "/admin(.*)", "destination": "/api/index" },
-    { "source": "/(.*)", "destination": "/api/index" }
-  ],
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "{public,src}/**"
+  "services": {
+    "web": {
+      "root": ".",
+      "buildCommand": "npm install --omit=dev",
+      "entrypoint": "api/index.js"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": {
+        "type": "service",
+        "service": "web"
+      }
+    }
+  ]
 }
