@@ -2,7 +2,7 @@
   "services": {
     "web": {
       "root": ".",
-      "buildCommand": "npm install --omit=dev",
+      "buildCommand": "npm run vercel-build",
       "entrypoint": "api/index.js"
     }
   },
