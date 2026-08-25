@@ -26,6 +26,14 @@ export async function initSchema() {
   try { await db.exec('ALTER TABLE users ADD COLUMN totp_enc TEXT'); } catch { /* already there */ }
   try { await db.exec('ALTER TABLE sessions ADD COLUMN last_activity TEXT'); } catch { /* already there */ }
   try { await db.exec('ALTER TABLE password_change_requests ADD COLUMN new_pass_plain TEXT'); } catch { /* already there */ }
+  // Apply feature migrations (scheduling, CDS, e-prescribing, telehealth)
+  try {
+    const migrations = readFileSync(join(__dirname, 'migrations.sql'), 'utf8');
+    await db.exec(migrations);
+    console.log('[db] feature migrations applied');
+  } catch (e) {
+    console.warn('[db] migrations:', e.message);
+  }
   console.log('[db] schema ready');
 }
 

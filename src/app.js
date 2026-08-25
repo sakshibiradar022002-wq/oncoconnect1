@@ -22,6 +22,10 @@ import { openapiRouter } from './routes/openapi.js';
 import { teamRouter } from './routes/team.js';
 import { pushRouter } from './routes/push.js';
 import { emailRouter } from './routes/email.js';
+import { scheduleRouter } from './routes/scheduling.js';
+import { clinicalRouter, seedDrugInteractions } from './routes/clinical-support.js';
+import { prescriptionRouter } from './routes/prescriptions.js';
+import { telehealthRouter, startTelehealthCleanup } from './routes/telehealth.js';
 import { initPush } from './push.js';
 import { observability, metricsSnapshot } from './observability.js';
 import { initSentry, sentryRequestHandler, sentryErrorHandler } from './observability/sentry.js';
@@ -33,6 +37,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 await initSchema();
 await initTestData(); // Auto-populate test data if using ephemeral DB
 await initPush();
+await seedDrugInteractions();
+startTelehealthCleanup();
 initSentry(); // Initialize error tracking (no-op if SENTRY_DSN not set)
 
 const app = express();
@@ -126,6 +132,10 @@ app.use('/api/admin', apiLimiter, adminDashboardRouter);
 app.use('/api/docs', openapiRouter);
 app.use('/api/push', apiLimiter, pushRouter);
 app.use('/api/email', emailRouter); // has its own per-route limiters
+app.use('/api/schedule', apiLimiter, scheduleRouter);
+app.use('/api/cds', apiLimiter, clinicalRouter);
+app.use('/api/rx', apiLimiter, prescriptionRouter);
+app.use('/api/telehealth', apiLimiter, telehealthRouter);
 
 // ── PWA assets: correct headers for manifests & service workers ───
 // One sw.js serves both apps; it reads its own URL to pick cache + shell.

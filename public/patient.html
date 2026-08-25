@@ -181,6 +181,48 @@ input[type="range"]{width:100%;accent-color:var(--blue);height:6px}
     </div>
   </div>
 
+  <div class="screen" id="screen-appointments">
+    <div class="page-title">📅 Appointments</div>
+    <div id="appt-book-view">
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="big-btn" id="appt-tab-book" onclick="switchApptTab('book')" style="flex:1;background:var(--green);color:#fff;border-radius:12px;font-size:13px">📅 Book</button>
+        <button class="big-btn" id="appt-tab-my" onclick="switchApptTab('my')" style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:12px;font-size:13px">🗓 My Appts</button>
+      </div>
+      <div id="appt-book-panel">
+        <div class="info-card">
+          <div class="info-card-title">Available Time Slots</div>
+          <div id="slot-date-nav" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <button onclick="slotNav(-1)" style="background:none;border:none;color:var(--text);font-size:18px;cursor:pointer">◀</button>
+            <span id="slot-date-label" style="font-weight:700;font-size:14px"></span>
+            <button onclick="slotNav(1)" style="background:none;border:none;color:var(--text);font-size:18px;cursor:pointer">▶</button>
+          </div>
+          <div id="slot-list" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+          <div id="slot-empty" class="empty-card" style="margin-top:12px;display:none">No available slots on this date.</div>
+        </div>
+        <div id="slot-selected-info" style="display:none">
+          <div class="info-card">
+            <div class="info-card-title">Selected Appointment</div>
+            <div id="slot-selected-details" style="font-size:13px;margin-bottom:12px"></div>
+            <div class="fg"><label>Type</label><select id="book-appt-type"><option>Follow-up</option><option>MRI Review</option><option>Lab Review</option><option>Treatment Planning</option><option>Teleconsult</option></select></div>
+            <div class="fg"><label>Notes (optional)</label><textarea id="book-appt-notes" rows="2" placeholder="Reason for visit..."></textarea></div>
+            <button class="big-btn log-btn" onclick="confirmBookAppt()">✅ Confirm Booking</button>
+          </div>
+        </div>
+      </div>
+      <div id="appt-my-panel" style="display:none">
+        <div id="my-appt-list"><div class="empty-card">Loading appointments...</div></div>
+      </div>
+    </div>
+    <div id="video-call-btn-container" style="display:none;margin-top:12px">
+      <button class="big-btn" onclick="checkForVideoRooms()" style="background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;border-radius:12px">📹 Join Video Call</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-rx">
+    <div class="page-title">💊 Prescriptions</div>
+    <div id="rx-list"><div class="empty-card">Loading prescriptions...</div></div>
+  </div>
+
   <div class="screen" id="screen-profile">
     <div class="page-title">👤 Profile</div>
     <div id="profile-content"><div class="empty-card">Loading...</div></div>
@@ -201,7 +243,8 @@ input[type="range"]{width:100%;accent-color:var(--blue);height:6px}
   <div class="bottom-nav">
     <button class="nav-btn active" id="nav-symptoms" onclick="goScreen('symptoms')"><div class="nav-icon">📅</div><div class="nav-label">Symptoms</div></button>
     <button class="nav-btn" id="nav-treatment" onclick="goScreen('treatment')"><div class="nav-icon">⚡</div><div class="nav-label">Treatment</div></button>
-    <button class="nav-btn" id="nav-visits" onclick="goScreen('visits')"><div class="nav-icon">🗓</div><div class="nav-label">Visits</div></button>
+    <button class="nav-btn" id="nav-appointments" onclick="goScreen('appointments')"><div class="nav-icon">📅</div><div class="nav-label">Book</div></button>
+    <button class="nav-btn" id="nav-rx" onclick="goScreen('rx')"><div class="nav-icon">💊</div><div class="nav-label">Rx</div></button>
     <button class="nav-btn" id="nav-messages" onclick="goScreen('messages')"><div class="nav-icon">💬</div><div class="nav-label">Messages</div></button>
     <button class="nav-btn" id="nav-profile" onclick="goScreen('profile')"><div class="nav-icon">👤</div><div class="nav-label">Profile</div></button>
   </div>
@@ -575,6 +618,8 @@ function goScreen(name){
   document.getElementById('nav-'+name).classList.add('active');
   if(name==='treatment')renderTreatmentPlan();
   if(name==='visits')renderVisits();
+  if(name==='appointments')renderPatientAppointments();
+  if(name==='rx')renderPatientRx();
   if(name==='messages')renderChat();
   if(name==='profile')renderProfile();
 }
@@ -601,6 +646,213 @@ function renderCalendar(){
   }
   grid.innerHTML=html;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// APPOINTMENT BOOKING
+// ═══════════════════════════════════════════════════════════════
+let _slotData={},_slotDateIdx=0,_selectedSlot=null;
+
+function switchApptTab(tab){
+  document.getElementById('appt-book-panel').style.display=tab==='book'?'block':'none';
+  document.getElementById('appt-my-panel').style.display=tab==='my'?'block':'none';
+  document.getElementById('appt-tab-book').style.background=tab==='book'?'var(--green)':'var(--surface)';
+  document.getElementById('appt-tab-book').style.color=tab==='book'?'#fff':'var(--text)';
+  document.getElementById('appt-tab-my').style.background=tab==='my'?'var(--green)':'var(--surface)';
+  document.getElementById('appt-tab-my').style.color=tab==='my'?'#fff':'var(--text)';
+  if(tab==='my')renderMyAppts();
+}
+
+async function renderPatientAppointments(){
+  try{
+    const r=await api('/api/schedule/slots?days=30');
+    if(r.ok)_slotData=r.slots||{};
+  }catch(e){}
+  _slotDateIdx=0;_selectedSlot=null;
+  renderSlotDate();
+  // Check for video rooms
+  try{
+    const vr=await api('/api/telehealth/my-rooms');
+    document.getElementById('video-call-btn-container').style.display=(vr.ok&&vr.rooms&&vr.rooms.length>0)?'block':'none';
+  }catch(e){}
+}
+
+function slotNav(dir){_slotDateIdx+=dir;if(_slotDateIdx<0)_slotDateIdx=0;_selectedSlot=null;renderSlotDate()}
+
+function renderSlotDate(){
+  const d=new Date();d.setDate(d.getDate()+_slotDateIdx);
+  const ds=d.toISOString().slice(0,10);
+  const label=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('slot-date-label').textContent=label;
+  const slots=_slotData[ds]||[];
+  const el=document.getElementById('slot-list');
+  const empty=document.getElementById('slot-empty');
+  const info=document.getElementById('slot-selected-info');
+  if(!slots.length){el.innerHTML='';empty.style.display='block';info.style.display='none';return}
+  empty.style.display='none';
+  el.innerHTML=slots.map(s=>`<button onclick="selectSlot('${ds}','${s.time}','${s.endTime}','${s.duration}')" style="padding:10px 8px;border-radius:10px;background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center">${s.time}</button>`).join('');
+}
+
+function selectSlot(date,time,endTime,dur){
+  _selectedSlot={date,time,endTime,duration:parseInt(dur)};
+  document.getElementById('slot-selected-info').style.display='block';
+  const d=new Date(date+'T00:00:00');
+  document.getElementById('slot-selected-details').innerHTML=`<div style="margin-bottom:6px"><span style="color:var(--green);font-weight:700">📅 ${d.toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric'})}</span></div><div><span style="color:var(--blue);font-weight:700">⏰ ${time} — ${endTime}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">Duration: ${dur} min</div>`;
+}
+
+async function confirmBookAppt(){
+  if(!_selectedSlot)return alert('Select a time slot first');
+  const type=document.getElementById('book-appt-type').value;
+  const notes=document.getElementById('book-appt-notes').value;
+  try{
+    const r=await api('/api/schedule/book',{method:'POST',body:JSON.stringify({date:_selectedSlot.date,startTime:_selectedSlot.time,type,notes})});
+    if(r.ok){
+      alert('✅ '+r.message);
+      _selectedSlot=null;
+      document.getElementById('slot-selected-info').style.display='none';
+      // Refresh slots
+      const sr=await api('/api/schedule/slots?days=30');
+      if(sr.ok)_slotData=sr.slots||{};
+      renderSlotDate();
+    }
+  }catch(e){alert('Error: '+e.message)}
+}
+
+async function renderMyAppts(){
+  const el=document.getElementById('my-appt-list');
+  try{
+    const r=await api('/api/schedule/my-appointments');
+    if(!r.ok||!r.appointments||!r.appointments.length){el.innerHTML='<div class="empty-card">No upcoming appointments.</div>';return}
+    const statusColors={pending:'var(--orange)',confirmed:'var(--green)',cancelled:'var(--red)',completed:'var(--blue)'};
+    el.innerHTML=r.appointments.map(a=>{
+      const d=new Date(a.date+'T00:00:00');
+      const canCancel=a.status==='pending'||a.status==='confirmed';
+      return `<div class="info-card" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div style="font-weight:700;font-size:14px">${a.type}</div><div style="font-size:12px;color:var(--text-muted)">${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})} at ${a.start_time}</div></div>
+          <span class="badge" style="background:${statusColors[a.status]||'var(--border)'};color:#fff;font-size:10px;padding:3px 10px;border-radius:8px">${a.status}</span>
+        </div>
+        ${canCancel?`<button onclick="cancelPatAppt('${a.id}')" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Cancel</button>`:''}
+      </div>`;
+    }).join('');
+  }catch(e){el.innerHTML='<div class="empty-card">Error loading appointments.</div>'}
+}
+
+async function cancelPatAppt(id){
+  if(!confirm('Cancel this appointment?'))return;
+  try{
+    const r=await api('/api/schedule/cancel',{method:'POST',body:JSON.stringify({appointmentId:id})});
+    if(r.ok){alert('✅ Appointment cancelled');renderMyAppts()}
+  }catch(e){alert(e.message)}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PATIENT PRESCRIPTIONS
+// ═══════════════════════════════════════════════════════════════
+async function renderPatientRx(){
+  const el=document.getElementById('rx-list');
+  try{
+    const r=await api('/api/rx/my');
+    if(!r.ok||!r.prescriptions||!r.prescriptions.length){el.innerHTML='<div class="empty-card">No prescriptions on file.</div>';return}
+    const statusIcon={active:'✅',completed:'✔️',cancelled:'❌',expired:'⏰','pending-refill':'🔄'};
+    const statusColor={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--blue)'};
+    el.innerHTML=r.prescriptions.map(rx=>`
+      <div class="info-card" style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+          <div><div style="font-weight:700;font-size:15px">${esc(rx.medication)}${rx.genericName?' <span style="font-size:12px;color:var(--text-muted);font-weight:400">('+esc(rx.genericName)+')</span>':''}</div></div>
+          <span style="font-size:11px;color:${statusColor[rx.status]};font-weight:700">${statusIcon[rx.status]||''} ${rx.status}</span>
+        </div>
+        <div class="irow"><div class="ikey">Dosage</div><div class="ival">${esc(rx.dosage)}</div></div>
+        <div class="irow"><div class="ikey">Frequency</div><div class="ival">${esc(rx.frequency)}</div></div>
+        ${rx.route?`<div class="irow"><div class="ikey">Route</div><div class="ival">${esc(rx.route)}</div></div>`:''}
+        ${rx.duration?`<div class="irow"><div class="ikey">Duration</div><div class="ival">${esc(rx.duration)}</div></div>`:''}
+        ${rx.refills?`<div class="irow"><div class="ikey">Refills</div><div class="ival">${rx.refills} remaining</div></div>`:''}
+        ${rx.pharmacy?`<div class="irow"><div class="ikey">Pharmacy</div><div class="ival">${esc(rx.pharmacy)}</div></div>`:''}
+        ${rx.instructions?`<div style="margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-muted)">📋 ${esc(rx.instructions)}</div>`:''}
+        ${rx.status==='active'?`<button onclick="requestRefill('${rx.id}')" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px solid var(--green);background:rgba(5,150,105,.06);color:var(--green);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">🔄 Request Refill</button>`:''}
+        <div style="font-size:10px;color:var(--text-dim);margin-top:6px">Prescribed: ${rx.prescribedDate||'N/A'}</div>
+      </div>
+    `).join('');
+  }catch(e){el.innerHTML='<div class="empty-card">Error loading prescriptions.</div>'}
+}
+
+async function requestRefill(rxId){
+  if(!confirm('Request a refill for this medication?'))return;
+  try{
+    const r=await api('/api/rx/refill-request',{method:'POST',body:JSON.stringify({prescriptionId:rxId})});
+    if(r.ok){alert('✅ '+r.message);renderPatientRx()}
+  }catch(e){alert(e.message)}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VIDEO CALL (TELEHEALTH)
+// ═══════════════════════════════════════════════════════════════
+let _pc=null,_localStream=null,_remoteStream=null,_signalInterval=null;
+
+async function checkForVideoRooms(){
+  try{
+    const r=await api('/api/telehealth/my-rooms');
+    if(r.ok&&r.rooms&&r.rooms.length>0){
+      const room=r.rooms[0];
+      joinVideoCall(room.id);
+    }else{alert('No active video rooms. Your doctor will start one when ready.')}
+  }catch(e){alert('Error: '+e.message)}
+}
+
+async function joinVideoCall(roomCode){
+  try{
+    _localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  }catch(e){alert('Camera/microphone access needed for video calls.');return}
+  // Join room
+  await api('/api/telehealth/rooms/'+roomCode+'/join',{method:'POST'});
+  // Create video overlay
+  const overlay=document.createElement('div');
+  overlay.id='video-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column';
+  overlay.innerHTML=`
+    <div id="remote-video-wrap" style="flex:1;position:relative;background:#111">
+      <video id="remote-video" autoplay playsinline style="width:100%;height:100%;object-fit:cover"></video>
+      <div style="position:absolute;bottom:16px;left:16px;font-size:14px;color:#fff;font-weight:600;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:8px">📹 Video Call</div>
+    </div>
+    <div style="position:absolute;bottom:80px;right:16px;width:120px;height:160px;border-radius:12px;overflow:hidden;border:2px solid #fff;box-shadow:0 4px 20px rgba(0,0,0,.5);z-index:10000">
+      <video id="local-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></div>
+    </div>
+    <div style="position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:16px;z-index:10000">
+      <button onclick="toggleMute()" id="btn-mute" style="width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:20px;cursor:pointer">🎤</button>
+      <button onclick="toggleVideoOff()" id="btn-video" style="width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:20px;cursor:pointer">📹</button>
+      <button onclick="endVideoCall('${roomCode}')" style="width:48px;height:48px;border-radius:50%;border:none;background:#dc2626;color:#fff;font-size:20px;cursor:pointer">📞</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('local-video').srcObject=_localStream;
+  // Simple WebRTC signaling via polling
+  _pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+  _localStream.getTracks().forEach(t=>_pc.addTrack(t,_localStream));
+  _pc.onicecandidate=e=>{if(e.candidate)api('/api/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'candidate',data:e.candidate})})};
+  _pc.ontrack=e=>{document.getElementById('remote-video').srcObject=e.streams[0]};
+  const offer=await _pc.createOffer();
+  await _pc.setLocalDescription(offer);
+  await api('/api/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'offer',data:offer})});
+  // Poll for signaling messages
+  let lastTs=Date.now();
+  _signalInterval=setInterval(async()=>{
+    try{const r=await fetch('/api/telehealth/signal/'+roomCode+'?since='+lastTs,{credentials:'include'});const d=await r.json();
+    if(d.messages){for(const m of d.messages){lastTs=Math.max(lastTs,m.timestamp);
+      if(m.type==='answer'&&m.sender==='doctor')await _pc.setRemoteDescription(new RTCSessionDescription(m.data));
+      if(m.type==='candidate'&&m.sender==='doctor'&&m.data)await _pc.addIceCandidate(new RTCIceCandidate(m.data));
+    }}
+    }catch(e){}},2000);
+}
+
+function toggleMute(){const t=_localStream?.getAudioTracks()[0];if(t){t.enabled=!t.enabled;document.getElementById('btn-mute').textContent=t.enabled?'🎤':'🔇'}}
+function toggleVideoOff(){const t=_localStream?.getVideoTracks()[0];if(t){t.enabled=!t.enabled;document.getElementById('btn-video').textContent=t.enabled?'📹':'📷'}}
+
+function endVideoCall(roomCode){
+  if(_pc){_pc.close();_pc=null}
+  if(_localStream){_localStream.getTracks().forEach(t=>t.stop());_localStream=null}
+  if(_signalInterval){clearInterval(_signalInterval);_signalInterval=null}
+  const ov=document.getElementById('video-overlay');if(ov)ov.remove();
+}
+
 function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++}if(calMonth<0){calMonth=11;calYear--}renderCalendar()}
 
 function viewDayLog(dateStr){

@@ -408,6 +408,11 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
       <button class="nav-item" onclick="showPanel('appt-calendar',this);renderApptCalendar()"><span class="ni">🗓</span>Appointments</button>
       <button class="nav-item" onclick="showPanel('messages',this)"><span class="ni">💬</span>Messages<span class="nav-badge" id="msg-badge" style="display:none;"></span></button>
       <button class="nav-item" onclick="showPanel('labs',this)"><span class="ni">🔬</span>Lab Management<span class="nav-badge" id="lab-badge" style="display:none;"></span></button>
+      <div class="sidebar-section" style="margin-top:8px;">Clinical Tools</div>
+      <button class="nav-item" onclick="showPanel('cds',this);renderCDSPanel()"><span class="ni">⚕️</span>Clinical Support</button>
+      <button class="nav-item" onclick="showPanel('rx',this);renderDoctorRxPanel()"><span class="ni">💊</span>Prescriptions</button>
+      <button class="nav-item" onclick="showPanel('telehealth',this);renderTelehealthPanel()"><span class="ni">📹</span>Video Calls</button>
+      <button class="nav-item" onclick="showPanel('availability',this);renderAvailabilityPanel()"><span class="ni">🕐</span>Availability</button>
       <div class="sidebar-section" style="margin-top:8px;">System</div>
       <button class="nav-item" onclick="showPanel('backup',this)"><span class="ni">💾</span>Data &amp; Backup</button>
       <button class="nav-item" onclick="showPanel('broadcast',this)"><span class="ni">📧</span>Broadcast Email</button>
@@ -539,6 +544,116 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
               <div id="lab-task-queue"></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- CLINICAL DECISION SUPPORT -->
+      <div class="panel" id="panel-cds">
+        <div class="page-header"><div><div class="page-title">⚕️ Clinical Decision Support</div><div class="page-sub">Drug interactions, allergy alerts, dosage safety</div></div></div>
+        <div class="g2" style="margin-bottom:20px">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">🔍 Drug Interaction Checker</div>
+            <div class="fg"><label>Medications (comma-separated, min 2)</label><textarea id="cds-meds" rows="2" placeholder="e.g. temozolomide, valproic acid, dexamethasone"></textarea></div>
+            <button class="btn btn-primary" onclick="checkInteractions()">Check Interactions</button>
+            <div id="cds-interaction-results" style="margin-top:14px"></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">⚠️ Patient Allergy Check</div>
+            <div class="fg"><label>Select Patient</label><select id="cds-patient" onchange="loadPatientAllergies()"><option value="">— Select —</option></select></div>
+            <div id="cds-allergy-list"></div>
+            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+              <div class="card-title" style="margin-bottom:8px;font-size:12px">Add Allergy</div>
+              <div class="g2">
+                <div class="fg" style="margin:0"><label>Drug Name</label><input id="cds-allergy-drug" placeholder="e.g. penicillin"></div>
+                <div class="fg" style="margin:0"><label>Reaction</label><input id="cds-allergy-rxn" placeholder="e.g. rash, anaphylaxis"></div>
+              </div>
+              <div class="fg"><label>Severity</label><select id="cds-allergy-sev"><option value="mild">Mild</option><option value="moderate" selected>Moderate</option><option value="severe">Severe</option><option value="anaphylaxis">Anaphylaxis</option></select></div>
+              <button class="btn btn-primary btn-sm" onclick="addAllergy()">+ Add Allergy</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">💊 Dosage Reference</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+            <div class="nav-btn-style" style="cursor:pointer;font-size:11px" onclick="showDrugInfo('temozolomide')"><strong>Temozolomide</strong><br><span style="font-size:10px;color:var(--text-dim)">TMZ · Temodar</span></div>
+            <div class="nav-btn-style" style="cursor:pointer;font-size:11px" onclick="showDrugInfo('bevacizumab')"><strong>Bevacizumab</strong><br><span style="font-size:10px;color:var(--text-dim)">Anti-VEGF · Avastin</span></div>
+            <div class="nav-btn-style" style="cursor:pointer;font-size:11px" onclick="showDrugInfo('carboplatin')"><strong>Carboplatin</strong><br><span style="font-size:10px;color:var(--text-dim)">Platinum agent</span></div>
+            <div class="nav-btn-style" style="cursor:pointer;font-size:11px" onclick="showDrugInfo('lomustine')"><strong>Lomustine</strong><br><span style="font-size:10px;color:var(--text-dim)">CCNU · Nitrosourea</span></div>
+            <div class="nav-btn-style" style="cursor:pointer;font-size:11px" onclick="showDrugInfo('procarbazine')"><strong>Procarbazine</strong><br><span style="font-size:10px;color:var(--text-dim)">MAO inhibitor</span></div>
+            <div class="nav-btn-style" style="cursor:pointer;font-size:11px" onclick="showDrugInfo('levetiracetam')"><strong>Levetiracetam</strong><br><span style="font-size:10px;color:var(--text-dim)">Antiepileptic · Keppra</span></div>
+            <div class="nav-btn-style" style="cursor:pointer;font-size:11px" onclick="showDrugInfo('dexamethasone')"><strong>Dexamethasone</strong><br><span style="font-size:10px;color:var(--text-dim)">Steroid · Decadron</span></div>
+            <div class="nav-btn-style" style="cursor:pointer;font-size:11px" onclick="showDrugInfo('valproic-acid')"><strong>Valproic Acid</strong><br><span style="font-size:10px;color:var(--text-dim)">Antiepileptic · Depakote</span></div>
+          </div>
+          <div id="cds-drug-info" style="margin-top:14px"></div>
+        </div>
+      </div>
+
+      <!-- PRESCRIPTIONS -->
+      <div class="panel" id="panel-rx">
+        <div class="page-header"><div><div class="page-title">💊 Prescriptions</div><div class="page-sub">E-prescribing & medication management</div></div></div>
+        <div class="g2" style="margin-bottom:20px">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">✍️ New Prescription</div>
+            <div class="fg"><label>Patient</label><select id="rx-patient"><option value="">— Select —</option></select></div>
+            <div class="fg"><label>Medication *</label><input id="rx-med" placeholder="e.g. Temozolomide"></div>
+            <div class="fg"><label>Generic Name</label><input id="rx-generic" placeholder="Optional generic name"></div>
+            <div class="g2">
+              <div class="fg" style="margin:0"><label>Dosage *</label><input id="rx-dose" placeholder="e.g. 150 mg/m²"></div>
+              <div class="fg" style="margin:0"><label>Frequency *</label><select id="rx-freq"><option>QD</option><option>BID</option><option>TID</option><option>QID</option><option>QAM</option><option>QHS</option><option>PRN</option><option>Q6H</option><option>Q8H</option><option>Monthly</option><option>Cycle Day 1-5</option></select></div>
+            </div>
+            <div class="g2">
+              <div class="fg" style="margin:0"><label>Route</label><select id="rx-route"><option value="oral">Oral</option><option value="iv">IV</option><option value="im">IM</option><option value="subcutaneous">Subcutaneous</option><option value="intrathecal">Intrathecal</option><option value="topical">Topical</option></select></div>
+              <div class="fg" style="margin:0"><label>Duration</label><input id="rx-dur" placeholder="e.g. 30 days"></div>
+            </div>
+            <div class="g2">
+              <div class="fg" style="margin:0"><label>Quantity</label><input id="rx-qty" type="number" placeholder="# pills"></div>
+              <div class="fg" style="margin:0"><label>Refills</label><input id="rx-refills" type="number" value="0" min="0" max="12"></div>
+            </div>
+            <div class="fg"><label>Pharmacy</label><input id="rx-pharmacy" placeholder="Pharmacy name/address"></div>
+            <div class="fg"><label>Special Instructions</label><textarea id="rx-instructions" rows="2" placeholder="e.g. Take with food, avoid sunlight"></textarea></div>
+            <div id="rx-safety-warnings" style="display:none;margin-bottom:12px"></div>
+            <button class="btn btn-primary btn-full" onclick="createPrescription()">💊 Prescribe</button>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">📋 Active Prescriptions</div>
+            <div id="rx-active-list"><div class="empty-card">Select a patient to view prescriptions</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TELEHEALTH / VIDEO -->
+      <div class="panel" id="panel-telehealth">
+        <div class="page-header"><div><div class="page-title">📹 Video Consultations</div><div class="page-sub">Start a telehealth session with a patient</div></div></div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">🎬 Start Video Call</div>
+            <div class="fg"><label>Select Patient</label><select id="th-patient"><option value="">— Select —</option></select></div>
+            <button class="btn btn-primary" onclick="startTelehealth()">📹 Start Video Room</button>
+            <div id="th-room-info" style="margin-top:14px"></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">📋 Active Rooms</div>
+            <div id="th-active-rooms"><div class="empty-card">No active video rooms</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOCTOR AVAILABILITY -->
+      <div class="panel" id="panel-availability">
+        <div class="page-header"><div><div class="page-title">🕐 My Availability</div><div class="page-sub">Configure when patients can book appointments</div></div></div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px">Weekly Schedule</div>
+          <div id="avail-grid">
+            <div style="display:grid;grid-template-columns:100px 1fr 1fr 80px 1fr;gap:8px;margin-bottom:8px">
+              <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase">Day</div>
+              <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase">Start Time</div>
+              <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase">End Time</div>
+              <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase">Slot (min)</div>
+              <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase">Active</div>
+            </div>
+            <div id="avail-rows"></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:14px" onclick="saveAvailability()">💾 Save Schedule</button>
         </div>
       </div>
 
@@ -3191,6 +3306,307 @@ async function disable2FA(){
     await api('/auth/totp/disable',{method:'POST',body:JSON.stringify({code})});
     document.getElementById('twofa-content').innerHTML=`<div style="text-align:center;"><div style="font-size:24px;margin-bottom:8px;">🔓</div><div style="font-weight:600;">2FA has been disabled</div><button onclick="document.getElementById('twofa-modal').remove()" style="margin-top:16px;padding:10px 24px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Done</button></div>`;
   }catch(e){alert(e.message);}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLINICAL DECISION SUPPORT
+// ═══════════════════════════════════════════════════════════════
+function renderCDSPanel(){
+  // Populate patient dropdown
+  const sel=document.getElementById('cds-patient');
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('cc_pat_')).map(k=>k.slice(3));
+  sel.innerHTML='<option value="">— Select —</option>'+keys.map(k=>{const p=LS.get(k);return p?`<option value="${p.mrn}">${p.name} (${p.mrn})</option>`:''}).join('');
+}
+
+async function checkInteractions(){
+  const medsStr=document.getElementById('cds-meds').value;
+  const meds=medsStr.split(',').map(m=>m.trim()).filter(Boolean);
+  if(meds.length<2){alert('Enter at least 2 medications');return}
+  try{
+    const r=await api('/api/cds/interactions',{method:'POST',body:JSON.stringify({medications:meds})});
+    const el=document.getElementById('cds-interaction-results');
+    if(!r.ok||!r.interactions||!r.interactions.length){el.innerHTML='<div style="padding:12px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:10px;color:var(--green);font-size:13px">✅ No known interactions found between these medications.</div>';return}
+    const sevColors={severe:'var(--red)',moderate:'var(--orange)',mild:'var(--text-muted)'};
+    el.innerHTML=r.interactions.map(i=>`
+      <div style="padding:12px;background:rgba(${i.severity==='severe'?'239,68,68':i.severity==='moderate'?'245,158,11':'100,116,139'},.06);border:1px solid rgba(${i.severity==='severe'?'239,68,68':i.severity==='moderate'?'245,158,11':'100,116,139'},.2);border-radius:10px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-weight:700;font-size:13px">${i.drug_a} ↔ ${i.drug_b}</span>
+          <span style="font-size:10px;font-weight:700;color:${sevColors[i.severity]};text-transform:uppercase">${i.severity}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${i.description}</div>
+        ${i.recommendation?`<div style="font-size:11px;color:var(--blue);font-weight:600">💡 ${i.recommendation}</div>`:''}
+      </div>
+    `).join('');
+  }catch(e){alert('Error: '+e.message)}
+}
+
+async function loadPatientAllergies(){
+  const mrn=document.getElementById('cds-patient').value;
+  const el=document.getElementById('cds-allergy-list');
+  if(!mrn){el.innerHTML='';return}
+  try{
+    const r=await api('/api/cds/allergies/'+mrn);
+    if(!r.ok||!r.allergies||!r.allergies.length){el.innerHTML='<div style="font-size:12px;color:var(--text-dim);margin-top:8px">No known allergies.</div>';return}
+    const sevColors={mild:'var(--green)',moderate:'var(--orange)',severe:'var(--red)',anaphylaxis:'#dc2626'};
+    el.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-top:8px;margin-bottom:4px">Known Allergies</div>'+r.allergies.map(a=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.12);border-radius:8px;margin-bottom:4px;font-size:12px">
+        <span style="font-weight:700;color:var(--red)">⚠ ${a.drug_name}</span>
+        ${a.reaction?`<span style="color:var(--text-muted)">— ${a.reaction}</span>`:''}
+        <span style="margin-left:auto;font-size:10px;font-weight:700;color:${sevColors[a.severity]};text-transform:uppercase">${a.severity}</span>
+        <button onclick="removeAllergy('${a.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px">✕</button>
+      </div>
+    `).join('');
+  }catch(e){el.innerHTML='<div style="font-size:11px;color:var(--red)">Error loading allergies</div>'}
+}
+
+async function addAllergy(){
+  const mrn=document.getElementById('cds-patient').value;
+  const drug=document.getElementById('cds-allergy-drug').value;
+  const rxn=document.getElementById('cds-allergy-rxn').value;
+  const sev=document.getElementById('cds-allergy-sev').value;
+  if(!mrn||!drug){alert('Select patient and enter drug name');return}
+  try{await api('/api/cds/allergies',{method:'POST',body:JSON.stringify({mrn,drugName:drug,reaction:rxn,severity:sev})});document.getElementById('cds-allergy-drug').value='';document.getElementById('cds-allergy-rxn').value='';loadPatientAllergies()}catch(e){alert(e.message)}
+}
+
+async function removeAllergy(id){if(!confirm('Remove this allergy?'))return;try{await api('/api/cds/allergies/'+id,{method:'DELETE'});loadPatientAllergies()}catch(e){alert(e.message)}}
+
+async function showDrugInfo(name){
+  try{
+    const r=await api('/api/cds/drug-info/'+name);
+    const el=document.getElementById('cds-drug-info');
+    if(!r.ok){el.innerHTML='<div style="font-size:12px;color:var(--text-dim)">Drug not found in database.</div>';return}
+    const info=r.info||{};
+    el.innerHTML=`<div class="card" style="margin-top:0;border-left:3px solid var(--blue)">
+      <div style="font-weight:800;font-size:16px;margin-bottom:4px">${name}${info.brand?' <span style="color:var(--text-muted);font-weight:400;font-size:13px">('+info.brand+')</span>':''}</div>
+      ${info.unit?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Dose unit: <strong>${info.unit}</strong></div>`:''}
+      ${info.frequency?`<div style="font-size:12px;margin-bottom:4px"><span style="color:var(--text-dim)">Frequency:</span> ${info.frequency}</div>`:''}
+      ${info.commonDoses?`<div style="font-size:12px;margin-bottom:4px"><span style="color:var(--text-dim)">Common doses:</span> ${info.commonDoses.join(', ')} ${info.unit||''}</div>`:''}
+      ${info.notes?`<div style="font-size:12px;color:var(--text-muted);margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:8px">📋 ${info.notes}</div>`:''}
+      ${info.blackBox?`<div style="font-size:12px;color:var(--red);margin-top:8px;padding:8px 12px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:8px;font-weight:600">⚠️ BLACK BOX: ${info.blackBox}</div>`:''}
+      ${info.interactions&&info.interactions.length?`<div style="margin-top:8px"><div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px">Known Interactions</div>${info.interactions.map(i=>`<div style="font-size:11px;color:var(--orange);padding:2px 0">• ${i}</div>`).join('')}</div>`:''}
+    </div>`;
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// E-PRESCRIBING
+// ═══════════════════════════════════════════════════════════════
+function renderDoctorRxPanel(){
+  const sel=document.getElementById('rx-patient');
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('cc_pat_')).map(k=>k.slice(3));
+  sel.innerHTML='<option value="">— Select —</option>'+keys.map(k=>{const p=LS.get(k);return p?`<option value="${p.mrn}">${p.name} (${p.mrn})</option>`:''}).join('');
+  sel.onchange=()=>loadDoctorRxs(sel.value);
+}
+
+async function loadDoctorRxs(mrn){
+  const el=document.getElementById('rx-active-list');
+  if(!mrn){el.innerHTML='<div class="empty-card">Select a patient to view prescriptions</div>';return}
+  try{
+    const r=await api('/api/rx/patient/'+mrn);
+    if(!r.ok||!r.prescriptions||!r.prescriptions.length){el.innerHTML='<div class="empty-card">No prescriptions for this patient.</div>';return}
+    const statusColors={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--orange)'};
+    el.innerHTML=r.prescriptions.map(rx=>`
+      <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--surface)">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div style="font-weight:700">${rx.medication}</div><div style="font-size:12px;color:var(--text-muted)">${rx.dosage} · ${rx.frequency} · ${rx.route||'oral'}</div></div>
+          <span style="font-size:10px;font-weight:700;color:${statusColors[rx.status]};text-transform:uppercase">${rx.status}</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          ${rx.status==='active'?`<button class="btn btn-ghost btn-sm" onclick="updateRx('${rx.id}','completed')">Complete</button>`:''}
+          ${rx.status==='active'?`<button class="btn btn-danger btn-sm" onclick="updateRx('${rx.id}','cancelled')">Cancel</button>`:''}
+          ${rx.status==='pending-refill'?`<button class="btn btn-primary btn-sm" onclick="updateRx('${rx.id}','active')">Approve Refill</button>`:''}
+        </div>
+      </div>
+    `).join('');
+  }catch(e){el.innerHTML='<div class="empty-card">Error loading prescriptions.</div>'}
+}
+
+async function createPrescription(){
+  const mrn=document.getElementById('rx-patient').value;
+  const med=document.getElementById('rx-med').value;
+  const dose=document.getElementById('rx-dose').value;
+  const freq=document.getElementById('rx-freq').value;
+  if(!mrn||!med||!dose){alert('Select patient, enter medication and dosage');return}
+  try{
+    const r=await api('/api/rx',{method:'POST',body:JSON.stringify({
+      patientMrn:mrn,medication:med,genericName:document.getElementById('rx-generic').value||undefined,
+      dosage:dose,frequency:freq,route:document.getElementById('rx-route').value,
+      duration:document.getElementById('rx-dur').value||undefined,
+      quantity:parseInt(document.getElementById('rx-qty').value)||undefined,
+      refills:parseInt(document.getElementById('rx-refills').value)||0,
+      pharmacy:document.getElementById('rx-pharmacy').value||undefined,
+      instructions:document.getElementById('rx-instructions').value||undefined
+    }))});
+    if(r.ok){
+      if(r.warnings&&r.warnings.length){
+        const el=document.getElementById('rx-safety-warnings');
+        el.style.display='block';
+        el.innerHTML='<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:12px"><div style="font-weight:700;font-size:12px;color:var(--orange);margin-bottom:6px">⚠️ Safety Warnings</div>'+r.warnings.map(w=>`<div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">• ${w.message}</div>`).join('')+'</div>';
+      }
+      alert('✅ Prescription created');
+      document.getElementById('rx-med').value='';document.getElementById('rx-dose').value='';document.getElementById('rx-instructions').value='';
+      loadDoctorRxs(mrn);
+    }
+  }catch(e){alert(e.message)}
+}
+
+async function updateRx(id,status){
+  try{await api('/api/rx',{method:'PATCH',body:JSON.stringify({prescriptionId:id,status})});
+  loadDoctorRxs(document.getElementById('rx-patient').value)}catch(e){alert(e.message)}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TELEMEDICINE / VIDEO
+// ═══════════════════════════════════════════════════════════════
+function renderTelehealthPanel(){
+  const sel=document.getElementById('th-patient');
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('cc_pat_')).map(k=>k.slice(3));
+  sel.innerHTML='<option value="">— Select —</option>'+keys.map(k=>{const p=LS.get(k);return p?`<option value="${p.mrn}">${p.name} (${p.mrn})</option>`:''}).join('');
+  loadActiveRooms();
+}
+
+async function loadActiveRooms(){
+  const el=document.getElementById('th-active-rooms');
+  try{
+    const r=await api('/api/telehealth/rooms');
+    if(!r.ok||!r.rooms||!r.rooms.length){el.innerHTML='<div class="empty-card">No active video rooms</div>';return}
+    el.innerHTML=r.rooms.map(room=>`
+      <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--surface)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-weight:700">📹 Room ${room.id}</div><div style="font-size:12px;color:var(--text-muted)">Patient: ${room.patient_mrn} · ${room.status}</div></div>
+          <div style="display:flex;gap:6px">
+            ${room.status!=='ended'?`<button class="btn btn-primary btn-sm" onclick="joinDoctorVideo('${room.id}')">Join</button>`:''}
+            ${room.status!=='ended'?`<button class="btn btn-danger btn-sm" onclick="endDoctorRoom('${room.id}')">End</button>`:''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }catch(e){}
+}
+
+let _docPc=null,_docLocalStream=null,_docSignalInterval=null;
+
+async function startTelehealth(){
+  const mrn=document.getElementById('th-patient').value;
+  if(!mrn){alert('Select a patient');return}
+  try{
+    const r=await api('/api/telehealth/rooms',{method:'POST',body:JSON.stringify({patientMrn:mrn})});
+    if(r.ok){
+      document.getElementById('th-room-info').innerHTML=`<div style="padding:14px;background:var(--blue-pale);border:1px solid rgba(37,99,235,.2);border-radius:10px">
+        <div style="font-weight:700;color:var(--blue);margin-bottom:6px">🎬 Video Room Created</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Room code: <strong style="font-family:var(--mono)">${r.roomCode}</strong></div>
+        <div style="font-size:11px;color:var(--text-dim)">Patient has been notified. They can join from their app.</div>
+        <button class="btn btn-primary" style="margin-top:10px" onclick="joinDoctorVideo('${r.roomCode}')">📹 Join Call</button>
+      </div>`;
+      loadActiveRooms();
+    }
+  }catch(e){alert(e.message)}
+}
+
+async function joinDoctorVideo(roomCode){
+  try{
+    _docLocalStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  }catch(e){alert('Camera/microphone access needed.');return}
+  const overlay=document.createElement('div');
+  overlay.id='doc-video-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column';
+  overlay.innerHTML=`
+    <div id="doc-remote-video-wrap" style="flex:1;position:relative;background:#111">
+      <video id="doc-remote-video" autoplay playsinline style="width:100%;height:100%;object-fit:cover"></video>
+      <div style="position:absolute;bottom:16px;left:16px;font-size:14px;color:#fff;font-weight:600;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:8px">📹 Room: ${roomCode}</div>
+    </div>
+    <div style="position:absolute;bottom:80px;right:16px;width:120px;height:160px;border-radius:12px;overflow:hidden;border:2px solid #fff;box-shadow:0 4px 20px rgba(0,0,0,.5);z-index:10000">
+      <video id="doc-local-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></div>
+    </div>
+    <div style="position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:16px;z-index:10000">
+      <button onclick="docToggleMute()" id="doc-btn-mute" style="width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:20px;cursor:pointer">🎤</button>
+      <button onclick="docToggleVideo()" id="doc-btn-video" style="width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:20px;cursor:pointer">📹</button>
+      <button onclick="endDoctorVideo('${roomCode}')" style="width:48px;height:48px;border-radius:50%;border:none;background:#dc2626;color:#fff;font-size:20px;cursor:pointer">📞</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('doc-local-video').srcObject=_docLocalStream;
+  _docPc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+  _docLocalStream.getTracks().forEach(t=>_docPc.addTrack(t,_docLocalStream));
+  _docPc.onicecandidate=e=>{if(e.candidate)api('/api/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'candidate',data:e.candidate})})};
+  _docPc.ontrack=e=>{document.getElementById('doc-remote-video').srcObject=e.streams[0]};
+  // Wait for patient offer
+  let lastTs=Date.now();
+  _docSignalInterval=setInterval(async()=>{
+    try{const r=await fetch('/api/telehealth/signal/'+roomCode+'?since='+lastTs,{credentials:'include'});const d=await r.json();
+    if(d.messages){for(const m of d.messages){lastTs=Math.max(lastTs,m.timestamp);
+      if(m.type==='offer'&&m.sender==='patient'){
+        await _docPc.setRemoteDescription(new RTCSessionDescription(m.data));
+        const answer=await _docPc.createAnswer();
+        await _docPc.setLocalDescription(answer);
+        await api('/api/telehealth/signal/'+roomCode,{method:'POST',body:JSON.stringify({type:'answer',data:answer})});
+      }
+      if(m.type==='candidate'&&m.sender==='patient'&&m.data)await _docPc.addIceCandidate(new RTCIceCandidate(m.data));
+    }}
+    }catch(e){}},2000);
+}
+
+function docToggleMute(){const t=_docLocalStream?.getAudioTracks()[0];if(t){t.enabled=!t.enabled;document.getElementById('doc-btn-mute').textContent=t.enabled?'🎤':'🔇'}}
+function docToggleVideo(){const t=_docLocalStream?.getVideoTracks()[0];if(t){t.enabled=!t.enabled;document.getElementById('doc-btn-video').textContent=t.enabled?'📹':'📷'}}
+
+async function endDoctorVideo(roomCode){
+  if(_docPc){_docPc.close();_docPc=null}
+  if(_docLocalStream){_docLocalStream.getTracks().forEach(t=>t.stop());_docLocalStream=null}
+  if(_docSignalInterval){clearInterval(_docSignalInterval);_docSignalInterval=null}
+  const ov=document.getElementById('doc-video-overlay');if(ov)ov.remove();
+  try{await api('/api/telehealth/rooms/'+roomCode+'/end',{method:'POST'})}catch(e){}
+  loadActiveRooms();
+}
+
+async function endDoctorRoom(code){if(!confirm('End this video room?'))return;try{await api('/api/telehealth/rooms/'+code+'/end',{method:'POST'});loadActiveRooms()}catch(e){alert(e.message)}}
+
+// ═══════════════════════════════════════════════════════════════
+// DOCTOR AVAILABILITY
+// ═══════════════════════════════════════════════════════════════
+const DAY_NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+let _availRows=[
+  {dayOfWeek:1,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true},
+  {dayOfWeek:1,startTime:'14:00',endTime:'17:00',slotDuration:30,active:true},
+  {dayOfWeek:2,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true},
+  {dayOfWeek:3,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true},
+  {dayOfWeek:4,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true},
+  {dayOfWeek:4,startTime:'14:00',endTime:'17:00',slotDuration:30,active:true},
+  {dayOfWeek:5,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true},
+];
+
+async function renderAvailabilityPanel(){
+  try{
+    const r=await api('/api/schedule/availability');
+    if(r.ok&&r.availability&&r.availability.length){
+      _availRows=r.availability.map(a=>({id:a.id,dayOfWeek:a.day_of_week,startTime:a.start_time,endTime:a.end_time,slotDuration:a.slot_duration,active:!!a.active}));
+    }
+  }catch(e){}
+  renderAvailRows();
+}
+
+function renderAvailRows(){
+  const el=document.getElementById('avail-rows');
+  el.innerHTML=_availRows.map((r,i)=>`
+    <div style="display:grid;grid-template-columns:100px 1fr 1fr 80px 1fr;gap:8px;align-items:center;margin-bottom:6px">
+      <select onchange="_availRows[${i}].dayOfWeek=+this.value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+        ${DAY_NAMES.map((d,j)=>`<option value="${j}" ${j===r.dayOfWeek?'selected':''}>${d}</option>`).join('')}
+      </select>
+      <input type="time" value="${r.startTime}" onchange="_availRows[${i}].startTime=this.value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+      <input type="time" value="${r.endTime}" onchange="_availRows[${i}].endTime=this.value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+      <input type="number" value="${r.slotDuration}" min="10" max="120" onchange="_availRows[${i}].slotDuration=+this.value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="_availRows.splice(${i},1);renderAvailRows()" style="color:var(--red)">✕</button>
+      </div>
+    </div>
+  `).join('')+
+  `<button class="btn btn-ghost btn-sm" onclick="_availRows.push({dayOfWeek:1,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true});renderAvailRows()">+ Add Time Block</button>`;
+}
+
+async function saveAvailability(){
+  try{
+    await api('/api/schedule/availability',{method:'PUT',body:JSON.stringify({slots:_availRows.filter(r=>r.active)})});
+    alert('✅ Schedule saved! Patients can now book during these times.');
+  }catch(e){alert(e.message)}
 }
 </script>
 
