@@ -77,6 +77,9 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
 /* ═══ LAYOUT ═══ */
 .app-body{display:flex;flex:1;overflow:hidden;}
 .sidebar{width:248px;background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;transition:all .35s ease;position:relative;overflow:hidden;}
+.sidebar-scroll{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;}
+.sidebar-scroll::-webkit-scrollbar{width:4px;}
+.sidebar-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
 .sidebar::after{content:'';position:absolute;top:0;right:0;width:1px;height:100%;background:linear-gradient(180deg,var(--blue) 0%,transparent 50%,var(--blue) 100%);opacity:.1;pointer-events:none;}
 .sidebar-section{padding:22px 18px 8px;font-size:9px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--text-dim);}
 .nav-item{display:flex;align-items:center;gap:11px;padding:11px 16px;margin:2px 12px;border-radius:11px;color:var(--text-muted);cursor:pointer;font-size:12.5px;font-weight:500;border:none;background:transparent;width:calc(100% - 24px);text-align:left;transition:all .25s cubic-bezier(.4,0,.2,1);position:relative;}
@@ -91,9 +94,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
 .sb-group-body.collapsed{max-height:0;padding:0;}
 .sb-chevron{transition:transform .2s;display:inline-block;}
 .sb-chevron.open{transform:rotate(90deg);}
-.sidebar{overflow-y:auto;overflow-x:hidden;}
-.sidebar::-webkit-scrollbar{width:4px;}
-.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
 .billing-stat-card{padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;}
 .billing-stat-card .label{font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:600;}
 .billing-stat-card .value{font-size:22px;font-weight:800;color:var(--text);}
@@ -101,7 +102,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
 .report-chart{padding:20px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;}
 .settings-section{padding:20px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;}
 .settings-section h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text);}
-.sidebar-bottom{margin-top:auto;border-top:1px solid var(--sidebar-border);padding:18px;}
+.sidebar-bottom{border-top:1px solid var(--sidebar-border);padding:18px;flex-shrink:0;}
 .status-row{display:flex;align-items:center;gap:8px;padding:6px 4px;margin-bottom:12px;}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(72,199,116,.4)}50%{opacity:.7;box-shadow:0 0 0 8px rgba(72,199,116,0)}}
@@ -442,6 +443,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
         <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-size:16px;">🧬</div>
         <div><div style="font-weight:800;font-size:13px;color:var(--text);">OncoConnect</div><div style="font-size:9px;color:var(--text-dim);font-family:var(--mono);">SOFTWARE</div></div>
       </div>
+      <div class="sidebar-scroll">
       <button class="nav-item" onclick="openPatientSearch()"><span class="ni">🔍</span>Search patients <span style="margin-left:auto;font-size:10px;opacity:.6;font-family:var(--mono);">Ctrl K</span></button>
 
       <div class="sidebar-section sb-group-header" onclick="toggleSbGroup(this)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:14px;">
@@ -503,6 +505,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
         <div style="font-size:10px;color:var(--text-dim);margin-bottom:5px;display:flex;justify-content:space-between;"><span>Storage</span><span id="storage-pct">0%</span></div>
         <div class="storage-bar-wrap"><div class="storage-bar-fill" id="storage-bar"></div></div>
       </div>
+      </div><!-- close sidebar-scroll -->
       <div style="border-top:1px solid var(--border);padding:10px 14px 4px;">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Switch Portal</div>
         <a href="/patient.html" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;color:var(--text-muted);text-decoration:none;font-size:11.5px;transition:all .15s;border:1px solid transparent;" onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'"><span>📱</span>Patient App</a>
