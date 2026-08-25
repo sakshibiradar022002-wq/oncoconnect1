@@ -197,15 +197,47 @@ backups — one without the other is useless to an attacker.
 - **Doctor: protocol templates** — Stupp, TMZ maintenance, PCV, bevacizumab,
   and a supportive-care bundle applied to the med list in one click from the
   patient record header (dose review still required — mg/m² needs BSA).
+- **Doctor: Clinical Decision Support** — 18 seeded drug interactions for
+  neuro-oncology, patient allergy management with cross-reactivity detection,
+  dosage validation for 8 common drugs (TMZ, bevacizumab, carboplatin, etc.).
+- **Doctor: E-Prescribing** — full prescription lifecycle with automatic
+  allergy/interaction safety checks, refill management, prescription labels.
+- **Doctor: Telehealth** — WebRTC video rooms with one-click join, signaling,
+  and call management.
+- **Doctor: Availability scheduling** — weekly time blocks that patients
+  can book directly from the patient app.
+- **Patient: self-scheduling** — browse available slots, book appointments,
+  cancel, and view upcoming visits.
 - **Patient: medication reminders** — daily times with browser notifications
   while the app is open (synced across the patient's devices).
+- **Patient: prescription viewer** — see active prescriptions, request refills.
 - **Patient: education library** — diagnosis, TMZ, radiotherapy, red-flag
   symptoms, nutrition, fatigue, and caregiver guidance.
 
-## Email (Gmail)
+## Email Setup (Recommended: Resend)
 
-The server sends registration verification codes and appointment reminders
-itself once two env vars are set:
+The server sends **registration OTP codes**, appointment reminders, and
+password change codes. Three providers are supported, in priority order:
+
+### Option 1: Resend (RECOMMENDED — works on Vercel/serverless)
+
+Free at https://resend.com — 100 emails/day, 3,000/month.
+
+```
+RESEND_API_KEY=re_your_key_here
+EMAIL_FROM="OncoConnect <onboarding@resend.dev>"
+```
+
+**Quick setup:**
+1. Sign up at https://resend.com (free, no credit card)
+2. Go to API Keys → Create API Key → copy the `re_...` key
+3. Add the two env vars above to your Vercel/host settings
+4. Redeploy — done!
+
+For production, verify your own domain in Resend to send from your address.
+See **EMAIL_SETUP_RESEND.md** for detailed instructions.
+
+### Option 2: Gmail App Password
 
 ```
 GMAIL_USER=you@gmail.com
@@ -213,13 +245,27 @@ GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
 ```
 
 The app password comes from Google Account → Security → 2-Step Verification →
-App passwords (normal Gmail passwords will not work). Any other SMTP provider
-works via `SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS/SMTP_FROM`.
+App passwords (normal Gmail passwords will not work).
 
-Check it from the app: Data & Backup → Email Setup shows a live status line
-(`/api/email/status?verify=1` runs a real SMTP handshake). With no email
-configured the app falls back to EmailJS (browser-side, keys in the same
-panel) and finally to dev mode, which shows the verification code on screen.
+⚠️ Many serverless hosts (Vercel, Netlify) **block outbound SMTP** —
+use Resend on those platforms.
+
+### Option 3: Generic SMTP
+
+```
+SMTP_HOST=smtp.yourprovider.com
+SMTP_PORT=587
+SMTP_USER=your_user
+SMTP_PASS=your_password
+SMTP_FROM=OncoConnect <no-reply@yourdomain.com>
+```
+
+### Dev Mode (no email configured)
+
+When none of the above are set, the app falls back to **dev mode**:
+- Registration OTP is **shown on screen** (no email sent)
+- Appointment reminders are logged to console
+- This lets you test the full flow without any email setup
 
 
 
