@@ -1448,6 +1448,8 @@ function showPanel(id,btn){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(btn)btn.classList.add('active');
   document.body.classList.remove('nav-open');
+  if(id==='overview')refreshOverview();
+  if(id==='patients')renderPatList();
   if(id==='calendars')populateCalSel();
   if(id==='messages')renderChatConvos();
   if(id==='labs'){populateLabDropdowns();refreshLabList();renderLabTaskQueue();}
