@@ -2558,7 +2558,13 @@ function _renderLetterheadHTML(){
 }
 
 function _openReport(title,bodyHtml){
-  const w=window.open('','','width=820,height=900');
+  let w;
+  try{w=window.open('about:blank','_blank','width=820,height=900');}catch(e){}
+  if(!w||w.closed||typeof w.document==='undefined'){
+    // Popup blocked — fall back to printing the current page
+    alert('Popup blocked. Please allow popups for this site, or use Ctrl+P to print.');
+    return null;
+  }
   w.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>${_REPORT_CSS}</style></head><body>
   <div id="__rpt-body">${bodyHtml}</div>
   <script>
@@ -2577,9 +2583,10 @@ function _openReport(title,bodyHtml){
   <\/script></body></html>`);
   w.document.close();
   return w;
-}function printPatientSummary(){
-  if(!selectedMRN)return;
-  const p=LS.get('pat_'+selectedMRN);if(!p)return;
+}
+function printPatientSummary(){
+  if(!selectedMRN){alert('Open a patient record first.');return;}
+  const p=LS.get('pat_'+selectedMRN);if(!p){alert('Patient not found.');return;}
   
   // Gather data
   const am=(p.meds||[]).filter(m=>m.status==='Active');
@@ -2959,7 +2966,7 @@ function _openReport(title,bodyHtml){
   </div>`;
   
   const w=_openReport('Clinical Report — '+p.name,html);
-  setTimeout(()=>w.print(),500);
+  if(w)setTimeout(()=>{try{w.print();}catch(e){}},500);
 }
 
 function downloadPrescription(){
@@ -3101,7 +3108,7 @@ function downloadPrescription(){
   </div>`;
   
   const w=_openReport('Prescription — '+p.name,html);
-  setTimeout(()=>w.print(),500);
+  if(w)setTimeout(()=>{try{w.print();}catch(e){}},500);
 }
 
 function generatePDFDownload(){
@@ -3110,18 +3117,24 @@ function generatePDFDownload(){
 
 // Add print/download buttons to record topbar
 const _origOpenRecord=window.openRecord;
-window.openRecord=function(mrn){_origOpenRecord(mrn);setTimeout(()=>{
+window.openRecord=function(mrn){
+  if(typeof _origOpenRecord==='function')_origOpenRecord(mrn);
+  setTimeout(()=>{
   const topbar=document.querySelector('.record-topbar');
-  if(topbar&&!document.getElementById('btn-print-summary')){
-    const btnsDiv=topbar.querySelector('div:last-child');
-    const btnPdf=document.createElement('button');btnPdf.id='btn-pdf-download';btnPdf.className='btn btn-primary btn-sm';btnPdf.textContent='⬇ PDF';btnPdf.title='Opens print dialog — choose Save as PDF';btnPdf.onclick=printPatientSummary;
-    const btnSummary=document.createElement('button');btnSummary.id='btn-print-summary';btnSummary.className='btn btn-ghost btn-sm';btnSummary.textContent='📄 Report';btnSummary.onclick=printPatientSummary;
-    const btnRx=document.createElement('button');btnRx.id='btn-rx-download';btnRx.className='btn btn-ghost btn-sm';btnRx.textContent='℞ Rx';btnRx.style.color='var(--blue)';btnRx.onclick=downloadPrescription;
-    btnsDiv.insertBefore(btnPdf,btnsDiv.firstChild);
-    btnsDiv.insertBefore(btnSummary,btnPdf.nextSibling);
-    btnsDiv.insertBefore(btnRx,btnSummary.nextSibling);
-  }
-},100);};
+  if(!topbar)return;
+  // Only add buttons once
+  if(document.getElementById('btn-print-summary'))return;
+  // Find the right-side button container (last div in topbar)
+  const btnsDiv=topbar.querySelector('div:last-child');
+  if(!btnsDiv)return;
+  const btnPdf=document.createElement('button');btnPdf.id='btn-pdf-download';btnPdf.className='btn btn-primary btn-sm';btnPdf.style.cssText='margin-right:4px';btnPdf.textContent='⬇ PDF';btnPdf.title='Opens print dialog — choose Save as PDF';btnPdf.onclick=printPatientSummary;
+  const btnSummary=document.createElement('button');btnSummary.id='btn-print-summary';btnSummary.className='btn btn-ghost btn-sm';btnSummary.style.cssText='margin-right:4px';btnSummary.textContent='📄 Report';btnSummary.onclick=printPatientSummary;
+  const btnRx=document.createElement('button');btnRx.id='btn-rx-download';btnRx.className='btn btn-ghost btn-sm';btnRx.style.cssText='color:var(--blue)';btnRx.textContent='℞ Rx';btnRx.onclick=downloadPrescription;
+  // Insert before the existing close button (first child)
+  btnsDiv.insertBefore(btnRx,btnsDiv.firstChild);
+  btnsDiv.insertBefore(btnSummary,btnRx);
+  btnsDiv.insertBefore(btnPdf,btnSummary);
+  },200);};
 
 // ── 2. DRUG DOSAGE CALCULATOR ──
 function calcDrugDose(){
