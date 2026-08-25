@@ -25,6 +25,7 @@ import { emailRouter } from './routes/email.js';
 import { scheduleRouter } from './routes/scheduling.js';
 import { clinicalRouter, seedDrugInteractions } from './routes/clinical-support.js';
 import { prescriptionRouter } from './routes/prescriptions.js';
+import { clinicalFeaturesRouter, seedProtocols } from './routes/clinical-features.js';
 import { telehealthRouter, startTelehealthCleanup } from './routes/telehealth.js';
 import { emailOtpRouter } from './routes/email-otp.js';
 import { initPush } from './push.js';
@@ -39,6 +40,7 @@ await initSchema();
 await initTestData(); // Auto-populate test data if using ephemeral DB
 await initPush();
 await seedDrugInteractions();
+await seedProtocols();
 startTelehealthCleanup();
 initSentry(); // Initialize error tracking (no-op if SENTRY_DSN not set)
 
@@ -136,6 +138,7 @@ app.use('/api/email', emailRouter); // has its own per-route limiters
 app.use('/api/schedule', apiLimiter, scheduleRouter);
 app.use('/api/cds', apiLimiter, clinicalRouter);
 app.use('/api/rx', apiLimiter, prescriptionRouter);
+app.use('/api/features', apiLimiter, clinicalFeaturesRouter);
 app.use('/api/telehealth', apiLimiter, telehealthRouter);
 app.use('/api/auth/otp', authLimiter, emailOtpRouter);
 
