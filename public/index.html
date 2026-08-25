@@ -384,7 +384,33 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
           <div id="rg-pass-bar" style="height:4px;border-radius:2px;background:var(--border2);margin-top:6px;overflow:hidden;"><div id="rg-pass-fill" style="height:100%;width:0%;border-radius:2px;transition:all .3s;"></div></div>
           <div id="rg-pass-label" style="font-size:11px;color:var(--text-dim);margin-top:3px;"></div>
         </div>
-        <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="createAccount()">Create Account →</button>
+        <!-- EMAIL VERIFICATION -->
+        <div id="rg-verify-section" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">📧</span>
+            <div style="font-weight:700;font-size:13px;color:var(--text)">Email Verification</div>
+            <span id="rg-verify-badge" style="margin-left:auto;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px;background:rgba(245,158,11,.1);color:var(--orange)">Required</span>
+          </div>
+          <div id="rg-verify-send">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">We'll send a 6-digit code to verify your email address.</div>
+            <button class="btn btn-ghost btn-full" id="btn-send-otp" onclick="sendRegOtp()">📧 Send Verification Code</button>
+          </div>
+          <div id="rg-verify-input" style="display:none">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Enter the 6-digit code sent to your email:</div>
+            <div style="display:flex;gap:8px">
+              <input id="rg-otp" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" style="flex:1;text-align:center;letter-spacing:4px;font-size:18px;font-weight:700;font-family:var(--mono);padding:10px;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;color:var(--text);outline:none">
+              <button class="btn btn-primary" onclick="verifyRegOtp()" style="padding:10px 16px">Verify</button>
+            </div>
+            <div id="rg-otp-dev" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.15);border-radius:8px;font-size:12px;color:var(--blue)"></div>
+            <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">Didn't receive it? <a href="javascript:void(0)" onclick="sendRegOtp()" style="color:var(--blue)">Resend</a></div>
+          </div>
+          <div id="rg-verify-done" style="display:none;text-align:center;padding:8px 0">
+            <div style="font-size:20px;margin-bottom:4px">✅</div>
+            <div style="font-size:13px;font-weight:700;color:var(--green)">Email Verified!</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-create-account" style="margin-top:8px" onclick="createAccount()" disabled>Create Account →</button>
+        <div id="rg-create-hint" style="font-size:11px;color:var(--text-dim);text-align:center;margin-top:6px">Verify your email above first</div>
       </div>
     </div>
     <div style="margin-top:16px;text-align:center;font-size:11px;color:var(--text-dim);">🔒 Data stored locally on this device</div>
@@ -1004,7 +1030,22 @@ function flash(msg){const d=document.createElement('div');d.style.cssText='posit
 async function pushToServer(changes){try{await api('/sync',{method:'PUT',body:JSON.stringify({changes})})}catch(e){console.warn('[sync] push failed:',e.message)}}
 
 // ── Auth ──
-function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('a-login').style.display=tab==='login'?'block':'none';document.getElementById('a-register').style.display=tab==='register'?'block':'none';}
+function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('a-login').style.display=tab==='login'?'block':'none';document.getElementById('a-register').style.display=tab==='register'?'block':'none';
+  // Reset OTP state when switching to register
+  if(tab==='register'){
+    _regVerificationToken=null;
+    document.getElementById('rg-verify-send').style.display='block';
+    document.getElementById('rg-verify-input').style.display='none';
+    document.getElementById('rg-verify-done').style.display='none';
+    document.getElementById('rg-otp-dev').style.display='none';
+    document.getElementById('btn-send-otp').disabled=false;
+    document.getElementById('btn-send-otp').textContent='📧 Send Verification Code';
+    document.getElementById('btn-create-account').disabled=true;
+    document.getElementById('rg-create-hint').textContent='Verify your email above first';
+    const badge=document.getElementById('rg-verify-badge');
+    badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--orange)';
+    document.getElementById('rg-otp').value='';
+  }}
 function showMsg(id,msg,type='err'){const el=document.getElementById(id);if(!el)return;el.innerHTML=msg;el.className='msg '+type;el.style.display='block';if(type==='err')setTimeout(()=>{if(el)el.style.display='none';},5000);}
 function clearRegMsg(){['reg-msg','reg-ok'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
 
@@ -1031,20 +1072,87 @@ function checkPassStrength(pass){
   const l=levels[Math.min(score,5)];fill.style.width=l.w;fill.style.background=l.col;label.textContent=l.txt;label.style.color=l.col;
 }
 
-// Account creation — direct, no OTP verification step
+// ═══ EMAIL OTP VERIFICATION ═══
+let _regVerificationToken=null;
+
+async function sendRegOtp(){
+  const email=v('rg-email').toLowerCase().trim();
+  if(!email||!email.includes('@')){showMsg('reg-msg','Enter your email address first.');return;}
+  const btn=document.getElementById('btn-send-otp');
+  btn.disabled=true;btn.textContent='Sending…';
+  try{
+    const r=await api('/auth/otp/send',{method:'POST',body:JSON.stringify({email,purpose:'register'})});
+    document.getElementById('rg-verify-send').style.display='none';
+    document.getElementById('rg-verify-input').style.display='block';
+    // Show dev OTP if returned
+    if(r.otp){
+      const devEl=document.getElementById('rg-otp-dev');
+      devEl.style.display='block';
+      devEl.innerHTML=`🔑 <strong>Dev Mode:</strong> Your code is <span style="font-weight:800;font-family:var(--mono);font-size:16px;letter-spacing:3px">${r.otp}</span>`;
+    }
+    document.getElementById('rg-otp').focus();
+  }catch(e){
+    showMsg('reg-msg',e.message);
+    btn.disabled=false;btn.textContent='📧 Send Verification Code';
+  }
+}
+
+async function verifyRegOtp(){
+  const email=v('rg-email').toLowerCase().trim();
+  const code=v('rg-otp');
+  if(!code||code.length!==6){showMsg('reg-msg','Enter the 6-digit code.');return;}
+  try{
+    const r=await api('/auth/otp/verify',{method:'POST',body:JSON.stringify({email,code,purpose:'register'})});
+    if(r.ok&&r.verificationToken){
+      _regVerificationToken=r.verificationToken;
+      document.getElementById('rg-verify-input').style.display='none';
+      document.getElementById('rg-verify-done').style.display='block';
+      const badge=document.getElementById('rg-verify-badge');
+      badge.textContent='Verified ✓';badge.style.background='rgba(16,185,129,.1)';badge.style.color='var(--green)';
+      // Enable create account button
+      document.getElementById('btn-create-account').disabled=false;
+      document.getElementById('rg-create-hint').textContent='';
+      document.getElementById('btn-create-account').style.opacity='1';
+    }
+  }catch(e){
+    showMsg('reg-msg',e.message);
+    if(e.message&&e.message.includes('expired')){
+      document.getElementById('rg-verify-input').style.display='none';
+      document.getElementById('rg-verify-send').style.display='block';
+      document.getElementById('btn-send-otp').disabled=false;
+      document.getElementById('btn-send-otp').textContent='📧 Send Verification Code';
+    }
+  }
+}
+
+// Account creation — requires email verification first
 async function createAccount(){
   const name=v('rg-name').trim(),email=v('rg-email').toLowerCase().trim(),pass=v('rg-pass');
   if(!name){showMsg('reg-msg','Name is required.');return;}
   if(!email||!email.includes('@')){showMsg('reg-msg','Enter a valid email.');return;}
   if(pass.length<10||!/[A-Za-z]/.test(pass)||!/\d/.test(pass)){showMsg('reg-msg','Password: 10+ chars, letter + number required.');return;}
+  if(!_regVerificationToken){showMsg('reg-msg','Please verify your email address first.');return;}
   // Check server for existing email (also keep local check for offline)
   if(LS.get('doc_email_'+email.replace(/[^a-z0-9]/g,'_'))){showMsg('reg-msg','Account exists locally. <a href="#" onclick="switchATab(\'login\',document.querySelector(\'.ts-btn\'));return false;" style="color:var(--blue);">Sign in?</a>');return;}
   const spec=v('rg-spec'),hosp=v('rg-hosp').trim();
   showMsg('reg-msg','Creating account…','ok');
   try{
-    const r=await api('/auth/register',{method:'POST',body:JSON.stringify({name,email,password:pass,specialty:spec,institution:hosp})});
+    const r=await api('/auth/register',{method:'POST',body:JSON.stringify({name,email,password:pass,specialty:spec,institution:hosp,emailVerificationToken:_regVerificationToken})});
     showMsg('reg-ok',r.message||'Account created! Redirecting to sign in…','ok');
+    _regVerificationToken=null;
   }catch(e){
+    if(e.message&&e.message.includes('EMAIL_NOT_VERIFIED')){
+      showMsg('reg-msg','Email verification expired. Please verify again.');
+      _regVerificationToken=null;
+      document.getElementById('rg-verify-done').style.display='none';
+      document.getElementById('rg-verify-send').style.display='block';
+      document.getElementById('btn-send-otp').disabled=false;
+      document.getElementById('btn-send-otp').textContent='📧 Send Verification Code';
+      document.getElementById('btn-create-account').disabled=true;
+      const badge=document.getElementById('rg-verify-badge');
+      badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--orange)';
+      return;
+    }
     // Server unreachable — save locally for offline mode
     showMsg('reg-ok','Account created (offline). Redirecting to sign in…','ok');
   }

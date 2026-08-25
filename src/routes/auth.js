@@ -13,6 +13,7 @@ import {
 } from '../middleware/auth.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { config } from '../config.js';
+import { verifyRegistrationToken } from './email-otp.js';
 
 export const authRouter = Router();
 
@@ -66,17 +67,21 @@ const registerSchema = z.object({
   name: z.string().min(2).max(120),
   email: z.string().email().toLowerCase(),
   // Password policy: ≥10 chars with at least one letter and one digit.
-  // Clinician accounts guard PHI, so we reject trivially weak passwords here
-  // as well as in the browser.
   password: z.string().min(10).max(200)
     .refine(p => /[A-Za-z]/.test(p) && /\d/.test(p),
       { message: 'Password must be at least 10 characters and include a letter and a number' }),
   specialty: z.string().max(120).optional(),
   institution: z.string().max(200).optional(),
+  emailVerificationToken: z.string().min(1), // required: proves email was verified
 });
 
 authRouter.post('/register', validate(registerSchema), asyncHandler(async (req, res) => {
-  const { name, email, password, specialty, institution } = req.valid;
+  const { name, email, password, specialty, institution, emailVerificationToken } = req.valid;
+
+  // Verify the email OTP token (one-time use, deleted on success)
+  if (!verifyRegistrationToken(email, emailVerificationToken)) {
+    return res.status(400).json({ error: 'Email verification required. Please verify your email first.', code: 'EMAIL_NOT_VERIFIED' });
+  }
 
   const existing = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (existing) return res.status(409).json({ error: 'An account already exists for this email' });
