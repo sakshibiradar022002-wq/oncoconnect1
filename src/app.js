@@ -62,7 +62,7 @@ app.use(helmet({
       imgSrc: ["'self'", 'data:', 'blob:'],
       // api.emailjs.com: the EmailJS fallback sender XHRs there — without
       // this entry the browser silently blocks every EmailJS send.
-      connectSrc: ["'self'", 'https://api.emailjs.com', 'https://api.anthropic.com', 'https://api.qrserver.com'],
+      connectSrc: ["'self'", 'https://api.emailjs.com', 'https://api.qrserver.com'],
       manifestSrc: ["'self'"],
       workerSrc: ["'self'"],
     },

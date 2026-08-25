@@ -873,10 +873,14 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
     <!-- Credentials display (shown after creation) -->
     <div id="ap-creds" style="display:none;margin-top:16px;">
       <div class="cred-box">
-        <div class="cred-label">✅ Patient Login Credentials</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="cred-label" style="margin-bottom:0">✅ Patient Login Credentials</div>
+          <button onclick="closeOverlay('add-pat-modal')" style="background:none;border:1.5px solid var(--border);border-radius:8px;color:var(--text-muted);width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">✕</button>
+        </div>
         <div class="cred-row"><span class="cred-key">MRN</span><span class="cred-val" id="ap-creds-mrn"></span></div>
         <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val" id="ap-creds-pass" style="word-break:break-all;"></span></div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">⚠ Copy these now — password cannot be viewed again after closing.</div>
+        <button class="btn btn-primary btn-full" style="margin-top:14px" onclick="closeOverlay('add-pat-modal')">Done — Close</button>
       </div>
     </div>
   </div>
@@ -937,10 +941,7 @@ const LS={
 };
 
 let currentDoc=null, selectedMRN=null, selectedChatMRN=null;
-let rLabs=[], rMeds=[], rAllergies=[];
-let _sessionApiKey=null;
-
-// ═══ UNDO/REDO SYSTEM ═══
+let rLabs=[], rMeds=[], rAllergies=[];// ═══ UNDO/REDO SYSTEM ═══
 const _undoStack={};const _redoStack={};const MAX_UNDO=30;
 function pushUndo(mrn){
   if(!mrn)return;
@@ -1264,7 +1265,7 @@ async function doLogin(){
 function doLogout(){
   // Revoke session server-side
   api('/auth/logout',{method:'POST'}).catch(()=>{});
-  currentDoc=null;selectedMRN=null;_sessionApiKey=null;
+  currentDoc=null;selectedMRN=null;
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('app').style.display='none';
 }
@@ -1689,13 +1690,6 @@ function buildRecordTabs(p){
           <textarea id="r-clin-notes" rows="4" placeholder="Assessment, plan, observations…" style="width:100%;padding:9px 11px;background:var(--surface2);border:1.5px solid var(--border2);border-radius:9px;color:var(--text);font-family:inherit;font-size:13px;outline:none;resize:vertical;line-height:1.6;">${esc(p.clinNotes||'')}</textarea>
         </div>
 
-        <!-- AI ANALYZER -->
-        <div class="info-card">
-          <div class="info-card-title">🤖 AI Health Risk Analyzer</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Powered by Claude · Requires API key (session-only, never stored)</div>
-          <button class="btn btn-primary btn-full" onclick="runAIAnalysis()">🧠 Run AI Analysis</button>
-          <div id="ai-results" style="margin-top:10px;font-size:12.5px;line-height:1.7;color:var(--text);display:none;"></div>
-        </div>
       </div>
     </div>
   </div>
@@ -2252,9 +2246,6 @@ async function loadPendingPasswordRequests(mrn){
 function deletePatient(){if(!confirm('DELETE this patient record? This cannot be undone.'))return;const mrn=selectedMRN;LS.del('pat_'+mrn);pushToServer({['pat_'+mrn]:null});closeRecord();refreshAll();flash('Patient deleted');}
 
 // ── AI Analysis ──
-async function promptApiKey(){if(_sessionApiKey)return true;const key=prompt('Enter Anthropic API key (sk-ant-...)\nThis key is session-only and never stored.');if(!key||!key.startsWith('sk-ant-')){alert('Invalid key format.');return false;}_sessionApiKey=key;return true;}
-async function runAIAnalysis(){if(!await promptApiKey())return;const p=LS.get('pat_'+selectedMRN);if(!p)return;const el=document.getElementById('ai-results');el.style.display='block';el.innerHTML='<em>Analyzing…</em>';try{const body={model:'claude-sonnet-4-6',max_tokens:1024,messages:[{role:'user',content:'You are a neuro-oncology clinical decision support AI. Analyze this patient data and provide risk assessment, treatment considerations, and monitoring recommendations. Be concise and clinical.\n\nPatient: '+p.name+', Age: '+p.age+', Diagnosis: '+p.diag+', Phase: '+p.phase+', ECOG: '+p.ecog+', KPS: '+p.kps+'\nMolecular: IDH1='+p.idh1+', MGMT='+p.mgmt+', 1p/19q='+p.codeletion+', TERT='+p.tert+'\nVitals: BP '+p.bp_sys+'/'+p.bp_dia+', HR '+p.hr+', BMI '+p.bmi+'\neGFR: '+p.egfr+', BSA: '+p.bsa+'\nMeds: '+(p.meds||[]).map(m=>m.name+' '+m.dose).join(', ')+'\nDisease Status: '+p.diseaseStatus+', RECIST: '+p.recist}]};const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':_sessionApiKey,'anthropic-version':'2023-06-01'},body:JSON.stringify(body)});const data=await resp.json();if(data.content&&data.content[0])el.innerHTML=data.content[0].text.replace(/\n/g,'<br>');else el.innerHTML='<span style="color:var(--red);">Error: '+esc(data.error?.message||'Unknown error')+'</span>';}catch(e){el.innerHTML='<span style="color:var(--red);">Error: '+esc(e.message)+'</span>';}}
-
 // ── FHIR ──
 function renderFHIRPatSel(){const sel=document.getElementById('fhir-pat-sel');if(!sel)return;sel.innerHTML='<option value="">— Choose —</option>'+getMyPatients().map(p=>`<option value="${p.mrn}">${esc(p.name)} (${p.mrn})</option>`).join('');}
 function exportFHIR(){const mrn=v('fhir-pat-sel');const p=LS.get('pat_'+mrn);if(!p){alert('Select a patient.');return;}const bundle={resourceType:'Bundle',type:'collection',entry:[{resource:{resourceType:'Patient',identifier:[{system:'urn:oid:oncoconnect',value:p.mrn}],name:[{family:p.name?.split(' ').pop(),given:p.name?.split(' ').slice(0,-1)}],gender:(p.gender||'unknown').toLowerCase(),birthDate:p.dob||undefined}}]};if(p.diag){bundle.entry.push({resource:{resourceType:'Condition',code:{coding:[{system:'http://hl7.org/fhir/sid/icd-10',code:p.icd10||'C71.9'}],text:p.diag}}});}(p.meds||[]).forEach(m=>{bundle.entry.push({resource:{resourceType:'MedicationRequest',medicationCodeableConcept:{text:m.name},dosageInstruction:[{text:m.dose+' '+m.route+' '+m.freq}]}});});const blob=new Blob([JSON.stringify(bundle,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FHIR_'+p.mrn+'.json';a.click();flash('FHIR bundle downloaded');}
