@@ -41,7 +41,6 @@
     "node": "24.x"
   },
   "dependencies": {
-    "@capacitor/android": "^6.2.1",
     "@libsql/client": "^0.14.0",
     "@sentry/node": "^7.108.0",
     "cookie-parser": "^1.4.7",
@@ -61,6 +60,7 @@
     "@playwright/test": "^1.62.0",
     "electron": "^33.0.0",
     "electron-builder": "^26.15.3",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "@capacitor/android": "^6.2.1"
   }
 }
