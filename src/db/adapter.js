@@ -29,18 +29,12 @@ export async function openDatabase(path) {
     return wrapLibsql(client, tursoUrl);
   }
 
-  // Serverless hosts (Vercel, Netlify, Cloudflare) have a read-only, ephemeral
-  // filesystem — a local SQLite file cannot work there. Fail with a clear,
-  // actionable message instead of a cryptic native crash.
+  // Serverless hosts (Vercel, Netlify, Cloudflare) — no persistent disk.
+  // If TURSO_DATABASE_URL is not set, fall back to in-memory sql.js so the
+  // app at least starts. Data won't persist between cold starts, but it works
+  // for testing/demo. For production, set TURSO_DATABASE_URL + TURSO_AUTH_TOKEN.
   if (process.env.VERCEL || process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    throw new Error(
-      'This is a serverless deployment (e.g. Vercel) but no TURSO_DATABASE_URL is set. ' +
-      'SQLite files cannot persist on serverless hosts — create a free Turso ' +
-      'database (https://turso.tech) and set these environment variables in your ' +
-      'host dashboard: TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, JWT_SECRET, PHI_ENCRYPTION_KEY. ' +
-      'Step-by-step: see DEPLOY_VERCEL.md in the repo. ' +
-      'Alternatively deploy to a host with a persistent disk (Render, Fly.io, Railway).'
-    );
+    console.warn('[db] No TURSO_DATABASE_URL set on serverless host — using in-memory database (data will not persist)');
   }
 
   // Try better-sqlite3 first.

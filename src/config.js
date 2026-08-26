@@ -6,9 +6,9 @@ import crypto from 'node:crypto';
 function required(name) {
   const val = process.env[name];
   if (val === undefined) {
-    console.error(`\n[FATAL] Missing required environment variable: ${name}`);
-    console.error(`Set it in your host's environment settings and restart.\n`);
-    process.exit(1);
+    const msg = 'Missing required environment variable: ' + name;
+    console.error('[FATAL] ' + msg);
+    throw new Error(msg);
   }
   return val;
 }
@@ -46,8 +46,7 @@ export const config = {
     if (k) {
       if (/^[0-9a-fA-F]{64}$/.test(k)) return k;              // exact hex key
       if (k.length >= 16) return crypto.createHash('sha256').update(k).digest('hex'); // derive
-      console.error('[FATAL] PHI_ENCRYPTION_KEY is too short — use at least 16 characters (64 hex chars recommended).');
-      process.exit(1);
+      throw new Error('PHI_ENCRYPTION_KEY is too short');
     }
     if (isProd) return required('PHI_ENCRYPTION_KEY');
     const gen = crypto.randomBytes(32).toString('hex');
