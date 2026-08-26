@@ -33,12 +33,15 @@
     "mobile:add:ios": "npx cap add ios",
     "mobile:sync": "npx cap sync",
     "mobile:open:android": "npx cap open android",
-    "mobile:open:ios": "npx cap open ios"
+    "mobile:open:ios": "npx cap open ios",
+    "mobile:build:android": "cd android && ./gradlew assembleDebug",
+    "mobile:build:release": "cd android && ./gradlew assembleRelease"
   },
   "engines": {
     "node": "24.x"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
     "@libsql/client": "^0.14.0",
     "@sentry/node": "^7.108.0",
     "cookie-parser": "^1.4.7",
@@ -53,10 +56,11 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.5.0",
-    "@capacitor/core": "^8.5.0",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
     "@playwright/test": "^1.62.0",
-    "electron": "^44.0.0",
-    "electron-builder": "^26.15.3"
+    "electron": "^33.0.0",
+    "electron-builder": "^26.15.3",
+    "typescript": "^7.0.2"
   }
 }

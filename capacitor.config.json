@@ -1,0 +1,22 @@
+{
+  "appId": "com.oncoconnect.patient",
+  "appName": "OncoConnect",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "https",
+    "url": "https://oncoconnect1.vercel.app/patient.html",
+    "cleartext": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#071210",
+      "showSpinner": true,
+      "spinnerColor": "#34d399"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#071210"
+    }
+  }
+}
