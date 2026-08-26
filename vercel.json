@@ -1,18 +1,14 @@
 {
-  "services": {
-    "web": {
-      "root": ".",
-      "buildCommand": "npm run vercel-build",
-      "entrypoint": "api/index.js"
+  "builds": [
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": {
-        "type": "service",
-        "service": "web"
-      }
+      "destination": "api/index.js"
     }
   ]
 }

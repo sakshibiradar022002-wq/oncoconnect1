@@ -25,7 +25,7 @@
     "vercel-build": "npm install --omit=optional --omit=dev"
   },
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",

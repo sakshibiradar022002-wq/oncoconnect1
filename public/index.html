@@ -538,7 +538,15 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
 
       <!-- APPOINTMENT CALENDAR VIEW -->
       <div class="panel" id="panel-appt-calendar">
-        <div class="page-header"><div><div class="page-title">Appointment Calendar</div><div class="page-sub">All upcoming appointments with reminder status</div></div></div>
+        <div class="page-header">
+          <div><div class="page-title">📅 Weekly Appointments</div><div class="page-sub">All your appointments for the current week</div></div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="btn btn-ghost btn-sm" onclick="_apptWeekOffset--;renderApptCalendar()">◀ Prev</button>
+            <button class="btn btn-ghost btn-sm" onclick="_apptWeekOffset=0;renderApptCalendar()" style="font-weight:700">Today</button>
+            <button class="btn btn-ghost btn-sm" onclick="_apptWeekOffset++;renderApptCalendar()">Next ▶</button>
+          </div>
+        </div>
+        <div id="appt-week-label" style="font-size:12px;color:var(--text-muted);margin-bottom:14px;font-weight:600;"></div>
         <div id="appt-cal-view"></div>
       </div>
 
@@ -680,7 +688,17 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
         <div class="g2">
           <div class="card">
             <div class="card-title" style="margin-bottom:12px">🎬 Start Video Call</div>
-            <div class="fg"><label>Select Patient</label><select id="th-patient"><option value="">— Select —</option></select></div>
+            <div class="fg" style="position:relative;"><label>Search Patient by MRN / Name</label>
+              <input id="th-mrn-input" placeholder="Type MRN or patient name..." autocomplete="off" oninput="searchPatientForVideo(this.value)" style="width:100%;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;color:var(--text);font-family:inherit;font-size:13px;">
+              <div id="th-search-results" style="display:none;position:absolute;left:0;right:0;z-index:100;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;margin-top:4px;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.25);"></div>
+            </div>
+            <input type="hidden" id="th-selected-mrn" value="">
+            <div id="th-selected-patient" style="display:none;padding:10px 14px;background:var(--blue-pale);border:1px solid rgba(37,99,235,.2);border-radius:10px;margin-bottom:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div><span style="font-weight:700;font-size:13px;" id="th-selected-name"></span><span style="font-size:11px;color:var(--text-muted);margin-left:6px;" id="th-selected-mrn-label"></span></div>
+                <button class="btn btn-ghost btn-sm" onclick="clearVideoPatientSelection()" style="color:var(--red);font-size:11px;">✕ Clear</button>
+              </div>
+            </div>
             <button class="btn btn-primary" onclick="startTelehealth()">📹 Start Video Room</button>
             <div id="th-room-info" style="margin-top:14px"></div>
           </div>
@@ -711,6 +729,12 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
             <button class="btn btn-ghost" onclick="_availRows.push({dayOfWeek:1,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true});renderAvailRows()">+ Add Time Block</button>
           </div>
           <div id="avail-msg" style="display:none;padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:600;margin-top:10px;"></div>
+        </div>
+        <!-- SLOT PREVIEW -->
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title" style="margin-bottom:12px">👁 Slot Preview — What Patients See</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Generated available time slots for the next 7 days based on your schedule above.</div>
+          <div id="avail-slot-preview"><div class="empty-card">Loading preview...</div></div>
         </div>
       </div>
 
@@ -3862,56 +3886,103 @@ window.renderRecordAppts=function(mrn){
   loadReminderStatus();
 };
 
-// ── APPOINTMENT CALENDAR VIEW ──
+// ── APPOINTMENT CALENDAR VIEW (Weekly) ──
+let _apptWeekOffset=0;
+
+function getWeekRange(offset){
+  const now=new Date();
+  const day=now.getDay();
+  const monday=new Date(now);monday.setDate(now.getDate()-day+(day===0?-6:1)+offset*7);
+  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
+  return{monday,sunday};
+}
+
 function renderApptCalendar(){
   const el=document.getElementById('appt-cal-view');
+  const labelEl=document.getElementById('appt-week-label');
   if(!el)return;
-  const pats=getMyPatients();
-  const now=new Date();
-  let allAppts=[];
-  pats.forEach(p=>{
-    const appts=(LS.get('appts_'+p.mrn)||[]);
-    appts.forEach(a=>{
-      if(a.date&&a.status!=='Cancelled'&&a.status!=='Completed'){
-        allAppts.push({...a,mrn:p.mrn,patName:p.name,patDiag:p.diag});
-      }
+  const{monday,sunday}=getWeekRange(_apptWeekOffset);
+  const fmtShort=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const fmtFull=d=>d.toISOString().slice(0,10);
+  if(labelEl)labelEl.textContent=`${fmtShort(monday)} — ${fmtShort(sunday)}, ${sunday.getFullYear()}`;
+  const dateFrom=fmtFull(monday);
+  const dateTo=fmtFull(sunday);
+  // Show loading
+  el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-muted);"><div style="font-size:20px;margin-bottom:8px;">⏳</div>Loading appointments...</div>';
+  // Fetch from server API
+  api('/schedule/appointments?from='+dateFrom+'&to='+dateTo).then(r=>{
+    const appts=r.ok?(r.appointments||[]):[];
+    // Merge with local LS appointments
+    const pats=getMyPatients();
+    pats.forEach(p=>{
+      (LS.get('appts_'+p.mrn)||[]).forEach(a=>{
+        if(a.date&&a.date>=dateFrom&&a.date<=dateTo&&a.status!=='Cancelled'&&a.status!=='Completed'){
+          if(!appts.find(x=>x.id===a.id))appts.push({...a,patient_mrn:p.mrn,patient_name:p.name,diagnosis:p.diag});
+        }
+      });
     });
+    renderWeeklyView(el,appts,monday,sunday);
+  }).catch(()=>{
+    // Fallback to local only
+    const appts=[];
+    const pats=getMyPatients();
+    pats.forEach(p=>{
+      (LS.get('appts_'+p.mrn)||[]).forEach(a=>{
+        if(a.date&&a.date>=dateFrom&&a.date<=dateTo&&a.status!=='Cancelled'&&a.status!=='Completed'){
+          appts.push({...a,patient_mrn:p.mrn,patient_name:p.name,diagnosis:p.diag});
+        }
+      });
+    });
+    renderWeeklyView(el,appts,monday,sunday);
   });
-  allAppts.sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const upcoming=allAppts.filter(a=>new Date(a.date)>=new Date(now.toISOString().slice(0,10)));
-  const past=allAppts.filter(a=>new Date(a.date)<new Date(now.toISOString().slice(0,10)));
-  let html=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-    <div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">📅 Upcoming (${upcoming.length})</div>`;
-  if(!upcoming.length)html+='<div class="card" style="padding:20px;text-align:center;color:var(--text-dim);">No upcoming appointments.</div>';
-  upcoming.slice(0,10).forEach(a=>{
-    const apptDate=new Date(a.date+(a.time?'T'+a.time:'T09:00:00'));
-    const hoursUntil=(apptDate-now)/(1000*60*60);
-    const col=hoursUntil<=1?'var(--red)':hoursUntil<=24?'var(--orange)':hoursUntil<=48?'var(--blue)':'var(--green)';
-    const statusCol={Confirmed:'var(--green)',Requested:'var(--orange)',Scheduled:'var(--blue)'}[a.status]||'var(--text-dim)';
-    html+=`<div class="card" style="border-left:3px solid ${col};margin-bottom:8px;padding:14px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div style="font-weight:700;font-size:13px;">${a.patName}</div>
-        <span style="font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;background:${statusCol}22;color:${statusCol};">${a.status}</span>
+}
+
+function renderWeeklyView(el,appts,monday,sunday){
+  const DAY_SHORT=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const DAY_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const today=new Date().toISOString().slice(0,10);
+  // Build day columns
+  let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;">';
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const dateStr=d.toISOString().slice(0,10);
+    const isToday=dateStr===today;
+    const dayAppts=appts.filter(a=>a.date===dateStr).sort((a,b)=>(a.start_time||a.time||'').localeCompare(b.start_time||b.time||''));
+    html+=`<div style="min-height:120px;border:1px solid ${isToday?'var(--blue)':'var(--border)'};border-radius:10px;overflow:hidden;background:${isToday?'var(--blue-pale)':'var(--surface)'};">
+      <div style="padding:8px 10px;text-align:center;border-bottom:1px solid var(--border);background:${isToday?'rgba(37,99,235,.1)':'var(--surface2)'};">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:${isToday?'var(--blue)':'var(--text-muted)'};">${DAY_SHORT[i]}</div>
+        <div style="font-size:16px;font-weight:800;color:${isToday?'var(--blue)':'var(--text)'};">${d.getDate()}</div>
       </div>
-      <div style="font-size:12px;color:var(--text-muted);">${a.date} ${a.time||''} · ${a.type||'Follow-up'}</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">${a.patDiag||''}</div>
-      <div style="display:flex;gap:6px;margin-top:8px;font-size:10px;">
-        ${hoursUntil<=168?`<span style="color:var(--blue);">⏰ in ${Math.round(hoursUntil)}h</span>`:''}
-        <span style="color:var(--text-dim);">MRN: ${a.mrn}</span>
-      </div>
-    </div>`;
-  });
-  html+='</div><div>';
-  html+=`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">📋 Past (${past.length})</div>`;
-  if(!past.length)html+='<div class="card" style="padding:20px;text-align:center;color:var(--text-dim);">No past appointments.</div>';
-  past.slice(0,5).forEach(a=>{
-    html+=`<div class="card" style="opacity:.6;margin-bottom:6px;padding:10px;">
-      <div style="font-weight:600;font-size:12px;">${a.patName} — ${a.date}</div>
-      <div style="font-size:11px;color:var(--text-dim);">${a.type||'Follow-up'} · ${a.status}</div>
-    </div>`;
-  });
-  html+='</div></div>';
+      <div style="padding:6px;max-height:300px;overflow-y:auto;">`;
+    if(!dayAppts.length){
+      html+=`<div style="text-align:center;padding:16px 4px;font-size:10px;color:var(--text-dim);">No appointments</div>`;
+    } else {
+      dayAppts.forEach(a=>{
+        const time=a.start_time||a.time||'';
+        const status=a.status||'Scheduled';
+        const statusCol={confirmed:'var(--green)',Confirmed:'var(--green)',pending:'var(--orange)',Requested:'var(--orange)',Scheduled:'var(--blue)',completed:'var(--text-dim)','no-show':'var(--red)',cancelled:'var(--red)'}[status]||'var(--text-dim)';
+        const name=a.patient_name||a.patName||a.patient_mrn||'Unknown';
+        const type=a.type||'Follow-up';
+        html+=`<div style="padding:6px 8px;margin-bottom:4px;border-radius:8px;border-left:3px solid ${statusCol};background:var(--surface2);font-size:11px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;">${time}</span>
+            <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:${statusCol}22;color:${statusCol};font-weight:700;">${status}</span>
+          </div>
+          <div style="font-weight:600;margin-top:2px;">${name}</div>
+          <div style="color:var(--text-dim);font-size:10px;">${type}</div>
+        </div>`;
+      });
+    }
+    html+='</div></div>';
+  }
+  html+='</div>';
+  // Summary below calendar
+  html+=`<div style="margin-top:14px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:flex;gap:20px;font-size:12px;">
+    <div><span style="font-weight:700;">${appts.length}</span> <span style="color:var(--text-muted);">appointments this week</span></div>
+    <div><span style="font-weight:700;color:var(--green);">${appts.filter(a=>['confirmed','Confirmed','Scheduled'].includes(a.status)).length}</span> <span style="color:var(--text-muted);">confirmed</span></div>
+    <div><span style="font-weight:700;color:var(--orange);">${appts.filter(a=>['pending','Requested'].includes(a.status)).length}</span> <span style="color:var(--text-muted);">pending</span></div>
+    <div><span style="font-weight:700;color:var(--red);">${appts.filter(a=>['cancelled','no-show'].includes(a.status)).length}</span> <span style="color:var(--text-muted);">cancelled/no-show</span></div>
+  </div>`;
   el.innerHTML=html;
 }
 
@@ -4975,12 +5046,79 @@ async function addPatientInsurance(){
 // ═══════════════════════════════════════════════════════════════
 // TELEMEDICINE / VIDEO
 // ═══════════════════════════════════════════════════════════════
+let _thVideoSearchTimeout=null;
+
 function renderTelehealthPanel(){
-  const sel=document.getElementById('th-patient');
-  const keys=LS.keys('pat_');
-  sel.innerHTML='<option value="">— Select —</option>'+keys.map(k=>{const p=LS.get(k);return p?`<option value="${p.mrn}">${p.name} (${p.mrn})</option>`:''}).join('');
+  document.getElementById('th-mrn-input').value='';
+  document.getElementById('th-selected-mrn').value='';
+  document.getElementById('th-selected-patient').style.display='none';
+  document.getElementById('th-search-results').style.display='none';
   loadActiveRooms();
 }
+
+function searchPatientForVideo(query){
+  const resultsEl=document.getElementById('th-search-results');
+  if(!query||query.length<1){resultsEl.style.display='none';return}
+  clearTimeout(_thVideoSearchTimeout);
+  _thVideoSearchTimeout=setTimeout(async()=>{
+    try{
+      // Search server first
+      const r=await api('/auth/search-patients?q='+encodeURIComponent(query));
+      const patients=(r.ok&&r.patients)?r.patients:[];
+      // Also search local storage
+      const localPats=getMyPatients().filter(p=>{
+        const q=query.toLowerCase();
+        return(p.mrn&&p.mrn.toLowerCase().includes(q))||(p.name&&p.name.toLowerCase().includes(q));
+      });
+      // Merge, dedup by MRN
+      const seen=new Set();const all=[];
+      [...localPats,...patients].forEach(p=>{if(p.mrn&&!seen.has(p.mrn)){seen.add(p.mrn);all.push(p)}});
+      if(!all.length){resultsEl.innerHTML='<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-dim);">No patients found</div>';resultsEl.style.display='block';return}
+      resultsEl.innerHTML=all.slice(0,10).map(p=>
+        `<div onclick="selectVideoPatient('${(p.mrn||'').replace(/'/g,"\\'")}','${(p.name||'').replace(/'/g,"\\'")}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+          <div><div style="font-weight:700;font-size:13px;">${p.name||'Unknown'}</div><div style="font-size:11px;color:var(--text-muted);">MRN: ${p.mrn}</div></div>
+          <div style="font-size:11px;color:var(--blue);">Select →</div>
+        </div>`
+      ).join('');
+      resultsEl.style.display='block';
+    }catch(e){
+      // Fallback to local search only
+      const localPats=getMyPatients().filter(p=>{
+        const q=query.toLowerCase();
+        return(p.mrn&&p.mrn.toLowerCase().includes(q))||(p.name&&p.name.toLowerCase().includes(q));
+      });
+      if(!localPats.length){resultsEl.innerHTML='<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-dim);">No patients found</div>';resultsEl.style.display='block';return}
+      resultsEl.innerHTML=localPats.slice(0,10).map(p=>
+        `<div onclick="selectVideoPatient('${(p.mrn||'').replace(/'/g,"\\'")}','${(p.name||'').replace(/'/g,"\\'")}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+          <div><div style="font-weight:700;font-size:13px;">${p.name||'Unknown'}</div><div style="font-size:11px;color:var(--text-muted);">MRN: ${p.mrn}</div></div>
+          <div style="font-size:11px;color:var(--blue);">Select →</div>
+        </div>`
+      ).join('');
+      resultsEl.style.display='block';
+    }
+  },200);
+}
+
+function selectVideoPatient(mrn,name){
+  document.getElementById('th-selected-mrn').value=mrn;
+  document.getElementById('th-mrn-input').value=name+' ('+mrn+')';
+  document.getElementById('th-selected-name').textContent=name;
+  document.getElementById('th-selected-mrn-label').textContent='MRN: '+mrn;
+  document.getElementById('th-selected-patient').style.display='block';
+  document.getElementById('th-search-results').style.display='none';
+}
+
+function clearVideoPatientSelection(){
+  document.getElementById('th-selected-mrn').value='';
+  document.getElementById('th-mrn-input').value='';
+  document.getElementById('th-selected-patient').style.display='none';
+}
+// Close video search dropdown on outside click
+document.addEventListener('click',e=>{
+  const results=document.getElementById('th-search-results');
+  const input=document.getElementById('th-mrn-input');
+  if(results&&input&&!results.contains(e.target)&&e.target!==input)results.style.display='none';
+});
 
 async function loadActiveRooms(){
   const el=document.getElementById('th-active-rooms');
@@ -5004,8 +5142,8 @@ async function loadActiveRooms(){
 let _docPc=null,_docLocalStream=null,_docSignalInterval=null;
 
 async function startTelehealth(){
-  const mrn=document.getElementById('th-patient').value;
-  if(!mrn){alert('Select a patient');return}
+  const mrn=document.getElementById('th-selected-mrn').value;
+  if(!mrn){alert('Please search and select a patient by MRN first.');return}
   try{
     const r=await api('/telehealth/rooms',{method:'POST',body:JSON.stringify({patientMrn:mrn})});
     if(r.ok){
@@ -5103,6 +5241,7 @@ async function renderAvailabilityPanel(){
     if(saved&&saved.length)_availRows=saved;
   }
   renderAvailRows();
+  renderAvailSlotPreview();
 }
 
 function renderAvailRows(){
@@ -5137,6 +5276,53 @@ function showAvailMsg(msg,type){
   el.style.display='block';
   setTimeout(()=>{el.style.display='none';},5000);
 }
+function renderAvailSlotPreview(){
+  const el=document.getElementById('avail-slot-preview');
+  if(!el)return;
+  const DAY_SHORT=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const today=new Date();
+  const todayDay=today.getDay();
+  // Generate slots for next 7 days from today
+  let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">';
+  let totalSlots=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(today);d.setDate(today.getDate()+i);
+    const dateStr=d.toISOString().slice(0,10);
+    const dayOfWeek=d.getDay();
+    const daySlots=[];
+    _availRows.filter(r=>r.active&&r.dayOfWeek===dayOfWeek).forEach(r=>{
+      const[sh,sm]=r.startTime.split(':').map(Number);
+      const[eh,em]=r.endTime.split(':').map(Number);
+      const dur=r.slotDuration||30;
+      let mins=sh*60+sm;const endMins=eh*60+em;
+      while(mins+dur<=endMins){
+        const h=Math.floor(mins/60);const m=mins%60;
+        daySlots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+        mins+=dur;
+      }
+    });
+    totalSlots+=daySlots.length;
+    const isToday=dateStr===today.toISOString().slice(0,10);
+    html+=`<div style="border:1px solid ${isToday?'var(--blue)':'var(--border)'};border-radius:8px;overflow:hidden;background:${isToday?'var(--blue-pale)':'var(--surface)'};">
+      <div style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);background:${isToday?'rgba(37,99,235,.08)':'var(--surface2)'};">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:${isToday?'var(--blue)':'var(--text-muted)'};">${DAY_SHORT[dayOfWeek]}</div>
+        <div style="font-size:13px;font-weight:800;color:${isToday?'var(--blue)':'var(--text)'};">${d.getDate()}</div>
+      </div>
+      <div style="padding:4px 6px;max-height:160px;overflow-y:auto;">`;
+    if(!daySlots.length){
+      html+='<div style="text-align:center;padding:10px 2px;font-size:9px;color:var(--text-dim);">—</div>';
+    } else {
+      daySlots.forEach(s=>{
+        html+=`<div style="padding:3px 6px;margin:2px 0;border-radius:4px;background:rgba(34,197,94,.08);font-size:10px;font-weight:600;color:var(--green);text-align:center;border:1px solid rgba(34,197,94,.15);">${s}</div>`;
+      });
+    }
+    html+='</div></div>';
+  }
+  html+='</div>';
+  html+=`<div style="margin-top:10px;font-size:11px;color:var(--text-muted);">Total: <strong style="color:var(--green);">${totalSlots}</strong> bookable slots over the next 7 days</div>`;
+  el.innerHTML=html;
+}
+
 async function saveAvailability(){
   const activeSlots=_availRows.filter(r=>r.active);
   LS.set('avail_'+(currentDoc?.docId||''),_availRows);
@@ -5146,6 +5332,7 @@ async function saveAvailability(){
   }catch(e){
     showAvailMsg('⚠️ Saved locally (offline). Will sync when server is available.','warn');
   }
+  renderAvailSlotPreview();
 }
 </script>
 <script>

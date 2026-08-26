@@ -20,3 +20,6 @@ playwright-report/
 playwright/.cache/
 *.pdf
 coverage/
+
+.vercel
+.env*

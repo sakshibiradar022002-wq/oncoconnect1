@@ -9,7 +9,7 @@ import {
   generateTotpSecret, verifyTotp,
 } from '../crypto.js';
 import {
-  createSession, revokeSession, clearSessionCookie, authenticate,
+  createSession, revokeSession, clearSessionCookie, authenticate, requireRole,
 } from '../middleware/auth.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { config } from '../config.js';
@@ -222,3 +222,49 @@ authRouter.post('/logout', authenticate, asyncHandler(async (req, res) => {
   await writeAudit({ actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'user.logout', ip: req.ip });
   res.json({ ok: true });
 }));
+
+// ── Search patients by MRN or name (for doctors) ──────────────────
+authRouter.get('/search-patients', authenticate, requireRole('doctor', 'admin'),
+  asyncHandler(async (req, res) => {
+    const q = String(req.query.q || '').trim();
+    if (!q || q.length < 1) return res.json({ ok: true, patients: [] });
+
+    // Search in kv_store for patient records
+    const rows = db.prepare(
+      `SELECT DISTINCT owner_id, k, v_enc FROM kv_store
+       WHERE k LIKE 'pat_%' AND k NOT LIKE '%::appts_%'`
+    ).all();
+
+    const patients = [];
+    for (const row of rows) {
+      const data = decryptPHI(row.v_enc);
+      if (!data) continue;
+      const mrn = data.mrn || row.owner_id.split('::')[1] || '';
+      const name = data.name || '';
+      const diag = data.diag || data.diagnosis || '';
+      const lowerQ = q.toLowerCase();
+      if (
+        mrn.toLowerCase().includes(lowerQ) ||
+        name.toLowerCase().includes(lowerQ)
+      ) {
+        patients.push({ mrn, name, diag });
+      }
+    }
+
+    // Also search the patients table if it exists
+    try {
+      const dbPatients = db.prepare(
+        `SELECT mrn, name, diagnosis FROM patients WHERE mrn LIKE ? OR name LIKE ? LIMIT 10`
+      ).all(`%${q}%`, `%${q}%`);
+      const seenM = new Set(patients.map(p => p.mrn));
+      for (const p of dbPatients) {
+        if (!seenM.has(p.mrn)) {
+          patients.push({ mrn: p.mrn, name: p.name, diag: p.diagnosis || '' });
+          seenM.add(p.mrn);
+        }
+      }
+    } catch (_) { /* patients table may not exist */ }
+
+    res.json({ ok: true, patients: patients.slice(0, 20) });
+  })
+);
