@@ -22,19 +22,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install dependencies
-        run: npm install --ignore-scripts
-
-      - name: Install Capacitor Android
-        run: npm install @capacitor/android@6 @capacitor/core@6 @capacitor/cli@6 --ignore-scripts
+        run: |
+          npm install --ignore-scripts --legacy-peer-deps
+          npm install @capacitor/android@6 @capacitor/core@6 @capacitor/cli@6 --ignore-scripts --legacy-peer-deps
 
       - name: Sync Capacitor
         run: npx cap sync android
 
       - name: Build Debug APK
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
