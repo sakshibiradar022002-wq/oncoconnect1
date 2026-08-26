@@ -1,0 +1,39 @@
+{
+  "appId": "com.oncoconnect.desktop",
+  "productName": "OncoConnect Pro",
+  "directories": {
+    "output": "dist-desktop"
+  },
+  "files": [
+    "src/**/*",
+    "public/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "node_modules/sql.js/dist",
+      "to": "sql.js"
+    }
+  ],
+  "win": {
+    "target": "nsis",
+    "icon": "public/icons/doctor-512.png"
+  },
+  "mac": {
+    "target": "dmg",
+    "icon": "public/icons/doctor-512.png",
+    "category": "public.app-category.medical"
+  },
+  "linux": {
+    "target": "AppImage",
+    "icon": "public/icons/doctor-512.png",
+    "category": "Medical"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "public/icons/doctor-512.png",
+    "uninstallerIcon": "public/icons/doctor-512.png"
+  }
+}

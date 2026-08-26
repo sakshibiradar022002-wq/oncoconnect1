@@ -23,3 +23,12 @@ coverage/
 
 .vercel
 .env*
+
+# Desktop (Electron) builds
+dist-desktop/
+release/
+
+# Mobile (Capacitor) native projects
+android/app/build/
+ios/App/Pods/
+.gradle/

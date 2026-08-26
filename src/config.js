@@ -59,7 +59,23 @@ export const config = {
 
   // Path to the SQLite database file.
   // If DB_EPHEMERAL=true, uses :memory: (for testing/preview, data lost on restart)
-  dbPath: process.env.DB_EPHEMERAL === 'true' ? ':memory:' : (process.env.DB_PATH || './chemocure.db'),
+  // In Electron, store DB in the user's data directory. Otherwise use local file or :memory:
+  dbPath: (() => {
+    if (process.env.DB_EPHEMERAL === 'true') return ':memory:';
+    if (process.env.DB_PATH) return process.env.DB_PATH;
+    // Electron: use userData directory
+    try {
+      if (typeof process !== 'undefined' && process.versions?.electron) {
+        const { app } = require('electron');
+        const { join } = require('path');
+        const fs = require('fs');
+        const dataDir = join(app.getPath('userData'), 'data');
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+        return join(dataDir, 'oncoconnect.db');
+      }
+    } catch {}
+    return './chemocure.db';
+  })(),
 
   // Password hashing cost (PBKDF2 iterations).
   pbkdf2Iterations: 210000,

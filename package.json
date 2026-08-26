@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "OncoConnect neuro-oncology EMR — secure backend (Node + Express + SQLite)",
   "type": "module",
-  "main": "src/server.js",
+  "main": "electron/main.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
@@ -22,7 +22,18 @@
     "backup": "node scripts/backup.js",
     "rotate-key": "node scripts/rotate-phi-key.js",
     "make-admin": "node scripts/make-admin.js",
-    "vercel-build": "npm install --omit=optional --omit=dev"
+    "vercel-build": "npm install --omit=optional --omit=dev",
+    "electron:dev": "electron .",
+    "electron:build": "electron-builder --config electron/electron-builder.json",
+    "electron:build:win": "electron-builder --config electron/electron-builder.json --win",
+    "electron:build:mac": "electron-builder --config electron/electron-builder.json --mac",
+    "electron:build:linux": "electron-builder --config electron/electron-builder.json --linux",
+    "mobile:init": "npx cap init com.oncoconnect.patient OncoConnect --web-dir public",
+    "mobile:add:android": "npx cap add android",
+    "mobile:add:ios": "npx cap add ios",
+    "mobile:sync": "npx cap sync",
+    "mobile:open:android": "npx cap open android",
+    "mobile:open:ios": "npx cap open ios"
   },
   "engines": {
     "node": "24.x"
@@ -42,6 +53,10 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.0"
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@playwright/test": "^1.62.0",
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3"
   }
 }
