@@ -35,7 +35,7 @@ async function startServer() {
     env: {
       ...process.env,
       PORT: String(serverPort),
-      NODE_ENV: 'production',
+      NODE_ENV: process.env.NODE_ENV || 'development',
       ELECTRON_RUN: '1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
