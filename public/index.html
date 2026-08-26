@@ -1406,6 +1406,10 @@ async function doLogin(){
       if(totpField){totpField.style.display='block';showMsg('login-msg','Enter the 6-digit code from your authenticator app.');}
       return;
     }
+    if(e.status===403&&e.message?.includes('pending')){
+      showMsg('login-msg',e.message);
+      return;
+    }
   }
   // Local fallback (offline mode)
   const docId=LS.get('doc_email_'+email.replace(/[^a-z0-9]/g,'_'));

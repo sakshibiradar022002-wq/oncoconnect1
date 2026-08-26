@@ -79,7 +79,8 @@ authRouter.post('/register', validate(registerSchema), asyncHandler(async (req, 
   const { name, email, password, specialty, institution, emailVerificationToken } = req.valid;
 
   // Verify the email OTP token (one-time use, deleted on success)
-  if (!verifyRegistrationToken(email, emailVerificationToken)) {
+  // Skip in Electron desktop mode for easier local registration
+  if (!process.env.ELECTRON_RUN && !verifyRegistrationToken(email, emailVerificationToken)) {
     return res.status(400).json({ error: 'Email verification required. Please verify your email first.', code: 'EMAIL_NOT_VERIFIED' });
   }
 
@@ -127,11 +128,18 @@ authRouter.post('/login', validate(loginSchema), asyncHandler(async (req, res) =
     return res.status(429).json({ error: 'Too many failed attempts. Please try again in 15 minutes.' });
   }
 
+  // Check if account exists (even if inactive) for better error messages
+  const existingUser = await db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+
   const user = await db.prepare('SELECT * FROM users WHERE email = ? AND active = 1').get(email);
 
   // Constant-ish behaviour whether or not the user exists.
   const ok = user && verifyPassword(password, user.password_hash);
   if (!ok) {
+    // Show specific error for inactive accounts
+    if (existingUser && !existingUser.active) {
+      return res.status(403).json({ error: 'Account pending admin approval. Please contact your administrator.' });
+    }
     const entry = recordFailedLogin(email);
     const remaining = MAX_ATTEMPTS - entry.count;
     const msg = remaining > 0
