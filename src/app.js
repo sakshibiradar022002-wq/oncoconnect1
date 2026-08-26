@@ -144,19 +144,6 @@ app.use('/api/telehealth', apiLimiter, telehealthRouter);
 app.use('/api/auth/otp', authLimiter, emailOtpRouter);
 app.use(apiLimiter, billingNccnHipaaRouter);
 
-// ── PWA assets: correct headers for manifests & service workers ───
-// One sw.js serves both apps; it reads its own URL to pick cache + shell.
-app.get(['/sw-doctor.js', '/sw-patient.js'], (req, res) => {
-  res.set('Content-Type', 'application/javascript');
-  res.set('Service-Worker-Allowed', req.path.includes('doctor') ? '/' : '/patient.html');
-  res.set('Cache-Control', 'no-cache');
-  res.sendFile(join(__dirname, '..', 'public', 'sw.js'));
-});
-app.get('/:name.webmanifest', (req, res, next) => {
-  res.set('Content-Type', 'application/manifest+json');
-  next();
-});
-
 // ── Serve the frontend (built HTML apps) ──────────────────────────
 app.use(express.static(join(__dirname, '..', 'public')));
 

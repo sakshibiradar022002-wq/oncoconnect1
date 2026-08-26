@@ -166,27 +166,10 @@ async function doLogin(){
   }catch(e){ msg.textContent = e.status===403?'This account is not the admin.':e.message; }
 }
 async function loadAll(){
-  const [u,a]=await Promise.all([api('/admin/users'),api('/admin/audit?limit=100')]);
-  _auditData=a.entries||[];
-  document.getElementById('users-body').innerHTML=u.users.map(x=>`
-    <tr><td><b>${esc(x.name||'—')}</b></td><td>${esc(x.email)}</td><td class="hide-sm">${esc(x.role)}</td>
-    <td><span class="badge ${x.active?'b-on':'b-off'}">${x.active?'Active':'Awaiting approval'}</span></td>
-    <td class="hide-sm">${x.lastLogin?new Date(x.lastLogin).toLocaleString():'never'}</td>
-    <td>${x.active?`<button class="btn-r" onclick="setActive('${esc(x.id)}',false)">Deactivate</button>`:`<button class="btn-g" onclick="setActive('${esc(x.id)}',true)">Approve ✓</button>`}</td></tr>`).join('');
-  document.getElementById('audit-body').innerHTML=_auditData.slice(0,100).map(e=>`
-    <tr><td>${new Date(e.ts).toLocaleString()}</td><td>${esc(e.actorRole||'')}</td><td><b>${esc(e.action)}</b></td>
-    <td class="hide-sm" style="font-family:monospace;font-size:11px;">${esc((e.targetId||'—').slice(0,14))}</td><td class="hide-sm">${esc(e.ip||'')}</td></tr>`).join('');
-}
-async function setActive(id,active){
-  try{ await api('/admin/users/'+id+'/active',{method:'POST',body:JSON.stringify({active})}); await loadAll(); }
-  catch(e){ alert(e.message); }
-}
-let _auditData=[];
-async function loadAll(){
   const [u,a]=await Promise.all([api('/admin/users'),api('/admin/audit?limit=500')]);
   _auditData=a.entries||[];
-  document.getElementById('users-body').innerHTML=u.users.map(x=>`<tr><td><b>${x.name||'—'}</b></td><td>${x.email}</td><td class="hide-sm">${x.role}</td><td><span class="badge ${x.active?'b-on':'b-off'}">${x.active?'Active':'Awaiting approval'}</span></td><td class="hide-sm">${x.lastLogin?new Date(x.lastLogin).toLocaleString():'never'}</td><td>${x.active?`<button class="btn-r" onclick="setActive('${x.id}',false)">Deactivate</button>`:`<button class="btn-g" onclick="setActive('${x.id}',true)">Approve ✓</button>`}</td></tr>`).join('');
-  document.getElementById('audit-body').innerHTML=_auditData.slice(0,100).map(e=>`<tr><td>${new Date(e.ts).toLocaleString()}</td><td>${e.actorRole||''}</td><td><b>${e.action}</b></td><td class="hide-sm" style="font-family:monospace;font-size:11px;">${(e.targetId||'—').slice(0,14)}</td><td class="hide-sm">${e.ip||''}</td></tr>`).join('');
+  document.getElementById('users-body').innerHTML=u.users.map(x=>`<tr><td><b>${esc(x.name||'—')}</b></td><td>${esc(x.email)}</td><td class="hide-sm">${esc(x.role)}</td><td><span class="badge ${x.active?'b-on':'b-off'}">${x.active?'Active':'Awaiting approval'}</span></td><td class="hide-sm">${x.lastLogin?new Date(x.lastLogin).toLocaleString():'never'}</td><td>${x.active?`<button class="btn-r" onclick="setActive('${esc(x.id)}',false)">Deactivate</button>`:`<button class="btn-g" onclick="setActive('${esc(x.id)}',true)">Approve ✓</button>`}</td></tr>`).join('');
+  document.getElementById('audit-body').innerHTML=_auditData.slice(0,100).map(e=>`<tr><td>${new Date(e.ts).toLocaleString()}</td><td>${esc(e.actorRole||'')}</td><td><b>${esc(e.action)}</b></td><td class="hide-sm" style="font-family:monospace;font-size:11px;">${esc((e.targetId||'—').slice(0,14))}</td><td class="hide-sm">${esc(e.ip||'')}</td></tr>`).join('');
 }
 function exportAuditCSV(){
   if(!_auditData.length){alert('No audit data. Load the page first.');return;}

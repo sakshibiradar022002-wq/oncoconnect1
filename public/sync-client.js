@@ -177,26 +177,7 @@
     } catch (e) {}
   });
 
-  function b64ToU8(b64) {
-    var pad = '='.repeat((4 - b64.length % 4) % 4);
-    var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
-    var out = new Uint8Array(raw.length);
-    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
-    return out;
-  }
-  // Ask for notification permission and register this device for web push.
-  async function enablePush() {
-    try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
-      var reg = await navigator.serviceWorker.ready;
-      if (Notification.permission === 'denied') return;
-      var perm = await Notification.requestPermission();
-      if (perm !== 'granted') return;
-      var keyRes = await req('GET', '/api/push/vapid-public-key');
-      var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(keyRes.key) });
-      await req('POST', '/api/push/subscribe', { subscription: sub.toJSON ? sub.toJSON() : sub });
-    } catch (e) { /* push is best-effort */ }
-  }
+  async function enablePush() { /* push disabled — no service worker */ }
 
   window.CCSync = {
     get online() { return state.online; },

@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-title" content="OncoConnect">
 <meta name="theme-color" content="#059669">
 <title>OncoConnect — Patient App</title>
-<link rel="manifest" href="/patient.webmanifest">
 <link rel="apple-touch-icon" href="/icons/patient-192.png">
 <link rel="icon" type="image/png" href="/icons/patient-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1085,25 +1084,9 @@ function exportMyData(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='MyData_'+currentPat.mrn+'.json';a.click();
 }
 
-// ═══ PUSH NOTIFICATIONS ═══
+// ═══ PUSH NOTIFICATIONS (no service worker) ═══
 async function subscribeToPush(){
-  if(!('serviceWorker' in navigator)||!('PushManager' in window)){alert('Push notifications are not supported in this browser.');return;}
-  try{
-    const reg=await navigator.serviceWorker.ready;
-    const existing=await reg.pushManager.getSubscription();
-    if(existing){alert('You are already subscribed to notifications!');return;}
-    // Fetch VAPID key from server
-    const resp=await fetch('/api/push/vapid-public-key');
-    if(!resp.ok)throw new Error('Server push service unavailable');
-    const {key}=await resp.json();
-    // Convert VAPID key
-    const urlBase64ToUint8Array=(urlB64)=>{const pad='='.repeat((4-urlB64.length%4)%4);const raw=atob(urlB64.replace(/-/g,'+').replace(/_/g,'/'));const arr=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);return arr};
-    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(key)});
-    // Send subscription to server
-    const r=await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(sub)});
-    if(!r.ok)throw new Error('Failed to register with server');
-    alert('🔔 Notifications enabled! You will receive appointment reminders.');
-  }catch(e){alert('Could not enable notifications: '+e.message);}
+  alert('Push notifications require a service worker which has been removed.');
 }
 
 // ═══ LAB PORTAL ═══
