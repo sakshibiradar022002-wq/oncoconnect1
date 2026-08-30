@@ -8,12 +8,17 @@
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
+import { chdir } from 'node:process';
 
 // Fix Windows sandbox/GPU crash on Electron 33
 app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-gpu-compositing');
-app.commandLine.appendSwitch('disk-cache-dir', app.getPath('temp'));
+app.commandLine.appendSwitch('user-data-dir', join(app.getPath('temp'), 'oncoconnect-server'));
+
+// Ensure working directory is next to the exe
+const exeDir = dirname(app.getPath('exe'));
+try { chdir(exeDir); } catch {}
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import os from 'node:os';
