@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import os from 'node:os';
 import net from 'node:net';
 
@@ -175,6 +176,17 @@ h1{font-size:1.5rem;font-weight:800;letter-spacing:-.4px;margin-bottom:4px;}
 .step-num{flex-shrink:0;width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
 .step-text{font-size:13px;color:var(--text-muted);line-height:1.5;}
 .step-text strong{color:var(--text);}
+.launch-section{margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;-webkit-app-region:no-drag;}
+.launch-section h3{font-size:12px;font-weight:700;margin-bottom:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;}
+.launch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;}
+.launch-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;transition:all .2s;-webkit-app-region:no-drag;}
+.launch-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.3);}
+.launch-btn.doctor:hover{border-color:#3b82f6;box-shadow:0 4px 12px rgba(59,130,246,.2);}
+.launch-btn.patient:hover{border-color:#22c55e;box-shadow:0 4px 12px rgba(34,197,94,.2);}
+.launch-btn.lab:hover{border-color:#a78bfa;box-shadow:0 4px 12px rgba(167,139,250,.2);}
+.launch-icon{font-size:28px;}
+.launch-text{font-size:11px;font-weight:600;color:var(--text-muted);}
+.launch-hint{text-align:center;font-size:10px;color:var(--text-dim);}
 .footer{margin-top:24px;text-align:center;font-size:11px;color:#4a5f82;}
 .footer span{color:#34d399;}
 </style>
@@ -198,8 +210,27 @@ h1{font-size:1.5rem;font-weight:800;letter-spacing:-.4px;margin-bottom:4px;}
   <div class="copy-hint">For apps running on this same computer</div>
 </div>
 
+<div class="launch-section">
+  <h3>🚀 Launch Client Apps</h3>
+  <div class="launch-grid">
+    <button class="launch-btn doctor" onclick="launchApp('doctor')">
+      <span class="launch-icon">👨‍⚕️</span>
+      <span class="launch-text">Doctor App</span>
+    </button>
+    <button class="launch-btn patient" onclick="launchApp('patient')">
+      <span class="launch-icon">💚</span>
+      <span class="launch-text">Patient App</span>
+    </button>
+    <button class="launch-btn lab" onclick="launchApp('lab')">
+      <span class="launch-icon">🔬</span>
+      <span class="launch-text">Lab App</span>
+    </button>
+  </div>
+  <div class="launch-hint">Apps will auto-connect to this server</div>
+</div>
+
 <div class="instructions">
-  <h3>How to connect</h3>
+  <h3>Or connect manually</h3>
   <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Install</strong> the Doctor, Patient, or Lab app on another computer</div></div>
   <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Enter</strong> this server address when the app asks for it</div></div>
   <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Done!</strong> All data syncs automatically between devices</div></div>
@@ -216,6 +247,26 @@ function copyAddr(el) {
     setTimeout(() => btn.textContent = '📋 Copy', 2000);
   });
 }
+async function launchApp(portal) {
+  const btn = document.querySelector('.launch-btn.' + portal);
+  if (btn) {
+    btn.style.opacity = '0.5';
+    btn.style.pointerEvents = 'none';
+  }
+  try {
+    const result = await window.electronAPI?.launchApp(portal);
+    if (btn) {
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    }
+  } catch (err) {
+    console.error('Failed to launch:', err);
+    if (btn) {
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    }
+  }
+}
 </script>
 </body>
 </html>`;
@@ -225,6 +276,52 @@ function copyAddr(el) {
 ipcMain.handle('app:getVersion', () => app.getVersion());
 ipcMain.handle('app:getDBPath', () => join(app.getPath('userData'), 'data'));
 ipcMain.handle('app:getPlatform', () => process.platform);
+
+// Launch a client app (Doctor/Patient/Lab) connected to this server
+ipcMain.handle('server:launchApp', async (event, portal) => {
+  const serverUrl = `http://127.0.0.1:${serverPort}`;
+  const exePath = app.getPath('exe');
+  const appDir = dirname(exePath);
+  
+  // Find the client app executable
+  const appNames = {
+    doctor: 'OncoConnect Doctor',
+    patient: 'OncoConnect Patient',
+    lab: 'OncoConnect Lab'
+  };
+  
+  const appName = appNames[portal];
+  if (!appName) return { ok: false, error: 'Unknown portal' };
+  
+  // Try to find and launch the app
+  let targetPath;
+  
+  if (process.platform === 'win32') {
+    targetPath = join(appDir, `${appName}.exe`);
+  } else if (process.platform === 'darwin') {
+    targetPath = join(dirname(appDir), 'MacOS', appName);
+  } else {
+    targetPath = join(dirname(appDir), appName.toLowerCase());
+  }
+  
+  // If not found as separate app, try launching with current executable + args
+  if (!existsSync(targetPath)) {
+    targetPath = exePath;
+  }
+  
+  try {
+    const child = spawn(targetPath, [`--server=${serverUrl}`, `--portal=${portal}`], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    child.unref();
+    console.log(`[server] Launched ${portal} app: ${targetPath}`);
+    return { ok: true, portal, url: serverUrl };
+  } catch (err) {
+    console.error(`[server] Failed to launch ${portal}:`, err.message);
+    return { ok: false, error: err.message };
+  }
+});
 
 // ── App lifecycle ─────────────────────────────────────────────────
 app.whenReady().then(async () => {

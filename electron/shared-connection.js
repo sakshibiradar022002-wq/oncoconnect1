@@ -406,8 +406,35 @@ export function getPortalIcon(portal, publicDir) {
 
 export function getPortalConfig(portal) {
   return {
-    doctor:  { portal: 'doctor',  title: 'OncoConnect Doctor',  subtitle: 'Doctor Software',   icon: '👨‍⚕️', themeColor: '#2563eb', portalPath: '/',          brand: 'SOFTWARE' },
+    doctor:  { portal: 'doctor',  title: 'OncoConnect Doctor',  subtitle: 'Doctor Software',   icon: '👨\u200d⚕️', themeColor: '#2563eb', portalPath: '/',          brand: 'SOFTWARE' },
     patient: { portal: 'patient', title: 'OncoConnect Patient', subtitle: 'Patient App',       icon: '📱', themeColor: '#059669', portalPath: '/patient.html', brand: 'APP' },
     lab:     { portal: 'lab',     title: 'OncoConnect Lab',     subtitle: 'Lab Portal',        icon: '🔬', themeColor: '#7c3aed', portalPath: '/lab.html',     brand: 'PORTAL' },
   }[portal];
+}
+
+/**
+ * Get server URL from command-line arguments (--server=url)
+ * This is used when the Server app launches client apps.
+ */
+export function getServerUrlFromArgs() {
+  const args = process.argv || [];
+  for (const arg of args) {
+    if (arg.startsWith('--server=')) {
+      return arg.slice('--server='.length);
+    }
+  }
+  return null;
+}
+
+/**
+ * Get portal from command-line arguments (--portal=name)
+ */
+export function getPortalFromArgs() {
+  const args = process.argv || [];
+  for (const arg of args) {
+    if (arg.startsWith('--portal=')) {
+      return arg.slice('--portal='.length);
+    }
+  }
+  return null;
 }

@@ -10,6 +10,11 @@ contextBridge.exposeInMainWorld('app', {
   isElectron: true,
 });
 
+// Server-specific: launch client apps
+contextBridge.exposeInMainWorld('electronAPI', {
+  launchApp: (portal) => ipcRenderer.invoke('server:launchApp', portal),
+});
+
 // ── Standalone Portal Isolation ──────────────────────────────────
 // In standalone mode, prevent the user from navigating to other portal pages.
 // This runs in every renderer as a safety net — the HTML pages also hide

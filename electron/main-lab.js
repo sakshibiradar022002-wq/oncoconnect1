@@ -12,7 +12,7 @@ import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import net from 'node:net';
 
-import { getConnectionHTML, getPortalConfig, getPortalIcon } from './shared-connection.js';
+import { getConnectionHTML, getPortalConfig, getPortalIcon, getServerUrlFromArgs } from './shared-connection.js';
 import { installPortalIsolator } from './portal-isolator.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -22,6 +22,9 @@ const PUBLIC = join(ROOT, 'public');
 const PORTAL = 'lab';
 const config = getPortalConfig(PORTAL);
 const STORAGE_KEY = 'oncoconnect_server_url';
+
+// Check for server URL from command-line args (passed by Server app)
+const SERVER_URL_FROM_ARGS = getServerUrlFromArgs();
 
 let mainWindow = null;
 let httpServer = null;
@@ -117,7 +120,13 @@ async function createWindow() {
   });  // Install portal isolation BEFORE loading any content
   installPortalIsolator(mainWindow, 'lab');
 
-  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(getConnectionHTML(config))}`);
+  // If server URL was passed via args, auto-connect directly
+  if (SERVER_URL_FROM_ARGS) {
+    console.log(`[lab] Auto-connecting to: ${SERVER_URL_FROM_ARGS}`);
+    mainWindow.loadURL(`${SERVER_URL_FROM_ARGS}${config.portalPath}?standalone=1`);
+  } else {
+    mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(getConnectionHTML(config))}`);
+  }
   mainWindow.once('ready-to-show', () => mainWindow.show());
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
