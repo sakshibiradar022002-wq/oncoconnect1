@@ -121,13 +121,10 @@ async function createWindow() {
   });  // Install portal isolation BEFORE loading any content
   installPortalIsolator(mainWindow, 'patient');
 
-  // If server URL exists in shared config, auto-connect directly
-  if (SERVER_URL_FROM_CONFIG) {
-    console.log(`[patient] Auto-connecting to: ${SERVER_URL_FROM_CONFIG}`);
-    mainWindow.loadURL(`${SERVER_URL_FROM_CONFIG}${config.portalPath}?standalone=1`);
-  } else {
-    mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(getConnectionHTML(config))}`);
-  }
+  // Skip connection screen — go directly to login page
+  const serverUrl = SERVER_URL_FROM_CONFIG || 'http://127.0.0.1:3000';
+  console.log(`[patient] Connecting to: ${serverUrl}`);
+  mainWindow.loadURL(`${serverUrl}${config.portalPath}?standalone=1`);
   mainWindow.once('ready-to-show', () => mainWindow.show());
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
@@ -146,7 +143,7 @@ async function createWindow() {
     {
       label: 'OncoConnect Patient',
       submenu: [
-        { label: '🔄  Reconnect', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(getConnectionHTML(config))}`) },
+        { label: '🔄  Refresh', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
         { type: 'separator' },
         { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
       ]
