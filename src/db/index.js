@@ -108,11 +108,29 @@ export async function initTestData() {
 }
 
 export async function writeAudit({ actorId, actorRole, action, targetId, detail, ip }) {
+  const now = new Date().toISOString();
+  
+  // Write to database (primary storage)
   await db.prepare(
     'INSERT INTO audit_log (id, actor_id, actor_role, action, target_id, detail_enc, ip, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
   ).run(
     randomToken(12), actorId || null, actorRole || null, action,
     targetId || null, detail ? encryptPHI(detail) : null, ip || null,
-    new Date().toISOString()
+    now
   );
+  
+  // Record on blockchain (async, non-blocking)
+  try {
+    const blockchain = (await import('../blockchain/index.js')).default;
+    if (blockchain.connected) {
+      blockchain.recordAudit({
+        record: { actorId, actorRole, action, targetId, timestamp: now },
+        action,
+        targetId: targetId || actorId || 'unknown',
+        actorId
+      }).catch(err => console.error('[blockchain] Audit failed:', err.message));
+    }
+  } catch (err) {
+    // Blockchain not available, continue without it
+  }
 }

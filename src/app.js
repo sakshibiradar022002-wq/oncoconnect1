@@ -32,6 +32,8 @@ import billingNccnHipaaRouter from './routes/billing-nccn-hipaa.js';
 import { initPush } from './push.js';
 import { observability, metricsSnapshot } from './observability.js';
 import { initSentry, sentryRequestHandler, sentryErrorHandler } from './observability/sentry.js';
+import { blockchainRouter } from './routes/blockchain.js';
+import blockchain from './blockchain/index.js';
 import { db } from './db/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -44,6 +46,15 @@ await seedDrugInteractions();
 await seedProtocols();
 startTelehealthCleanup();
 initSentry(); // Initialize error tracking (no-op if SENTRY_DSN not set)
+
+// Initialize blockchain audit trail (non-blocking)
+blockchain.connect().then(connected => {
+  if (connected) {
+    console.log('[app] 🔗 Blockchain audit trail enabled');
+  } else {
+    console.log('[app] ⚠️  Blockchain not available - running without blockchain audit');
+  }
+});
 
 const app = express();
 app.set('trust proxy', 1); // needed for correct req.ip behind cloud proxies
@@ -107,15 +118,28 @@ const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 300 });
 // Shallow by default (fast, for load-balancer pings); ?deep=1 also checks
 // the database so a broken DB surfaces as unhealthy instead of silently 200.
 app.get('/health', async (req, res) => {
+  const health = { ok: true, ts: new Date().toISOString() };
+  
   if (req.query.deep === '1') {
+    // Check database
     try {
       await db.prepare('SELECT 1 AS ok').get();
+      health.db = true;
     } catch (e) {
-      return res.status(503).json({ ok: false, db: false, error: 'database unreachable' });
+      health.db = false;
+      health.ok = false;
     }
-    return res.json({ ok: true, db: true, ts: new Date().toISOString() });
+    
+    // Check blockchain
+    const blockchainStats = await blockchain.getStats();
+    health.blockchain = blockchainStats.connected ? 'connected' : 'disconnected';
+    
+    if (!health.ok) {
+      return res.status(503).json(health);
+    }
   }
-  res.json({ ok: true, ts: new Date().toISOString() });
+  
+  res.json(health);
 });
 
 // ── Metrics (admin-only): per-flow count / error rate / latency ───
@@ -142,6 +166,7 @@ app.use('/api/rx', apiLimiter, prescriptionRouter);
 app.use('/api/features', apiLimiter, clinicalFeaturesRouter);
 app.use('/api/telehealth', apiLimiter, telehealthRouter);
 app.use('/api/auth/otp', authLimiter, emailOtpRouter);
+app.use('/api/blockchain', apiLimiter, blockchainRouter);
 app.use(apiLimiter, billingNccnHipaaRouter);
 
 // ── Serve the frontend (built HTML apps) ──────────────────────────

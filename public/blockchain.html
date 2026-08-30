@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OncoConnect - Blockchain Audit Trail</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080d1a;
+      --surface: #0f1729;
+      --border: #1e2d4a;
+      --text: #e2e8f0;
+      --text-muted: #8494b2;
+      --blue: #2563eb;
+      --green: #059669;
+      --red: #dc2626;
+      --purple: #8b5cf6;
+      --yellow: #eab308;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 32px;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    .logo {
+      width: 64px; height: 64px; border-radius: 18px;
+      background: linear-gradient(135deg, var(--purple), var(--blue));
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 30px; box-shadow: 0 10px 40px rgba(139, 92, 246, 0.35);
+      margin-bottom: 20px;
+    }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
+    .status-card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 24px; margin-bottom: 20px;
+    }
+    .status-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    }
+    .status-badge.connected {
+      background: rgba(5, 150, 105, 0.1); border: 1px solid rgba(5, 150, 105, 0.2);
+      color: var(--green);
+    }
+    .status-badge.disconnected {
+      background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2);
+      color: var(--red);
+    }
+    .pulse {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 8px rgba(5, 150, 105, 0); }
+    }
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .stat-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px;
+    }
+    .stat-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .stat-value {
+      font-family: 'IBM Plex Mono', monospace; font-size: 24px;
+      font-weight: 700; color: var(--blue);
+    }
+    .stat-value.green { color: var(--green); }
+    .stat-value.purple { color: var(--purple); }
+    .verify-section {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 24px; margin-top: 20px;
+    }
+    .verify-section h2 {
+      font-size: 14px; font-weight: 700; margin-bottom: 16px;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .input-group {
+      display: flex; gap: 12px; margin-bottom: 16px;
+    }
+    input[type="text"] {
+      flex: 1; padding: 12px 16px; border-radius: 10px;
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); font-size: 14px; font-family: monospace;
+    }
+    input[type="text"]:focus {
+      outline: none; border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    button {
+      padding: 12px 24px; border-radius: 10px; border: none;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: white; font-weight: 600; font-size: 14px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+    button:disabled {
+      opacity: 0.5; cursor: not-allowed; transform: none;
+    }
+    .result-box {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; margin-top: 16px;
+      font-family: monospace; font-size: 13px; white-space: pre-wrap;
+      display: none;
+    }
+    .result-box.show { display: block; }
+    .result-box.success { border-color: var(--green); }
+    .result-box.error { border-color: var(--red); }
+    .loading { text-align: center; padding: 40px; color: var(--text-muted); }
+    .spinner {
+      display: inline-block; width: 20px; height: 20px;
+      border: 2px solid var(--border); border-top-color: var(--blue);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .info-box {
+      background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.2);
+      border-radius: 10px; padding: 16px; margin-top: 20px;
+    }
+    .info-box h3 {
+      font-size: 12px; font-weight: 700; margin-bottom: 8px;
+      color: var(--blue); text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .info-box p {
+      font-size: 13px; color: var(--text-muted); line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🔗</div>
+    <h1>Blockchain Audit Trail</h1>
+    <p class="subtitle">OncoConnect — Tamper-proof medical record verification</p>
+
+    <div class="status-card">
+      <div class="status-header">
+        <div id="status-badge" class="status-badge disconnected">
+          <span class="spinner"></span> Connecting...
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Audit Entries</div>
+          <div class="stat-value" id="entry-count">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Network</div>
+          <div class="stat-value purple" id="network">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Chain ID</div>
+          <div class="stat-value green" id="chain-id">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="verify-section">
+      <h2>🔍 Verify Record</h2>
+      <div class="input-group">
+        <input type="text" id="record-hash" placeholder="Enter record hash (SHA-256)">
+        <button id="verify-btn" onclick="verifyRecord()">Verify</button>
+      </div>
+      <div id="result-box" class="result-box"></div>
+    </div>
+
+    <div class="info-box">
+      <h3>ℹ️ How It Works</h3>
+      <p>
+        OncoConnect uses a local blockchain to create an immutable audit trail.
+        Every medical record operation is hashed and recorded on-chain, providing
+        tamper-proof verification. The actual encrypted records remain in the
+        secure database — only their cryptographic fingerprints are stored on the
+        blockchain.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    let apiBase = '';
+
+    async function loadStatus() {
+      try {
+        const res = await fetch(`${apiBase}/api/blockchain/status`);
+        const data = await res.json();
+        
+        const badge = document.getElementById('status-badge');
+        const stats = data.blockchain;
+        
+        if (stats.connected) {
+          badge.className = 'status-badge connected';
+          badge.innerHTML = '<div class="pulse"></div> Connected';
+          document.getElementById('entry-count').textContent = stats.entryCount;
+          document.getElementById('network').textContent = stats.network;
+          document.getElementById('chain-id').textContent = stats.chainId;
+        } else {
+          badge.className = 'status-badge disconnected';
+          badge.innerHTML = 'Disconnected';
+        }
+      } catch (err) {
+        console.error('Failed to load status:', err);
+      }
+    }
+
+    async function verifyRecord() {
+      const hash = document.getElementById('record-hash').value.trim();
+      if (!hash) return;
+
+      const btn = document.getElementById('verify-btn');
+      const resultBox = document.getElementById('result-box');
+      
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+      resultBox.className = 'result-box show';
+      resultBox.textContent = 'Checking blockchain...';
+
+      try {
+        const res = await fetch(`${apiBase}/api/blockchain/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ record: hash })
+        });
+        const data = await res.json();
+        
+        if (data.verification.verified) {
+          resultBox.className = 'result-box show success';
+          resultBox.textContent = `✅ RECORD VERIFIED\n\n` +
+            `Hash: ${data.verification.recordHash}\n` +
+            `Entries: ${data.verification.entryCount}\n` +
+            `Action: ${data.verification.onChain.action}\n` +
+            `Timestamp: ${data.verification.onChain.timestamp}`;
+        } else {
+          resultBox.className = 'result-box show error';
+          resultBox.textContent = `❌ NOT FOUND\n\n${data.verification.error || 'Record not in blockchain'}`;
+        }
+      } catch (err) {
+        resultBox.className = 'result-box show error';
+        resultBox.textContent = `Error: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Verify';
+      }
+    }
+
+    // Auto-refresh status
+    loadStatus();
+    setInterval(loadStatus, 10000);
+  </script>
+</body>
+</html>
