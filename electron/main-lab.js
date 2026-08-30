@@ -9,6 +9,9 @@
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
+
+// Fix Windows sandbox crash on Electron 33
+app.commandLine.appendSwitch('no-sandbox');
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import net from 'node:net';
