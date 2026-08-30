@@ -10,9 +10,10 @@ contextBridge.exposeInMainWorld('app', {
   isElectron: true,
 });
 
-// Server-specific: launch client apps
+// Server-specific: launch client apps + get server URL from shared config
 contextBridge.exposeInMainWorld('electronAPI', {
   launchApp: (portal) => ipcRenderer.invoke('server:launchApp', portal),
+  getServerUrl: () => ipcRenderer.invoke('app:getServerUrl'),
 });
 
 // ── Standalone Portal Isolation ──────────────────────────────────

@@ -13,8 +13,9 @@ import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import net from 'node:net';
 
-import { getConnectionHTML, getPortalConfig, getPortalIcon, getServerUrlFromArgs } from './shared-connection.js';
+import { getConnectionHTML, getPortalConfig, getPortalIcon } from './shared-connection.js';
 import { installPortalIsolator } from './portal-isolator.js';
+import { getServerUrl } from './shared-config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -24,8 +25,8 @@ const PORTAL = 'doctor';
 const config = getPortalConfig(PORTAL);
 const STORAGE_KEY = 'oncoconnect_server_url';
 
-// Check for server URL from command-line args (passed by Server app)
-const SERVER_URL_FROM_ARGS = getServerUrlFromArgs();
+// Check for server URL from shared config (written by Server app)
+const SERVER_URL_FROM_CONFIG = getServerUrl();
 
 let mainWindow = null;
 let httpServer = null;
@@ -131,10 +132,10 @@ async function createWindow() {
   // Install portal isolation BEFORE loading any content
   installPortalIsolator(mainWindow, 'doctor');
 
-  // If server URL was passed via args, auto-connect directly
-  if (SERVER_URL_FROM_ARGS) {
-    console.log(`[doctor] Auto-connecting to: ${SERVER_URL_FROM_ARGS}`);
-    mainWindow.loadURL(`${SERVER_URL_FROM_ARGS}${config.portalPath}?standalone=1`);
+  // If server URL exists in shared config, auto-connect directly
+  if (SERVER_URL_FROM_CONFIG) {
+    console.log(`[doctor] Auto-connecting to: ${SERVER_URL_FROM_CONFIG}`);
+    mainWindow.loadURL(`${SERVER_URL_FROM_CONFIG}${config.portalPath}?standalone=1`);
   } else {
     // Load the connection screen
     mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(getConnectionHTML(config))}`);
@@ -187,6 +188,7 @@ async function createWindow() {
 ipcMain.handle('app:getVersion', () => app.getVersion());
 ipcMain.handle('app:getDBPath', () => join(app.getPath('userData'), 'data'));
 ipcMain.handle('app:getPlatform', () => process.platform);
+ipcMain.handle('app:getServerUrl', () => SERVER_URL_FROM_CONFIG);
 
 // ── App lifecycle ─────────────────────────────────────────────────
 app.whenReady().then(async () => {

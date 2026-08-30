@@ -16,6 +16,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import net from 'node:net';
+import { saveServerUrl } from './shared-config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -335,10 +336,16 @@ app.whenReady().then(async () => {
       serverPort = PREFERRED_PORT;
     } catch (e) {
       serverPort = await findFreePort();
-    }
-    httpServer = createServer(serveStatic);
-    await new Promise((resolve, reject) => { httpServer.listen(serverPort, '0.0.0.0', resolve); httpServer.on('error', reject); });
+    }    httpServer = createServer(serveStatic);
+    await new Promise((resolve, reject) => {
+      httpServer.listen(serverPort, '0.0.0.0', resolve);
+      httpServer.on('error', reject);
+    });
     console.log(`[server] Listening on port ${serverPort}`);
+    
+    // Save server URL to shared config for client apps
+    const serverUrl = `http://127.0.0.1:${serverPort}`;
+    saveServerUrl(serverUrl);
 
     // Load Express in background
     tryLoadExpress(serverPort).then(ok => {

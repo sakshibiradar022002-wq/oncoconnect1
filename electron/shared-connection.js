@@ -137,8 +137,19 @@ async function go(){
   catch(e){let m='Cannot reach server.';if(e.name==='AbortError')m='Timed out — check address & port.';show(m,'error');$('btn').disabled=false;$('btn').textContent='Connect →'}
 }
 function show(m,c){const s=$('st');s.textContent=m;s.className='status '+c}
-// Auto-connect: try saved URL first, then localhost:3000
+// Auto-connect: try shared config, then saved URL, then localhost:3000
 (async()=>{
+  try {
+    if (window.electronAPI && window.electronAPI.getServerUrl) {
+      const configUrl = await window.electronAPI.getServerUrl();
+      if (configUrl) {
+        await tryConnect(configUrl);
+        localStorage.setItem(KEY, configUrl);
+        window.location.href = configUrl + PATH + '?standalone=1';
+        return;
+      }
+    }
+  } catch(e) {}
   const candidates=[saved,AUTO].filter(Boolean);
   for(const u of candidates){try{await tryConnect(u);localStorage.setItem(KEY,u);window.location.href=u+PATH+'?standalone=1';return}catch{}}
 })();
@@ -249,8 +260,19 @@ async function go(){
   catch(e){let m='Cannot reach server.';if(e.name==='AbortError')m='Timed out — check the address.';show(m,'error');$('btn').disabled=false;$('btn').textContent='Connect →'}
 }
 function show(m,c){const s=$('st');s.textContent=m;s.className='status '+c}
-// Auto-connect: try saved URL first, then localhost:3000
+// Auto-connect: try shared config, then saved URL, then localhost:3000
 (async()=>{
+  try {
+    if (window.electronAPI && window.electronAPI.getServerUrl) {
+      const configUrl = await window.electronAPI.getServerUrl();
+      if (configUrl) {
+        await tryConnect(configUrl);
+        localStorage.setItem(KEY, configUrl);
+        window.location.href = configUrl + PATH + '?standalone=1';
+        return;
+      }
+    }
+  } catch(e) {}
   const candidates=[saved,AUTO].filter(Boolean);
   for(const u of candidates){try{await tryConnect(u);localStorage.setItem(KEY,u);window.location.href=u+PATH+'?standalone=1';return}catch{}}
 })();
@@ -383,8 +405,19 @@ async function go(){
   catch(e){let m='Cannot reach server.';if(e.name==='AbortError')m='Timed out — check the address.';show(m,'error');$('btn').disabled=false;$('btn').textContent='Connect →'}
 }
 function show(m,c){const s=$('st');s.textContent=m;s.className='status '+c}
-// Auto-connect: try saved URL first, then localhost:3000
+// Auto-connect: try shared config, then saved URL, then localhost:3000
 (async()=>{
+  try {
+    if (window.electronAPI && window.electronAPI.getServerUrl) {
+      const configUrl = await window.electronAPI.getServerUrl();
+      if (configUrl) {
+        await tryConnect(configUrl);
+        localStorage.setItem(KEY, configUrl);
+        window.location.href = configUrl + PATH + '?standalone=1';
+        return;
+      }
+    }
+  } catch(e) {}
   const candidates=[saved,AUTO].filter(Boolean);
   for(const u of candidates){try{await tryConnect(u);localStorage.setItem(KEY,u);window.location.href=u+PATH+'?standalone=1';return}catch{}}
 })();
