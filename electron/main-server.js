@@ -12,6 +12,7 @@ import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import os from 'node:os';
 import net from 'node:net';
+import { saveServerUrl } from './shared-config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -191,6 +192,10 @@ app.whenReady().then(async () => {
       httpServer.on('error', reject);
     });
     console.log(`[server] Listening on port ${serverPort}`);
+    
+    // Save server URL for client apps to discover
+    const serverUrl = `http://127.0.0.1:${serverPort}`;
+    saveServerUrl(serverUrl);
 
     // Load Express in background
     tryLoadExpress(serverPort).then(ok => {

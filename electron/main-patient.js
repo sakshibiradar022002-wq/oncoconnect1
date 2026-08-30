@@ -3,6 +3,7 @@
  *
  * Fully self-contained app with its own local Express server.
  * Goes directly to the login/registration page on launch.
+ * Silently connects to shared server if available (backend only).
  */
 
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
@@ -14,6 +15,7 @@ import net from 'node:net';
 
 import { getPortalConfig, getPortalIcon } from './shared-connection.js';
 import { installPortalIsolator } from './portal-isolator.js';
+import { getServerUrl } from './shared-config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
