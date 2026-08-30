@@ -1,6 +1,6 @@
 {
-  "appId": "com.oncoconnect.desktop",
-  "productName": "OncoConnect Pro",
+  "appId": "com.oncoconnect.doctor",
+  "productName": "OncoConnect Doctor",
   "directories": {
     "output": "dist-desktop"
   },
@@ -10,6 +10,9 @@
     "electron/**/*",
     "package.json"
   ],
+  "extraMetadata": {
+    "main": "electron/main-doctor.js"
+  },
   "extraResources": [
     {
       "from": "node_modules/sql.js/dist",
@@ -43,7 +46,7 @@
     "uninstallerIcon": "public/icons/doctor-512.png",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "OncoConnect Pro",
+    "shortcutName": "OncoConnect Doctor",
     "installerHeaderIcon": "public/icons/doctor-512.png"
   }
 }

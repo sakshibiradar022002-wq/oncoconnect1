@@ -3,6 +3,7 @@
 
 import crypto from 'node:crypto';
 
+
 function required(name) {
   const val = process.env[name];
   if (val === undefined) {
@@ -63,17 +64,7 @@ export const config = {
   dbPath: (() => {
     if (process.env.DB_EPHEMERAL === 'true') return ':memory:';
     if (process.env.DB_PATH) return process.env.DB_PATH;
-    // Electron: use userData directory
-    try {
-      if (typeof process !== 'undefined' && process.versions?.electron) {
-        const { app } = require('electron');
-        const { join } = require('path');
-        const fs = require('fs');
-        const dataDir = join(app.getPath('userData'), 'data');
-        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-        return join(dataDir, 'oncoconnect.db');
-      }
-    } catch {}
+
     return './chemocure.db';
   })(),
 

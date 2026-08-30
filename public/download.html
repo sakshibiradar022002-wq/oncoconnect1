@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Download OncoConnect Pro — Neuro-oncology EMR</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/icons/doctor-192.png">
+<style>
+:root {
+  --bg: #080d1a;
+  --surface: #0f1729;
+  --surface2: #141d33;
+  --border: #1e2d4a;
+  --text: #e2e8f0;
+  --text-muted: #8494b2;
+  --blue: #4a90e2;
+  --blue2: #2563eb;
+  --green: #059669;
+  --green2: #34d399;
+  --purple: #7c3aed;
+  --red: #dc2626;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+.hero {
+  text-align: center;
+  padding: 70px 20px 50px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%; width: 200%; height: 200%;
+  background: radial-gradient(circle at 50% 80%, rgba(37,99,235,0.08) 0%, transparent 50%),
+              radial-gradient(circle at 30% 20%, rgba(124,58,234,0.05) 0%, transparent 40%);
+  z-index: 0;
+}
+.hero > * { position: relative; z-index: 1; }
+.logo {
+  width: 90px; height: 90px; border-radius: 24px;
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 44px; box-shadow: 0 14px 56px rgba(37,99,235,0.35);
+  margin-bottom: 24px;
+}
+h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; }
+.badge {
+  display: inline-block; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 16px; font-size: 13px; color: var(--text-muted); margin-bottom: 18px;
+}
+.badge span { color: var(--green2); font-weight: 600; }
+.subtitle {
+  font-size: 17px; color: var(--text-muted); max-width: 620px;
+  margin: 0 auto 40px; line-height: 1.6;
+}
+
+/* ── Section headers ── */
+.section-header {
+  text-align: center; margin-bottom: 32px;
+}
+.section-header h2 {
+  font-size: 1.6rem; font-weight: 700; margin-bottom: 8px;
+}
+.section-header p {
+  font-size: 14px; color: var(--text-muted);
+}
+
+/* ── Download grid ── */
+.download-section {
+  max-width: 1100px; margin: 0 auto 60px; padding: 0 20px;
+}
+.download-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+}
+@media (max-width: 800px) { .download-grid { grid-template-columns: 1fr; } }
+.download-card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 22px;
+  padding: 30px; transition: all 0.3s; position: relative; overflow: hidden;
+}
+.download-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.download-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.download-card.doctor { --accent: #2563eb; --accent2: #1d4ed8; }
+.download-card.patient { --accent: #059669; --accent2: #047857; }
+.download-card.lab { --accent: #7c3aed; --accent2: #6d28d9; }
+.download-card.server { --accent: #ea580c; --accent2: #c2410c; }
+.download-card::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.download-card:hover { border-color: var(--accent); box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px var(--accent); }
+
+.card-header {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+}
+.card-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+.card-title { font-size: 18px; font-weight: 700; }
+.card-subtitle { font-size: 12px; color: var(--text-muted); }
+.card-desc {
+  font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;
+}
+.download-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; text-decoration: none; padding: 14px 28px;
+  border-radius: 12px; font-size: 15px; font-weight: 700;
+  transition: all 0.3s; box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+  width: 100%; justify-content: center;
+}
+.download-btn:hover {
+  transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0,0,0,0.3);
+}
+.download-btn svg { width: 20px; height: 20px; }
+.download-meta {
+  display: flex; justify-content: space-between; margin-top: 12px;
+  font-size: 12px; color: var(--text-muted);
+}
+.card-badge {
+  position: absolute; top: 16px; right: 16px; font-size: 10px; font-weight: 700;
+  padding: 4px 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: .5px;
+}
+.card-badge.required { background: rgba(239,68,68,.1); color: #f87171; }
+.card-badge.optional { background: rgba(5,150,105,.1); color: var(--green2); }
+
+/* ── How it works ── */
+.how-it-works {
+  max-width: 700px; margin: 0 auto 70px; padding: 0 20px;
+}
+.how-it-works h2 {
+  text-align: center; font-size: 1.6rem; font-weight: 700; margin-bottom: 36px;
+}
+.step { display: flex; gap: 18px; margin-bottom: 24px; align-items: flex-start; }
+.step-num {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 15px;
+}
+.step-text h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+.step-text p { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+
+/* ── Features ── */
+.features {
+  max-width: 900px; margin: 0 auto 70px; padding: 0 20px;
+}
+.features h2 {
+  text-align: center; font-size: 1.6rem; font-weight: 700; margin-bottom: 36px;
+}
+.feature-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+}
+@media (max-width: 700px) { .feature-grid { grid-template-columns: 1fr; } h1 { font-size: 2rem; } }
+.feature {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+  padding: 26px 22px; text-align: center; transition: all 0.3s;
+}
+.feature:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.2); }
+.feature-icon { font-size: 34px; margin-bottom: 12px; }
+.feature h3 { font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+.feature p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+/* ── System requirements ── */
+.requirements {
+  max-width: 600px; margin: 0 auto 70px; padding: 0 20px;
+}
+.requirements h2 {
+  text-align: center; font-size: 1.6rem; font-weight: 700; margin-bottom: 28px;
+}
+.req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.req-item {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+}
+.req-item .label {
+  font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 1px; margin-bottom: 5px;
+}
+.req-item .value { font-size: 14px; font-weight: 600; }
+
+/* ── Footer ── */
+.footer {
+  text-align: center; padding: 36px 20px; font-size: 13px;
+  color: #4a5f82; border-top: 1px solid var(--border);
+}
+.footer a { color: var(--blue); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="logo">🧬</div>
+  <h1>OncoConnect Pro</h1>
+  <div class="badge"><span>v2.0</span> · Separate Apps · Shared Server</div>
+  <p class="subtitle">
+    Download the individual apps for each role. They all connect to the same server for real-time data sync.
+  </p>
+</div>
+
+<!-- ── Download Section ── -->
+<div class="download-section">
+  <div class="section-header">
+    <h2>Choose Your App</h2>
+    <p>Install only what you need. All apps sync through the shared server.</p>
+  </div>
+
+  <div class="download-grid">
+
+    <!-- Server -->
+    <div class="download-card server">
+      <div class="card-badge required">Required First</div>
+      <div class="card-header">
+        <div class="card-icon">🖥️</div>
+        <div>
+          <div class="card-title">Server</div>
+          <div class="card-subtitle">The Linking Software</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        Run this on one computer to create the shared server. It manages the database and syncs data between all connected apps. All other apps connect to this.
+      </div>
+      <a class="download-btn" href="https://github.com/sakshibiradar022002-wq/oncoconnect1/releases/latest/download/OncoConnect%20Server.exe" download>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+        Download Server (.exe)
+      </a>
+      <div class="download-meta">
+        <span>📦 ~80 MB</span>
+        <span>💻 Windows 10/11</span>
+        <span>🔌 No install</span>
+      </div>
+    </div>
+
+    <!-- Doctor -->
+    <div class="download-card doctor">
+      <div class="card-badge optional">Doctor</div>
+      <div class="card-header">
+        <div class="card-icon">👨‍⚕️</div>
+        <div>
+          <div class="card-title">Doctor Software</div>
+          <div class="card-subtitle">EMR & Patient Management</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        Full EMR dashboard with patient records, appointment scheduling, clinical notes, lab management, billing, and video calls.
+      </div>
+      <a class="download-btn" href="https://github.com/sakshibiradar022002-wq/oncoconnect1/releases/latest/download/OncoConnect%20Doctor.exe" download>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+        Download Doctor (.exe)
+      </a>
+      <div class="download-meta">
+        <span>📦 ~80 MB</span>
+        <span>💻 Windows 10/11</span>
+        <span>🔌 No install</span>
+      </div>
+    </div>
+
+    <!-- Patient -->
+    <div class="download-card patient">
+      <div class="card-badge optional">Patient</div>
+      <div class="card-header">
+        <div class="card-icon">📱</div>
+        <div>
+          <div class="card-title">Patient App</div>
+          <div class="card-subtitle">Symptom Tracker & Care</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        Log daily symptoms, track medications, view appointments, message your care team, and access treatment information.
+      </div>
+      <a class="download-btn" href="https://github.com/sakshibiradar022002-wq/oncoconnect1/releases/latest/download/OncoConnect%20Patient.exe" download>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+        Download Patient (.exe)
+      </a>
+      <div class="download-meta">
+        <span>📦 ~80 MB</span>
+        <span>💻 Windows 10/11</span>
+        <span>🔌 No install</span>
+      </div>
+    </div>
+
+    <!-- Lab -->
+    <div class="download-card lab">
+      <div class="card-badge optional">Lab</div>
+      <div class="card-header">
+        <div class="card-icon">🔬</div>
+        <div>
+          <div class="card-title">Lab Portal</div>
+          <div class="card-subtitle">Test Management & Results</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        Manage lab test orders, upload results, track sample status, and communicate with doctors about pending results.
+      </div>
+      <a class="download-btn" href="https://github.com/sakshibiradar022002-wq/oncoconnect1/releases/latest/download/OncoConnect%20Lab.exe" download>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+        Download Lab (.exe)
+      </a>
+      <div class="download-meta">
+        <span>📦 ~80 MB</span>
+        <span>💻 Windows 10/11</span>
+        <span>🔌 No install</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── How It Works ── -->
+<div class="how-it-works">
+  <h2>How It Works</h2>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <h3>Run the Server</h3>
+      <p>Download and run the <strong>Server</strong> app on one computer. It shows a connection address (like <code>http://192.168.1.100:3000</code>).</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <h3>Install Portal Apps</h3>
+      <p>Download the <strong>Doctor</strong>, <strong>Patient</strong>, or <strong>Lab</strong> app on any computer. Each is a separate download.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <h3>Connect & Use</h3>
+      <p>Open a portal app and enter the server address when prompted. All data syncs automatically between every connected device.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-text">
+      <h3>Share the Address</h3>
+      <p>Give the server address to anyone who needs access. No accounts to create — just enter the URL and start working.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Features ── -->
+<div class="features">
+  <h2>Built for Every Role</h2>
+  <div class="feature-grid">
+    <div class="feature">
+      <div class="feature-icon">👨‍⚕️</div>
+      <h3>Doctor Portal</h3>
+      <p>Full EMR dashboard with patient management, scheduling, clinical notes, and billing.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📱</div>
+      <h3>Patient App</h3>
+      <p>Symptom tracker, medication reminders, appointment viewing, and secure messaging.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔬</div>
+      <h3>Lab Portal</h3>
+      <p>Order management, result uploads, sample tracking, and doctor communication.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔄</div>
+      <h3>Real-time Sync</h3>
+      <p>All apps share the same database through the server. Changes appear instantly on every device.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔒</div>
+      <h3>Privacy First</h3>
+      <p>AES-256 encryption at rest. You control the server — no third-party cloud required.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">⚡</div>
+      <h3>Portable & Fast</h3>
+      <p>Single .exe per app. No installation needed. Run from USB drive. Launches in seconds.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── System Requirements ── -->
+<div class="requirements">
+  <h2>System Requirements</h2>
+  <div class="req-grid">
+    <div class="req-item">
+      <div class="label">Operating System</div>
+      <div class="value">Windows 10 or 11 (64-bit)</div>
+    </div>
+    <div class="req-item">
+      <div class="label">RAM</div>
+      <div class="value">4 GB minimum</div>
+    </div>
+    <div class="req-item">
+      <div class="label">Disk Space</div>
+      <div class="value">200 MB per app</div>
+    </div>
+    <div class="req-item">
+      <div class="label">Network</div>
+      <div class="value">Required for sync</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>OncoConnect Pro · Built with ❤️ for neuro-oncology care · <a href="https://github.com/sakshibiradar022002-wq/oncoconnect1">View Source on GitHub</a></p>
+</div>
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
-  "appId": "com.oncoconnect.desktop",
-  "productName": "OncoConnect Pro",
+  "appId": "com.oncoconnect.lab",
+  "productName": "OncoConnect Lab",
   "directories": {
     "output": "dist-desktop"
   },
@@ -10,6 +10,9 @@
     "electron/**/*",
     "package.json"
   ],
+  "extraMetadata": {
+    "main": "electron/main-lab.js"
+  },
   "extraResources": [
     {
       "from": "node_modules/sql.js/dist",
@@ -24,26 +27,26 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "public/icons/doctor-512.png"
+    "icon": "public/icons/patient-512.png"
   },
   "mac": {
     "target": "dmg",
-    "icon": "public/icons/doctor-512.png",
+    "icon": "public/icons/patient-512.png",
     "category": "public.app-category.medical"
   },
   "linux": {
     "target": ["AppImage", "deb"],
-    "icon": "public/icons/doctor-512.png",
+    "icon": "public/icons/patient-512.png",
     "category": "Medical"
   },
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
-    "installerIcon": "public/icons/doctor-512.png",
-    "uninstallerIcon": "public/icons/doctor-512.png",
+    "installerIcon": "public/icons/patient-512.png",
+    "uninstallerIcon": "public/icons/patient-512.png",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "OncoConnect Pro",
-    "installerHeaderIcon": "public/icons/doctor-512.png"
+    "shortcutName": "OncoConnect Lab",
+    "installerHeaderIcon": "public/icons/patient-512.png"
   }
 }
