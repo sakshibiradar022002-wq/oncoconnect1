@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="OncoConnect">
 <meta name="theme-color" content="#059669">
 <title>OncoConnect — Patient App</title>
+<link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/patient-192.png">
 <link rel="icon" type="image/png" href="/icons/patient-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -100,14 +101,28 @@ input[type="range"]{width:100%;accent-color:var(--blue);height:6px}
 .conn-banner{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--green);text-align:center}
 .conn-banner.warn{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.2);color:var(--orange)}
 .err-box{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:10px;padding:10px 14px;font-size:12.5px;margin-bottom:12px;display:none}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(-50%) translateY(-12px)}}
+@keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.screen.active{animation:screenIn .35s cubic-bezier(.4,0,.2,1)}
 </style>
 </head>
 <body>
+
+<!-- ═══ SPLASH SCREEN ═══ -->
+<div id="splash" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#040c0a 0%,#071210 35%,#0d1c18 70%,#122620 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s,visibility .5s">
+  <div style="width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,#059669,#34d399);display:flex;align-items:center;justify-content:center;font-size:42px;box-shadow:0 12px 48px rgba(5,150,105,.4);animation:splashPulse 2s ease-in-out infinite;margin-bottom:20px">🧬</div>
+  <div style="font-size:1.6rem;font-weight:800;color:#e8faf2;letter-spacing:-.5px;margin-bottom:6px">OncoConnect</div>
+  <div style="font-size:13px;color:#7d9b8e;margin-bottom:28px">Patient & Lab Portal</div>
+  <div style="width:120px;height:3px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:0%;background:linear-gradient(90deg,#059669,#34d399,#60a5fa);border-radius:3px;animation:splashLoad 1.5s ease-in-out forwards"></div></div>
+</div>
+<style>@keyframes splashPulse{0%,100%{box-shadow:0 12px 48px rgba(5,150,105,.4)}50%{box-shadow:0 12px 64px rgba(5,150,105,.6)}}@keyframes splashLoad{0%{width:0%}60%{width:70%}100%{width:100%}}</style>
+
 <div id="screen-login">
   <div class="auth-logo">
     <div class="auth-logo-icon">🧬</div>
     <div class="app-title">OncoConnect</div>
-    <div class="app-sub">Patient &amp; Lab Portal</div>
+    <div class="app-sub">Patient Portal</div>
   </div>
   <div class="conn-banner" id="conn-banner">🔗 Connected to Doctor Software</div>
   <div class="login-tabs">
@@ -232,9 +247,10 @@ input[type="range"]{width:100%;accent-color:var(--blue);height:6px}
         <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)" id="theme-label">Dark Mode</div><div style="font-size:11px;color:var(--text-muted)">Switch between light and dark</div></div>
         <div id="theme-track" style="width:40px;height:22px;border-radius:11px;background:var(--green);position:relative;transition:background .3s"><div id="theme-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(0,0,0,.2)"></div></div>
       </div>
-      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">Switch Portal</div>
-      <a href="/" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:13px;background:var(--surface);border:1px solid var(--border);margin-bottom:8px;transition:all .2s"><span>👨‍⚕️</span>Doctor Software</a>
-      <a href="/admin.html" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:13px;background:var(--surface);border:1px solid var(--border);margin-bottom:16px;transition:all .2s"><span>🛡️</span>Admin Panel</a>
+      <div id="portal-switcher" style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">Portals</div>
+      <div id="portal-links"><a href="/" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:13px;background:var(--surface);border:1px solid var(--border);margin-bottom:8px;transition:all .2s"><span>👨‍⚕️</span>Doctor Software</a>
+      <a href="/lab.html" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:13px;background:var(--surface);border:1px solid var(--border);margin-bottom:8px;transition:all .2s"><span>🔬</span>Lab Portal</a>
+      <a href="/admin.html" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:13px;background:var(--surface);border:1px solid var(--border);margin-bottom:16px;transition:all .2s"><span>🛡️</span>Admin Panel</a></div>
     </div>
     <button class="big-btn" style="background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);border-radius:12px;transition:all .2s" onclick="doLogout()">Sign Out</button>
   </div>
@@ -370,6 +386,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function v(id){const el=document.getElementById(id);return el?(el.value||'').trim():''}
 function toggle(el){el.classList.toggle('checked')}
+function showToast(msg){const t=document.createElement('div');t.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green2);color:#fff;padding:12px 24px;border-radius:12px;font-size:13px;font-weight:600;z-index:9000;box-shadow:0 8px 32px rgba(5,150,105,.3);animation:toastIn .3s ease,toastOut .3s ease 2.5s forwards;pointer-events:none;font-family:var(--font)';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000)}
 
 let currentPat=null,currentLab=null,calMonth=new Date().getMonth(),calYear=new Date().getFullYear(),_docId=null;
 
@@ -383,6 +400,8 @@ function mergeServerKeys(keys){if(!keys)return;for(const[k,entry]of Object.entri
 function switchLoginTab(tab,btn){document.querySelectorAll('.ltab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('login-patient').style.display=tab==='patient'?'block':'none';document.getElementById('login-lab').style.display=tab==='lab'?'block':'none'}
 
 window.addEventListener('DOMContentLoaded',async()=>{
+  // Hide splash screen
+  setTimeout(()=>{const sp=document.getElementById('splash');if(sp){sp.style.opacity='0';sp.style.visibility='hidden';setTimeout(()=>sp.remove(),500)}},1600);
   const b=document.getElementById('conn-banner');
   // First check local data
   const hasLocal=LS.keys('pat_').length>0||LS.keys('doc_').filter(k=>!k.startsWith('doc_email')).length>0;
@@ -1490,6 +1509,43 @@ function submitBatchCSV() {
   renderLabUpload();
   refreshLabTasks();
 }
+</script>
+
+<!-- Standalone mode: LOCK to Patient portal only -->
+<script>
+(function(){
+  if(new URLSearchParams(location.search).get('standalone')==='1'){
+    document.title='OncoConnect Patient';
+    window._standaloneMode=true;
+    // Hide portal switcher & links in sidebar
+    var s=document.getElementById('portal-switcher');
+    var l=document.getElementById('portal-links');
+    if(s)s.style.display='none';
+    if(l)l.style.display='none';
+    // Hide Lab login tab and card — patient app is PATIENT ONLY
+    var tabs=document.querySelectorAll('.ltab');
+    tabs.forEach(function(t){
+      if(t.textContent.indexOf('Lab')!==-1||t.textContent.indexOf('lab')!==-1) t.style.display='none';
+    });
+    var labCard=document.getElementById('login-lab');
+    if(labCard) labCard.style.display='none';
+    // Make sure Patient tab is active
+    var pTab=document.querySelector('.ltab.active');
+    if(!pTab){
+      var first=document.querySelector('.ltab');
+      if(first){first.click();}
+    }
+    // Also hide any cross-portal links that appear anywhere
+    document.querySelectorAll('a[href="/"],a[href="/lab.html"],a[href="/admin.html"]').forEach(function(a){a.style.display='none';});
+    // Navigation guard: prevent going to other portals
+    window.addEventListener('beforeunload',function(e){
+      var dest=(e.target||document).location;
+      if(dest && (dest.pathname==='/lab.html'||dest.pathname==='/admin.html'||dest.pathname==='/')){
+        e.preventDefault();e.returnValue='';return false;
+      }
+    });
+  }
+})();
 </script>
 </body>
 </html>
