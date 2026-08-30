@@ -13,6 +13,7 @@ import { dirname, join } from 'node:path';
 app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-gpu-compositing');
+app.commandLine.appendSwitch('disk-cache-dir', app.getPath('temp'));
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import os from 'node:os';
