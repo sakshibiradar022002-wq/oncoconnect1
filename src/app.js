@@ -33,7 +33,6 @@ import { initPush } from './push.js';
 import { observability, metricsSnapshot } from './observability.js';
 import { initSentry, sentryRequestHandler, sentryErrorHandler } from './observability/sentry.js';
 import { blockchainRouter } from './routes/blockchain.js';
-import blockchain from './blockchain/index.js';
 import { db } from './db/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -47,14 +46,7 @@ await seedProtocols();
 startTelehealthCleanup();
 initSentry(); // Initialize error tracking (no-op if SENTRY_DSN not set)
 
-// Initialize blockchain audit trail (non-blocking)
-blockchain.connect().then(connected => {
-  if (connected) {
-    console.log('[app] 🔗 Blockchain audit trail enabled');
-  } else {
-    console.log('[app] ⚠️  Blockchain not available - running without blockchain audit');
-  }
-});
+// Blockchain is now handled by electron/blockchain.js (shared chain)
 
 const app = express();
 app.set('trust proxy', 1); // needed for correct req.ip behind cloud proxies
@@ -130,9 +122,8 @@ app.get('/health', async (req, res) => {
       health.ok = false;
     }
     
-    // Check blockchain
-    const blockchainStats = await blockchain.getStats();
-    health.blockchain = blockchainStats.connected ? 'connected' : 'disconnected';
+    // Blockchain status
+    health.blockchain = 'electron-module';
     
     if (!health.ok) {
       return res.status(503).json(health);
