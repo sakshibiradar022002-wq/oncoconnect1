@@ -23,8 +23,6 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import net from 'node:net';
 
 import { getPortalConfig, getPortalIcon } from './shared-connection.js';
-import { installPortalIsolator } from './portal-isolator.js';
-import { getServerUrl } from './shared-config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -126,8 +124,6 @@ async function createWindow() {
     backgroundColor: '#071210',
     show: false,
   });
-
-  installPortalIsolator(mainWindow, 'patient');
 
   // Go directly to login page — no connection screen
   const serverUrl = `http://127.0.0.1:${serverPort}`;
