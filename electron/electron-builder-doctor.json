@@ -24,30 +24,30 @@
   "win": {
     "target": [
       {
-        "target": "portable",
-        "arch": ["x64"]
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
       }
-    ],
-    "icon": "public/icons/doctor-512.png"
+    ]
   },
   "mac": {
     "target": "dmg",
-    "icon": "public/icons/doctor-512.png",
     "category": "public.app-category.medical"
   },
   "linux": {
-    "target": ["AppImage", "deb"],
+    "target": [
+      "AppImage",
+      "deb"
+    ],
     "icon": "public/icons/doctor-512.png",
     "category": "Medical"
   },
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
-    "installerIcon": "public/icons/doctor-512.png",
-    "uninstallerIcon": "public/icons/doctor-512.png",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "OncoConnect Doctor",
-    "installerHeaderIcon": "public/icons/doctor-512.png"
+    "shortcutName": "OncoConnect Doctor"
   }
 }
