@@ -14,7 +14,6 @@ const VARIANTS = [
   { name: "Doctor",  config: "electron/electron-builder-doctor.json",  main: "electron/main-doctor.js" },
   { name: "Patient", config: "electron/electron-builder-patient.json", main: "electron/main-patient.js" },
   { name: "Lab",     config: "electron/electron-builder-lab.json",     main: "electron/main-lab.js" },
-  { name: "Server",  config: "electron/electron-builder-server.json",  main: "electron/main-server.js" },
 ];
 
 // Read original main from package.json

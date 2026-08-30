@@ -1,42 +1,33 @@
 /**
- * OncoConnect Doctor — Standalone Electron Desktop App
- *
- * Fully self-contained app with its own local Express server.
- * Goes directly to the login/registration page on launch.
- * Silently connects to shared server if available (backend only).
+ * OncoConnect Doctor — Standalone Desktop App
+ * 
+ * Fully self-contained. Runs its own local Express API + SQLite database.
+ * Linked to Patient and Lab apps via blockchain.
+ * NO server app needed — just open and use.
  */
 
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
-import { chdir } from 'node:process';
 
-// Critical Windows fixes
+// Windows compatibility fixes
 app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-gpu-compositing');
-app.commandLine.appendSwitch('user-data-dir', join(app.getPath('temp'), 'oncoconnect-doctor'));
-const exeDir = dirname(app.getPath('exe'));
-try { chdir(exeDir); } catch {}
-import { createServer } from 'node:http';
-import { createReadStream, existsSync, statSync } from 'node:fs';
-import net from 'node:net';
 
-import { getPortalConfig, getPortalIcon } from './shared-connection.js';
+import { createServer } from 'node:http';
+import { createReadStream, existsSync, readFileSync, statSync, mkdirSync } from 'node:fs';
+import net from 'node:net';
+import blockchain from './blockchain.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const PUBLIC = join(ROOT, 'public');
-
-const PORTAL = 'doctor';
-const config = getPortalConfig(PORTAL);
 
 let mainWindow = null;
 let httpServer = null;
 let expressApp = null;
 let serverPort = 0;
 
-// ── MIME types ────────────────────────────────────────────────────
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css':  'text/css; charset=utf-8',
@@ -65,30 +56,30 @@ function findFreePort() {
   });
 }
 
-/**
- * Check if a server is reachable at the given URL
- */
-async function isServerReachable(url) {
-  try {
-    const c = new AbortController();
-    const t = setTimeout(() => c.abort(), 2000);
-    const r = await fetch(url + '/health', { signal: c.signal, mode: 'cors' });
-    clearTimeout(t);
-    return r.ok;
-  } catch {
-    return false;
-  }
-}
-
-// ── Minimal static file server ────────────────────────────────────
 function serveStatic(req, res) {
   const url = new URL(req.url, `http://127.0.0.1:${serverPort}`);
   let pathname = url.pathname;
+
+  // API routes → Express
   if (pathname.startsWith('/api/')) {
     if (expressApp) { expressApp(req, res); }
     else { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'API loading' })); }
     return;
   }
+
+  // Blockchain API
+  if (pathname === '/api/blockchain/stats') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(blockchain.getStats()));
+    return;
+  }
+  if (pathname === '/api/blockchain/verify') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(blockchain.verify()));
+    return;
+  }
+
+  // Static files
   if (pathname === '/') pathname = '/index.html';
   const filePath = join(PUBLIC, pathname);
   if (!filePath.startsWith(PUBLIC)) { res.writeHead(403); res.end('Forbidden'); return; }
@@ -104,7 +95,6 @@ function serveStatic(req, res) {
   createReadStream(filePath).pipe(res);
 }
 
-// ── Try loading Express API ───────────────────────────────────────
 async function tryLoadExpress(port) {
   try {
     process.env.PORT = String(port);
@@ -112,88 +102,60 @@ async function tryLoadExpress(port) {
     process.env.ELECTRON_RUN = '1';
     const { app: electronApp } = await import('electron');
     const userData = electronApp.getPath('userData');
-    const { mkdirSync } = await import('node:fs');
     const dataDir = join(userData, 'data');
     try { mkdirSync(dataDir, { recursive: true }); } catch {}
     process.env.DB_PATH = join(dataDir, 'oncoconnect.db');
     await import('dotenv/config').catch(() => {});
     const mod = await import(pathToFileURL(join(ROOT, 'src', 'app.js')).href);
     expressApp = mod.app;
-    console.log('[doctor] Express API loaded');
+    console.log('[doctor] ✅ Express API loaded');
   } catch (err) {
-    console.error('[doctor] Express failed:', err.message);
+    console.error('[doctor] ⚠️ Express failed:', err.message);
     expressApp = null;
   }
 }
 
-// ── Create the window — goes directly to login page ───────────────
-async function createWindow() {
+function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1100,
     height: 750,
     minWidth: 800,
     minHeight: 600,
-    title: getPortalConfig(PORTAL).title,
-    icon: getPortalIcon(PORTAL, PUBLIC),
+    title: 'OncoConnect Doctor',
+    icon: join(PUBLIC, 'icons', 'doctor-512.png'),
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
     },
-    titleBarStyle: 'hiddenInset',
     backgroundColor: '#080d1a',
     show: false,
   });
 
-  // Go directly to login page — no connection screen
-  const serverUrl = `http://127.0.0.1:${serverPort}`;
-  console.log(`[doctor] Loading: ${serverUrl}${config.portalPath}`);
-  mainWindow.loadURL(`${serverUrl}${config.portalPath}?standalone=1`);
-
+  mainWindow.loadURL(`http://127.0.0.1:${serverPort}/?standalone=1`);
   mainWindow.once('ready-to-show', () => mainWindow.show());
-
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: 'deny' };
-  });
-
-  mainWindow.webContents.on('will-navigate', (e, url) => {
-    try {
-      const u = new URL(url);
-      const blocked = ['/patient.html', '/lab.html', '/admin.html'];
-      if (blocked.includes(u.pathname)) {
-        e.preventDefault();
-        console.log('[doctor] Blocked navigation to', u.pathname);
-      }
-    } catch(err) {}
-  });
-
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
   mainWindow.on('closed', () => { mainWindow = null; });
 
-  const template = [
-    {
-      label: 'OncoConnect Doctor',
-      submenu: [
-        { label: '🔄  Refresh', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
-        { type: 'separator' },
-        { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
-      ]
-    },
-    {
-      label: 'Window',
-      submenu: [{ role: 'minimize' }, { role: 'zoom' }, { role: 'togglefullscreen' }, { role: 'close' }]
-    },
-  ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: 'OncoConnect Doctor', submenu: [
+      { label: '🔄 Refresh', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
+      { type: 'separator' },
+      { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
+    ]},
+    { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'close' }] },
+  ]));
 }
 
-// ── IPC ───────────────────────────────────────────────────────────
+// IPC
 ipcMain.handle('app:getVersion', () => app.getVersion());
-ipcMain.handle('app:getDBPath', () => join(app.getPath('userData'), 'data'));
 ipcMain.handle('app:getPlatform', () => process.platform);
+ipcMain.handle('blockchain:stats', () => blockchain.getStats());
+ipcMain.handle('blockchain:verify', () => blockchain.verify());
+ipcMain.handle('blockchain:records', (_, mrn) => blockchain.getPatientRecords(mrn));
 
-// ── App lifecycle ─────────────────────────────────────────────────
+// App lifecycle
 app.whenReady().then(async () => {
   try {
     serverPort = await findFreePort();
@@ -205,6 +167,11 @@ app.whenReady().then(async () => {
     console.log(`[doctor] Local server on port ${serverPort}`);
 
     await tryLoadExpress(serverPort);
+    
+    // Record startup on blockchain
+    blockchain.recordAudit('app_started', { app: 'doctor', port: serverPort }, 'doctor');
+    console.log('[doctor] 🔗 Blockchain audit recorded');
+
     createWindow();
   } catch (err) {
     dialog.showErrorBox('OncoConnect Doctor — Error', err.message || String(err));

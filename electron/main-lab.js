@@ -1,35 +1,27 @@
 /**
- * OncoConnect Lab — Standalone Electron Desktop App
- *
- * Fully self-contained app with its own local Express server.
- * Goes directly to the login/registration page on launch.
- * Silently connects to shared server if available (backend only).
+ * OncoConnect Lab — Standalone Desktop App
+ * 
+ * Fully self-contained. Runs its own local Express API + SQLite database.
+ * Linked to Doctor and Patient apps via blockchain.
+ * NO server app needed — just open and use.
  */
 
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
-import { chdir } from 'node:process';
 
-// Critical Windows fixes
+// Windows compatibility fixes
 app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-gpu-compositing');
-app.commandLine.appendSwitch('user-data-dir', join(app.getPath('temp'), 'oncoconnect-lab'));
-const exeDir = dirname(app.getPath('exe'));
-try { chdir(exeDir); } catch {}
-import { createServer } from 'node:http';
-import { createReadStream, existsSync, statSync } from 'node:fs';
-import net from 'node:net';
 
-import { getPortalConfig, getPortalIcon } from './shared-connection.js';
+import { createServer } from 'node:http';
+import { createReadStream, existsSync, statSync, mkdirSync } from 'node:fs';
+import net from 'node:net';
+import blockchain from './blockchain.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const PUBLIC = join(ROOT, 'public');
-
-const PORTAL = 'lab';
-const config = getPortalConfig(PORTAL);
 
 let mainWindow = null;
 let httpServer = null;
@@ -56,7 +48,10 @@ const MIME = {
 function findFreePort() {
   return new Promise((resolve, reject) => {
     const srv = net.createServer();
-    srv.listen(0, '127.0.0.1', () => { const p = srv.address().port; srv.close(() => resolve(p)); });
+    srv.listen(0, '127.0.0.1', () => {
+      const port = srv.address().port;
+      srv.close(() => resolve(port));
+    });
     srv.on('error', reject);
   });
 }
@@ -64,11 +59,19 @@ function findFreePort() {
 function serveStatic(req, res) {
   const url = new URL(req.url, `http://127.0.0.1:${serverPort}`);
   let pathname = url.pathname;
+
   if (pathname.startsWith('/api/')) {
     if (expressApp) { expressApp(req, res); }
     else { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'API loading' })); }
     return;
   }
+
+  if (pathname === '/api/blockchain/stats') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(blockchain.getStats()));
+    return;
+  }
+
   if (pathname === '/') pathname = '/lab.html';
   const filePath = join(PUBLIC, pathname);
   if (!filePath.startsWith(PUBLIC)) { res.writeHead(403); res.end('Forbidden'); return; }
@@ -79,8 +82,7 @@ function serveStatic(req, res) {
     return;
   }
   const ext = join('.', pathname.split('.').pop()).toLowerCase();
-  const contentType = MIME[ext] || 'application/octet-stream';
-  res.writeHead(200, { 'Content-Type': contentType });
+  res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
   createReadStream(filePath).pipe(res);
 }
 
@@ -91,74 +93,56 @@ async function tryLoadExpress(port) {
     process.env.ELECTRON_RUN = '1';
     const { app: electronApp } = await import('electron');
     const userData = electronApp.getPath('userData');
-    const { mkdirSync } = await import('node:fs');
     const dataDir = join(userData, 'data');
     try { mkdirSync(dataDir, { recursive: true }); } catch {}
     process.env.DB_PATH = join(dataDir, 'oncoconnect.db');
     await import('dotenv/config').catch(() => {});
     const mod = await import(pathToFileURL(join(ROOT, 'src', 'app.js')).href);
     expressApp = mod.app;
-    console.log('[lab] Express API loaded');
+    console.log('[lab] ✅ Express API loaded');
   } catch (err) {
-    console.error('[lab] Express failed:', err.message);
+    console.error('[lab] ⚠️ Express failed:', err.message);
     expressApp = null;
   }
 }
 
-// ── Create the window — goes directly to login page ───────────────
-async function createWindow() {
+function createWindow() {
   mainWindow = new BrowserWindow({
     width: 440,
     height: 780,
     minWidth: 360,
     minHeight: 600,
-    title: getPortalConfig(PORTAL).title,
-    icon: getPortalIcon(PORTAL, PUBLIC),
+    title: 'OncoConnect Lab',
+    icon: join(PUBLIC, 'icons', 'patient-512.png'),
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
     },
-    titleBarStyle: 'hiddenInset',
     backgroundColor: '#0c0a1a',
     show: false,
   });
 
-  // Go directly to login page — no connection screen
-  const serverUrl = `http://127.0.0.1:${serverPort}`;
-  console.log(`[lab] Loading: ${serverUrl}${config.portalPath}`);
-  mainWindow.loadURL(`${serverUrl}${config.portalPath}?standalone=1`);
-
+  mainWindow.loadURL(`http://127.0.0.1:${serverPort}/lab.html?standalone=1`);
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
-
-  mainWindow.webContents.on('will-navigate', (e, url) => {
-    try {
-      const u = new URL(url);
-      const blocked = ['/patient.html', '/', '/admin.html'];
-      if (blocked.includes(u.pathname)) { e.preventDefault(); console.log('[lab] Blocked nav to', u.pathname); }
-    } catch(err) {}
-  });
   mainWindow.on('closed', () => { mainWindow = null; });
 
-  const template = [
-    {
-      label: 'OncoConnect Lab',
-      submenu: [
-        { label: '🔄  Refresh', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
-        { type: 'separator' },
-        { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
-      ]
-    },
-    { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'zoom' }, { role: 'close' }] },
-  ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: 'OncoConnect Lab', submenu: [
+      { label: '🔄 Refresh', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
+      { type: 'separator' },
+      { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
+    ]},
+    { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'close' }] },
+  ]));
 }
 
 ipcMain.handle('app:getVersion', () => app.getVersion());
-ipcMain.handle('app:getDBPath', () => join(app.getPath('userData'), 'data'));
 ipcMain.handle('app:getPlatform', () => process.platform);
+ipcMain.handle('blockchain:stats', () => blockchain.getStats());
+ipcMain.handle('blockchain:records', (_, mrn) => blockchain.getPatientRecords(mrn));
 
 app.whenReady().then(async () => {
   try {
@@ -168,6 +152,9 @@ app.whenReady().then(async () => {
     console.log(`[lab] Local server on port ${serverPort}`);
 
     await tryLoadExpress(serverPort);
+    blockchain.recordAudit('app_started', { app: 'lab', port: serverPort }, 'lab');
+    console.log('[lab] 🔗 Blockchain audit recorded');
+
     createWindow();
   } catch (err) {
     dialog.showErrorBox('OncoConnect Lab — Error', err.message || String(err));
