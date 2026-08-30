@@ -1,8 +1,8 @@
 /**
  * OncoConnect Lab — Standalone Electron Desktop App
  *
- * Self-contained app that connects to an OncoConnect server.
- * Shows connection screen on first launch, then loads the Lab portal.
+ * Fully self-contained app with its own local Express server.
+ * Goes directly to the login/registration page on launch.
  */
 
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
@@ -12,9 +12,8 @@ import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import net from 'node:net';
 
-import { getConnectionHTML, getPortalConfig, getPortalIcon } from './shared-connection.js';
+import { getPortalConfig, getPortalIcon } from './shared-connection.js';
 import { installPortalIsolator } from './portal-isolator.js';
-import { getServerUrl } from './shared-config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -22,10 +21,6 @@ const PUBLIC = join(ROOT, 'public');
 
 const PORTAL = 'lab';
 const config = getPortalConfig(PORTAL);
-const STORAGE_KEY = 'oncoconnect_server_url';
-
-// Check for server URL from shared config (written by Server app)
-const SERVER_URL_FROM_CONFIG = getServerUrl();
 
 let mainWindow = null;
 let httpServer = null;
@@ -65,7 +60,7 @@ function serveStatic(req, res) {
     else { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'API loading' })); }
     return;
   }
-  if (pathname === '/') pathname = '/lab.html'; // Default to lab page
+  if (pathname === '/') pathname = '/lab.html';
   const filePath = join(PUBLIC, pathname);
   if (!filePath.startsWith(PUBLIC)) { res.writeHead(403); res.end('Forbidden'); return; }
   if (!existsSync(filePath) || !statSync(filePath).isFile()) {
@@ -101,6 +96,7 @@ async function tryLoadExpress(port) {
   }
 }
 
+// ── Create the window — goes directly to login page ───────────────
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 440,
@@ -118,18 +114,18 @@ async function createWindow() {
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#0c0a1a',
     show: false,
-  });  // Install portal isolation BEFORE loading any content
+  });
+
   installPortalIsolator(mainWindow, 'lab');
 
-  // Skip connection screen — go directly to login page
-  const serverUrl = SERVER_URL_FROM_CONFIG || 'http://127.0.0.1:3000';
-  console.log(`[lab] Connecting to: ${serverUrl}`);
+  // Go directly to login page — no connection screen
+  const serverUrl = `http://127.0.0.1:${serverPort}`;
+  console.log(`[lab] Loading: ${serverUrl}${config.portalPath}`);
   mainWindow.loadURL(`${serverUrl}${config.portalPath}?standalone=1`);
-  mainWindow.once('ready-to-show', () => mainWindow.show());
 
+  mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
 
-  // Block navigation to other portal pages
   mainWindow.webContents.on('will-navigate', (e, url) => {
     try {
       const u = new URL(url);
@@ -156,7 +152,6 @@ async function createWindow() {
 ipcMain.handle('app:getVersion', () => app.getVersion());
 ipcMain.handle('app:getDBPath', () => join(app.getPath('userData'), 'data'));
 ipcMain.handle('app:getPlatform', () => process.platform);
-ipcMain.handle('app:getServerUrl', () => SERVER_URL_FROM_CONFIG);
 
 app.whenReady().then(async () => {
   try {
@@ -164,8 +159,9 @@ app.whenReady().then(async () => {
     httpServer = createServer(serveStatic);
     await new Promise((resolve, reject) => { httpServer.listen(serverPort, '127.0.0.1', resolve); httpServer.on('error', reject); });
     console.log(`[lab] Local server on port ${serverPort}`);
+
+    await tryLoadExpress(serverPort);
     createWindow();
-    tryLoadExpress(serverPort);
   } catch (err) {
     dialog.showErrorBox('OncoConnect Lab — Error', err.message || String(err));
     app.quit();

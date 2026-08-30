@@ -1,9 +1,8 @@
 /**
  * OncoConnect Doctor — Standalone Electron Desktop App
  *
- * This is a self-contained app that connects to an OncoConnect server.
- * On first launch it shows a connection screen asking for the server URL.
- * Once connected, it loads the Doctor portal and saves the URL for future use.
+ * Fully self-contained app with its own local Express server.
+ * Goes directly to the login/registration page on launch.
  */
 
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
@@ -13,9 +12,8 @@ import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import net from 'node:net';
 
-import { getConnectionHTML, getPortalConfig, getPortalIcon } from './shared-connection.js';
+import { getPortalConfig, getPortalIcon } from './shared-connection.js';
 import { installPortalIsolator } from './portal-isolator.js';
-import { getServerUrl } from './shared-config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -23,16 +21,11 @@ const PUBLIC = join(ROOT, 'public');
 
 const PORTAL = 'doctor';
 const config = getPortalConfig(PORTAL);
-const STORAGE_KEY = 'oncoconnect_server_url';
-
-// Check for server URL from shared config (written by Server app)
-const SERVER_URL_FROM_CONFIG = getServerUrl();
 
 let mainWindow = null;
 let httpServer = null;
 let expressApp = null;
 let serverPort = 0;
-let isStandalone = true; // always true for standalone apps
 
 // ── MIME types ────────────────────────────────────────────────────
 const MIME = {
@@ -109,7 +102,7 @@ async function tryLoadExpress(port) {
   }
 }
 
-// ── Create the window ─────────────────────────────────────────────
+// ── Create the window — goes directly to login page ───────────────
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1100,
@@ -132,9 +125,9 @@ async function createWindow() {
   // Install portal isolation BEFORE loading any content
   installPortalIsolator(mainWindow, 'doctor');
 
-  // Skip connection screen — go directly to login page
-  const serverUrl = SERVER_URL_FROM_CONFIG || 'http://127.0.0.1:3000';
-  console.log(`[doctor] Connecting to: ${serverUrl}`);
+  // Go directly to login page — no connection screen
+  const serverUrl = `http://127.0.0.1:${serverPort}`;
+  console.log(`[doctor] Loading: ${serverUrl}${config.portalPath}`);
   mainWindow.loadURL(`${serverUrl}${config.portalPath}?standalone=1`);
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
@@ -144,7 +137,6 @@ async function createWindow() {
     return { action: 'deny' };
   });
 
-  // Also block navigation to other portal pages at the webContents level
   mainWindow.webContents.on('will-navigate', (e, url) => {
     try {
       const u = new URL(url);
@@ -158,7 +150,6 @@ async function createWindow() {
 
   mainWindow.on('closed', () => { mainWindow = null; });
 
-  // Simple menu for standalone app
   const template = [
     {
       label: 'OncoConnect Doctor',
@@ -180,12 +171,10 @@ async function createWindow() {
 ipcMain.handle('app:getVersion', () => app.getVersion());
 ipcMain.handle('app:getDBPath', () => join(app.getPath('userData'), 'data'));
 ipcMain.handle('app:getPlatform', () => process.platform);
-ipcMain.handle('app:getServerUrl', () => SERVER_URL_FROM_CONFIG);
 
 // ── App lifecycle ─────────────────────────────────────────────────
 app.whenReady().then(async () => {
   try {
-    // Start a local Express server for API
     serverPort = await findFreePort();
     httpServer = createServer(serveStatic);
     await new Promise((resolve, reject) => {
@@ -194,8 +183,8 @@ app.whenReady().then(async () => {
     });
     console.log(`[doctor] Local server on port ${serverPort}`);
 
+    await tryLoadExpress(serverPort);
     createWindow();
-    tryLoadExpress(serverPort);
   } catch (err) {
     dialog.showErrorBox('OncoConnect Doctor — Error', err.message || String(err));
     app.quit();
