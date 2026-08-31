@@ -24,7 +24,7 @@
       "to": "ffmpeg.dll"
     }
   ],
-  "asar": true,
+  "asar": false,
   "win": {
     "target": [
       {
