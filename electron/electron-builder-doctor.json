@@ -18,6 +18,10 @@
     {
       "from": "node_modules/sql.js/dist",
       "to": "sql.js"
+    },
+    {
+      "from": "node_modules/electron/dist/ffmpeg.dll",
+      "to": "ffmpeg.dll"
     }
   ],
   "asar": true,
