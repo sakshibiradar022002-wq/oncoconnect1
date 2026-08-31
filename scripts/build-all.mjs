@@ -2,30 +2,28 @@
 /**
  * build-all.mjs — Build all OncoConnect standalone apps.
  *
- * Produces portable .exe files for:
+ * Produces unpacked Electron app folders for:
  *   - OncoConnect Doctor   (Doctor Software)
  *   - OncoConnect Patient  (Patient App)
  *   - OncoConnect Lab      (Lab Portal)
- *   - OncoConnect Server   (Backend Server — the "linking software")
+ *   - OncoConnect Server   (Backend Server)
+ *
+ * Each app is a self-contained Electron app that opens in a native window.
  *
  * Usage:
  *   node scripts/build-all.mjs
- *   npm run electron:build:all
- *
- * Individual builds:
- *   npm run electron:build:doctor
- *   npm run electron:build:patient
- *   npm run electron:build:lab
- *   npm run electron:build:server
+ *   node scripts/build-all.mjs doctor    (build just one)
  */
 
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, cpSync, readdirSync, statSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, cpSync, rmSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
+const DIST = join(ROOT, "dist-desktop");
+const DESKTOP = join(ROOT, "Desktop");
 
 const BUILD_VARIANTS = [
   { name: "Doctor",  config: "electron/electron-builder-doctor.json",  main: "electron/main-doctor.js" },
@@ -34,16 +32,11 @@ const BUILD_VARIANTS = [
   { name: "Server",  config: "electron/electron-builder-server.json",  main: "electron/main-server.js" },
 ];
 
-function log(msg) {
-  console.log(`\x1b[36m▸\x1b[0m ${msg}`);
-}
+function log(msg) { console.log(`\x1b[36m▸\x1b[0m ${msg}`); }
+function run(cmd) { execSync(cmd, { cwd: ROOT, stdio: "inherit" }); }
 
-function run(cmd) {
-  execSync(cmd, { cwd: ROOT, stdio: "inherit" });
-}
-
-const targetName = process.argv[2]; // optional: doctor, patient, lab, server
-
+// ── Parse args ──────────────────────────────────────────────────
+const targetName = process.argv[2];
 const variants = targetName
   ? BUILD_VARIANTS.filter((v) => v.name.toLowerCase() === targetName.toLowerCase())
   : BUILD_VARIANTS;
@@ -57,74 +50,87 @@ if (variants.length === 0) {
 process.env.CSC_IDENTITY_AUTO_DISCOVERY = "false";
 
 const electronBuilder = join(ROOT, "node_modules/.bin/electron-builder");
-const builder = existsSync(electronBuilder + ".cmd")
-  ? electronBuilder + ".cmd"
-  : electronBuilder;
+const builder = existsSync(electronBuilder + ".cmd") ? electronBuilder + ".cmd" : electronBuilder;
 
+// ── Build each variant ──────────────────────────────────────────
 for (const v of variants) {
   log(`\n${"═".repeat(50)}`);
   log(`Building OncoConnect ${v.name}...`);
   log(`${"═".repeat(50)}\n`);
 
-  // Patch package.json with the correct main entry point
+  // Patch package.json main entry point
   const pkgPath = join(ROOT, "package.json");
   const originalPkg = readFileSync(pkgPath, "utf-8");
   const pkg = JSON.parse(originalPkg);
-  const origMain = pkg.main;
   pkg.main = v.main;
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
   log(`Patched package.json main → ${v.main}`);
 
   try {
-    run(`"${builder}" --config "${v.config}" --win portable`);
+    // Build as unpacked dir (not portable) — creates actual Electron .exe
+    run(`"${builder}" --config "${v.config}" --win dir`);
   } finally {
-    // Restore original package.json
     writeFileSync(pkgPath, originalPkg);
-    log(`Restored package.json main → ${origMain}`);
+  }
+
+  // Save win-unpacked to a named folder before next build overwrites it
+  const unpacked = join(DIST, "win-unpacked");
+  const named = join(DIST, `OncoConnect ${v.name}`);
+  if (existsSync(unpacked)) {
+    if (existsSync(named)) rmSync(named, { recursive: true });
+    cpSync(unpacked, named, { recursive: true });
+    log(`✅ Saved OncoConnect ${v.name}/ (${countFiles(named)} files)`);
+  } else {
+    log(`⚠️  win-unpacked not found for ${v.name}`);
   }
 }
 
-// ── Deploy portable .exe files to Desktop/ folders ──────────────
+// ── Deploy to user's Desktop ────────────────────────────────────
+log("\n📂 Deploying to Desktop...");
 
-const DESKTOP = join(ROOT, 'Desktop');
-const DEPLOY_MAP = [
-  { pattern: 'OncoConnect Doctor',  folder: 'OncoConnect Doctor' },
-  { pattern: 'OncoConnect Patient', folder: 'OncoConnect Patient' },
-  { pattern: 'OncoConnect Lab',     folder: 'OncoConnect Lab' },
-  { pattern: 'OncoConnect Server',  folder: 'OncoConnect Server' },
-];
+for (const v of variants) {
+  const src = join(DIST, `OncoConnect ${v.name}`);
+  const dst = join(DESKTOP, `OncoConnect ${v.name}`);
 
-const distDir = join(ROOT, 'dist-desktop');
-if (existsSync(distDir)) {
-  const exes = readdirSync(distDir).filter((f) => f.endsWith('.exe'));
-  if (exes.length > 0) {
-    log(`\n✅ Build complete! Files in dist-desktop/:\n`);
-    for (const exe of exes) {
-      const { size } = statSync(join(distDir, exe));
-      const mb = (size / 1024 / 1024).toFixed(1);
-      log(`  📦 ${exe} (${mb} MB)`);
-    }
-
-    // Copy portable .exe files to Desktop folders
-    log('\n📂 Deploying to Desktop/...');
-    for (const { pattern, folder } of DEPLOY_MAP) {
-      const matched = exes.find((e) => e.includes(pattern));
-      if (!matched) {
-        log(`  ⚠️  No .exe found matching "${pattern}" — skipping`);
-        continue;
-      }
-      const src = join(distDir, matched);
-      const dstDir = join(DESKTOP, folder);
-      mkdirSync(dstDir, { recursive: true });
-      // Copy as clean name without version number (e.g. 'OncoConnect Doctor.exe')
-      const cleanName = `${folder}.exe`;
-      const dst = join(dstDir, cleanName);
-      cpSync(src, dst);
-      const { size } = statSync(dst);
-      const mb = (size / 1024 / 1024).toFixed(1);
-      log(`  ✅ ${matched} → Desktop/${folder}/${cleanName} (${mb} MB)`);
-    }
-
-    log('\n🎉 All apps deployed! Double-click the .exe in each Desktop/ folder to launch.');
+  if (!existsSync(src)) {
+    log(`  ⚠️  OncoConnect ${v.name} not built — skipping`);
+    continue;
   }
+
+  mkdirSync(dst, { recursive: true });
+  rmSync(dst, { recursive: true, force: true });
+  cpSync(src, dst, { recursive: true });
+
+  // Find the main .exe
+  const exe = findExe(dst);
+  if (exe) {
+    log(`  ✅ OncoConnect ${v.name} → Desktop (${basename(exe)})`);
+  } else {
+    log(`  ✅ OncoConnect ${v.name} → Desktop (folder)`);
+  }
+}
+
+log("\n🎉 Done! Double-click the .exe in each Desktop folder to launch.");
+
+// ── Helpers ─────────────────────────────────────────────────────
+function countFiles(dir) {
+  let count = 0;
+  const items = readdirSync(dir, { withFileTypes: true });
+  for (const item of items) {
+    if (item.isFile()) count++;
+    else if (item.isDirectory()) count += countFiles(join(dir, item.name));
+  }
+  return count;
+}
+
+function findExe(dir) {
+  const items = readdirSync(dir, { withFileTypes: true });
+  for (const item of items) {
+    if (item.isFile() && item.name.endsWith(".exe")) return join(dir, item.name);
+  }
+  return null;
+}
+
+function basename(p) {
+  return p.split(/[\\/]/).pop();
 }
