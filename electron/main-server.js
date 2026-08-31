@@ -7,7 +7,7 @@
 
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, extname } from 'node:path';
 import { chdir } from 'node:process';
 
 // Fix Windows sandbox/GPU crash on Electron 33
@@ -77,7 +77,7 @@ function serveStatic(req, res) {
     else { res.writeHead(404); res.end('Not Found'); }
     return;
   }
-  const ext = join('.', pathname.split('.').pop()).toLowerCase();
+  const ext = extname(pathname).toLowerCase();
   res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
   createReadStream(filePath).pipe(res);
 }

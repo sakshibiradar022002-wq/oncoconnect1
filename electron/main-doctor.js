@@ -8,7 +8,7 @@
 
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, extname } from 'node:path';
 
 // Windows compatibility fixes
 app.commandLine.appendSwitch('no-sandbox');
@@ -89,7 +89,7 @@ function serveStatic(req, res) {
     else { res.writeHead(404); res.end('Not Found'); }
     return;
   }
-  const ext = join('.', pathname.split('.').pop()).toLowerCase();
+  const ext = extname(pathname).toLowerCase();
   const contentType = MIME[ext] || 'application/octet-stream';
   res.writeHead(200, { 'Content-Type': contentType });
   createReadStream(filePath).pipe(res);
