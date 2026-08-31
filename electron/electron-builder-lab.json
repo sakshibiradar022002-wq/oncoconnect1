@@ -24,12 +24,13 @@
   "win": {
     "target": [
       {
-        "target": "nsis",
+        "target": "portable",
         "arch": [
           "x64"
         ]
       }
-    ]
+    ],
+    "icon": "public/icons/lab-512.png"
   },
   "mac": {
     "target": "dmg",
@@ -40,14 +41,7 @@
       "AppImage",
       "deb"
     ],
-    "icon": "public/icons/patient-512.png",
+    "icon": "public/icons/lab-512.png",
     "category": "Medical"
-  },
-  "nsis": {
-    "oneClick": false,
-    "allowToChangeInstallationDirectory": true,
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true,
-    "shortcutName": "OncoConnect Lab"
   }
 }

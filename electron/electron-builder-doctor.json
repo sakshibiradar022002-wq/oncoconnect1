@@ -24,12 +24,13 @@
   "win": {
     "target": [
       {
-        "target": "nsis",
+        "target": "portable",
         "arch": [
           "x64"
         ]
       }
-    ]
+    ],
+    "icon": "public/icons/doctor-512.png"
   },
   "mac": {
     "target": "dmg",
@@ -42,12 +43,5 @@
     ],
     "icon": "public/icons/doctor-512.png",
     "category": "Medical"
-  },
-  "nsis": {
-    "oneClick": false,
-    "allowToChangeInstallationDirectory": true,
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true,
-    "shortcutName": "OncoConnect Doctor"
   }
 }

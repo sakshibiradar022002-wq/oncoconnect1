@@ -39,15 +39,5 @@
     "target": ["AppImage", "deb"],
     "icon": "public/icons/doctor-512.png",
     "category": "Medical"
-  },
-  "nsis": {
-    "oneClick": false,
-    "allowToChangeInstallationDirectory": true,
-    "installerIcon": "public/icons/doctor-512.png",
-    "uninstallerIcon": "public/icons/doctor-512.png",
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true,
-    "shortcutName": "OncoConnect Server",
-    "installerHeaderIcon": "public/icons/doctor-512.png"
   }
 }

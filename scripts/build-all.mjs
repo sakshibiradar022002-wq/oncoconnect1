@@ -20,7 +20,7 @@
  */
 
 import { execSync } from "node:child_process";
-import { existsSync, readdirSync, statSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, cpSync, readdirSync, statSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -84,10 +84,19 @@ for (const v of variants) {
   }
 }
 
-// Report output
-const distDir = join(ROOT, "dist-desktop");
+// ── Deploy portable .exe files to Desktop/ folders ──────────────
+
+const DESKTOP = join(ROOT, 'Desktop');
+const DEPLOY_MAP = [
+  { pattern: 'OncoConnect Doctor',  folder: 'OncoConnect Doctor' },
+  { pattern: 'OncoConnect Patient', folder: 'OncoConnect Patient' },
+  { pattern: 'OncoConnect Lab',     folder: 'OncoConnect Lab' },
+  { pattern: 'OncoConnect Server',  folder: 'OncoConnect Server' },
+];
+
+const distDir = join(ROOT, 'dist-desktop');
 if (existsSync(distDir)) {
-  const exes = readdirSync(distDir).filter((f) => f.endsWith(".exe"));
+  const exes = readdirSync(distDir).filter((f) => f.endsWith('.exe'));
   if (exes.length > 0) {
     log(`\n✅ Build complete! Files in dist-desktop/:\n`);
     for (const exe of exes) {
@@ -95,5 +104,27 @@ if (existsSync(distDir)) {
       const mb = (size / 1024 / 1024).toFixed(1);
       log(`  📦 ${exe} (${mb} MB)`);
     }
+
+    // Copy portable .exe files to Desktop folders
+    log('\n📂 Deploying to Desktop/...');
+    for (const { pattern, folder } of DEPLOY_MAP) {
+      const matched = exes.find((e) => e.includes(pattern));
+      if (!matched) {
+        log(`  ⚠️  No .exe found matching "${pattern}" — skipping`);
+        continue;
+      }
+      const src = join(distDir, matched);
+      const dstDir = join(DESKTOP, folder);
+      mkdirSync(dstDir, { recursive: true });
+      // Copy as clean name without version number (e.g. 'OncoConnect Doctor.exe')
+      const cleanName = `${folder}.exe`;
+      const dst = join(dstDir, cleanName);
+      cpSync(src, dst);
+      const { size } = statSync(dst);
+      const mb = (size / 1024 / 1024).toFixed(1);
+      log(`  ✅ ${matched} → Desktop/${folder}/${cleanName} (${mb} MB)`);
+    }
+
+    log('\n🎉 All apps deployed! Double-click the .exe in each Desktop/ folder to launch.');
   }
 }
