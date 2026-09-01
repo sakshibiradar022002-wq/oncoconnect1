@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">OncoConnect</string>
-    <string name="title_activity_main">OncoConnect</string>
-    <string name="package_name">com.oncoconnect.patient</string>
-    <string name="custom_url_scheme">com.oncoconnect.patient</string>
+    <string name="app_name">VELTRUVIA</string>
+    <string name="title_activity_main">VELTRUVIA</string>
+    <string name="package_name">com.veltruvia.patient</string>
+    <string name="custom_url_scheme">com.veltruvia.patient</string>
 </resources>

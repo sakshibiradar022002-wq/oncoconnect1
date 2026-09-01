@@ -489,22 +489,22 @@ syncRouter.post('/password-change-request', authenticate, requireRole('doctor', 
     try {
       await sendMail({
         to: pat.email,
-        subject: `Your OncoConnect password change code: ${otp}`,
+        subject: `Your VELTRUVIA password change code: ${otp}`,
         text: `Hello ${pat.name || ''},
 
-Your doctor has requested a password change for your OncoConnect account.
+Your doctor has requested a password change for your VELTRUVIA account.
 
 Your verification code is: ${otp}
 
-Open the OncoConnect Patient App and enter this code to approve the change.
+Open the VELTRUVIA Patient App and enter this code to approve the change.
 This code expires in 30 minutes. If you didn't request this, contact your doctor.`,
         html: `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:0 auto;padding:24px;">
-          <h2 style="color:#059669;margin:0 0 6px;">OncoConnect</h2>
+          <h2 style="color:#059669;margin:0 0 6px;">VELTRUVIA</h2>
           <p>Hello${pat.name ? ' ' + pat.name : ''},</p>
           <p>Your doctor has requested a password change for your account.</p>
           <p>Your verification code is:</p>
           <div style="font-size:32px;font-weight:800;letter-spacing:6px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px;text-align:center;color:#059669;">${otp}</div>
-          <p>Open the <strong>OncoConnect Patient App</strong> and enter this code to approve the password change.</p>
+          <p>Open the <strong>VELTRUVIA Patient App</strong> and enter this code to approve the password change.</p>
           <p style="color:#64748b;font-size:13px;">This code expires in 30 minutes. If you didn't request this, contact your doctor.</p>
         </div>`,
       });
@@ -517,7 +517,7 @@ This code expires in 30 minutes. If you didn't request this, contact your doctor
   if (deliveryMethod === 'doctor' && pat.phone && await smsConfigured()) {
     try {
       await sendSms(pat.phone,
-        `OncoConnect: Your password change code is ${otp}. Enter it in the Patient App to approve. Expires in 30 min.`
+        `VELTRUVIA: Your password change code is ${otp}. Enter it in the Patient App to approve. Expires in 30 min.`
       );
       deliveryMethod = 'sms';
       deliveryDetail = pat.phone;

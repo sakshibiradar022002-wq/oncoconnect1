@@ -38,7 +38,7 @@ function buildReminderHtml(patientName, appointment, tier) {
 <div style="font-family:'Segoe UI',system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px;">
   <div style="background:${tier.color};color:#fff;border-radius:10px 10px 0 0;padding:16px 20px;">
     <div style="font-size:22px;margin-bottom:4px;">🧬</div>
-    <div style="font-size:18px;font-weight:800;">OncoConnect</div>
+    <div style="font-size:18px;font-weight:800;">VELTRUVIA</div>
     <div style="font-size:12px;opacity:.85;">Neuro-Oncology EMR</div>
   </div>
   <div style="background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px;padding:20px;">
@@ -72,7 +72,7 @@ function buildReminderHtml(patientName, appointment, tier) {
     </div>
 
     <div style="border-top:1px solid #e2e8f0;padding-top:12px;text-align:center;">
-      <div style="font-size:10px;color:#94a3b8;">OncoConnect Neuro-Oncology EMR · ${new Date().getFullYear()}</div>
+      <div style="font-size:10px;color:#94a3b8;">VELTRUVIA Neuro-Oncology EMR · ${new Date().getFullYear()}</div>
     </div>
   </div>
 </div>`;
@@ -82,7 +82,7 @@ function buildReminderText(patientName, appointment, tier) {
   const dateStr = appointment.date;
   const timeStr = appointment.time || 'Not specified';
   return `
-OncoConnect — ${tier.subject.replace(/^[^\s]+\s/, '')}
+VELTRUVIA — ${tier.subject.replace(/^[^\s]+\s/, '')}
 
 Hello ${patientName},
 
@@ -95,7 +95,7 @@ You have an upcoming appointment:
 
 Please keep this appointment. If you need to reschedule, contact your doctor.
 
-— OncoConnect Neuro-Oncology EMR
+— VELTRUVIA Neuro-Oncology EMR
   `.trim();
 }
 

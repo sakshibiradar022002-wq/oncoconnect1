@@ -196,11 +196,11 @@ emailRouter.post('/broadcast', authenticate, requireAdminOrFirstDoctor, broadcas
       const personalizedHtml = html
         ? html.replace(/\{name\}/gi, recipient.name)
         : `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
-            <h2 style="color:#2C5EAD;margin:0 0 6px;">OncoConnect</h2>
+            <h2 style="color:#2C5EAD;margin:0 0 6px;">VELTRUVIA</h2>
             <p>Hello ${recipient.name},</p>
             <div style="white-space:pre-wrap;line-height:1.6;">${personalizedText}</div>
             <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;">
-            <p style="color:#94a3b8;font-size:11px;">This message was sent via OncoConnect Neuro-Oncology EMR.</p>
+            <p style="color:#94a3b8;font-size:11px;">This message was sent via VELTRUVIA Neuro-Oncology EMR.</p>
           </div>`;
 
       await sendMail({

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 /**
- * @title OncoConnect Audit Trail
+ * @title VELTRUVIA Audit Trail
  * @notice Immutable audit log for healthcare records
  * @dev Stores hashes of medical records for tamper-proof verification
  */

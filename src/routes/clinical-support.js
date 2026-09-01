@@ -374,7 +374,7 @@ export async function seedDrugInteractions() {
   const now = new Date().toISOString();
   const ins = await db.prepare(`
     INSERT OR IGNORE INTO drug_interactions (id, drug_a, drug_b, severity, description, recommendation, source)
-    VALUES (?, ?, ?, ?, ?, ?, 'OncoConnect CDS')
+    VALUES (?, ?, ?, ?, ?, ?, 'VELTRUVIA CDS')
   `);
 
   const interactions = [

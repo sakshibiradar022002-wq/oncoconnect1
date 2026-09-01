@@ -1,7 +1,7 @@
-# OncoConnect — Governance, Privacy & Clinical Safety
+# VELTRUVIA — Governance, Privacy & Clinical Safety
 
 This document is the reference a hospital data-protection officer, ethics
-committee, or auditor would ask for. It states what data OncoConnect handles,
+committee, or auditor would ask for. It states what data VELTRUVIA handles,
 why, where it lives, how long it is kept, and how patient rights are honoured.
 It is a living document; the app's **Clinic Management → 🛡 Governance** tab
 shows the live figures (consent coverage, audit integrity, security events).
@@ -58,7 +58,7 @@ research pathway uses **de-identified** data only (see §4).
 
 ## 4. Patient rights (DPDP Act 2023 / GDPR mapping)
 
-| Right | How OncoConnect honours it |
+| Right | How VELTRUVIA honours it |
 |---|---|
 | Notice / transparency | Versioned in-app consent screen (English + Hindi) explaining data, purpose, rights before any processing |
 | Access / portability | Patient App → Data & Backup exports the patient's full data as JSON any time |
@@ -68,7 +68,7 @@ research pathway uses **de-identified** data only (see §4).
 | Grievance / contact | Via the treating clinic (the data fiduciary) |
 
 **Roles under the law:** the operating clinic/hospital is the **Data
-Fiduciary** (GDPR: Controller); OncoConnect-the-software is the tool it
+Fiduciary** (GDPR: Controller); VELTRUVIA-the-software is the tool it
 operates. When self-hosted, the clinic is also the processor.
 
 ## 5. Consent versioning

@@ -1,9 +1,9 @@
-# OncoConnect — Clinic Implementation Kit
+# VELTRUVIA — Clinic Implementation Kit
 
 Everything a clinic needs to run a pilot. Pair this with GOVERNANCE.md
 (data handling) and DPIA.md (risk sign-off).
 
-## What OncoConnect does (one line each)
+## What VELTRUVIA does (one line each)
 
 - **Patients** log symptoms and quality-of-life, see clear "when to call now"
   triage, and message their team — in English or Hindi, with accessibility modes.
@@ -62,8 +62,8 @@ follow the incident process in GOVERNANCE.md §8.
 ## Deploy in 5 minutes (self-host)
 
 ```bash
-git clone https://github.com/sakshibiradar022002-wq/OncoConnect
-cd OncoConnect && npm install
+git clone https://github.com/sakshibiradar022002-wq/VELTRUVIA
+cd VELTRUVIA && npm install
 cp .env.example .env
 node -e "console.log('JWT_SECRET='+require('crypto').randomBytes(32).toString('hex'))" >> .env
 node -e "console.log('PHI_ENCRYPTION_KEY='+require('crypto').randomBytes(32).toString('hex'))" >> .env

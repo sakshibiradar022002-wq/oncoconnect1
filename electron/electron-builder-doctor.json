@@ -1,6 +1,6 @@
 {
-  "appId": "com.oncoconnect.doctor",
-  "productName": "OncoConnect Doctor",
+  "appId": "com.veltruvia.doctor",
+  "productName": "VELTRUVIA Doctor",
   "directories": {
     "output": "dist-desktop"
   },

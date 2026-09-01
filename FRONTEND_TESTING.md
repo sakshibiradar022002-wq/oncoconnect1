@@ -2,7 +2,7 @@
 
 ## Overview
 
-Playwright-based browser automation testing framework for validating the OncoConnect doctor and patient applications. Tests run against a real browser (Chromium) to verify end-to-end user flows.
+Playwright-based browser automation testing framework for validating the VELTRUVIA doctor and patient applications. Tests run against a real browser (Chromium) to verify end-to-end user flows.
 
 ## Setup
 

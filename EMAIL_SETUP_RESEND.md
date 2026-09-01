@@ -1,4 +1,4 @@
-# 📧 Resend Email Setup for OncoConnect
+# 📧 Resend Email Setup for VELTRUVIA
 
 Resend is the **recommended** email provider — it works on Vercel/serverless (unlike SMTP), has a generous free tier, and takes 2 minutes to set up.
 
@@ -12,7 +12,7 @@ Resend is the **recommended** email provider — it works on Vercel/serverless (
 ### 2. Get Your API Key
 1. After login, go to **API Keys** in the dashboard
 2. Click **"Create API Key"**
-3. Name it `oncoconnect` 
+3. Name it `veltruvia` 
 4. Click **"Add"**
 5. Copy the key (starts with `re_...`) — you'll only see it once!
 
@@ -20,7 +20,7 @@ Resend is the **recommended** email provider — it works on Vercel/serverless (
 For production, verify your own domain to send from your address:
 1. Go to **Domains** in Resend dashboard
 2. Click **"Add Domain"**
-3. Enter your domain (e.g., `oncoconnect.com`)
+3. Enter your domain (e.g., `veltruvia.com`)
 4. Add the DNS records Resend gives you (MX, TXT, CNAME)
 5. Wait for verification (usually 5-15 minutes)
 
@@ -35,7 +35,7 @@ For production, verify your own domain to send from your address:
 | Key | Value |
 |-----|-------|
 | `RESEND_API_KEY` | `re_your_key_here` |
-| `EMAIL_FROM` | `OncoConnect <onboarding@resend.dev>` |
+| `EMAIL_FROM` | `VELTRUVIA <onboarding@resend.dev>` |
 
 3. Click **"Save"**
 4. **Redeploy** the project (Deployments → ⋯ → Redeploy)
@@ -44,14 +44,14 @@ For production, verify your own domain to send from your address:
 Add to your environment:
 ```bash
 RESEND_API_KEY=re_your_key_here
-EMAIL_FROM=OncoConnect <onboarding@resend.dev>
+EMAIL_FROM=VELTRUVIA <onboarding@resend.dev>
 ```
 
 #### For local development:
 Add to your `.env` file:
 ```
 RESEND_API_KEY=re_your_key_here
-EMAIL_FROM=OncoConnect <onboarding@resend.dev>
+EMAIL_FROM=VELTRUVIA <onboarding@resend.dev>
 ```
 
 ### 5. Test It
@@ -64,9 +64,9 @@ EMAIL_FROM=OncoConnect <onboarding@resend.dev>
 
 | Scenario | EMAIL_FROM Value |
 |----------|------------------|
-| Testing (instant) | `OncoConnect <onboarding@resend.dev>` |
-| Your domain verified | `OncoConnect <noreply@oncoconnect.com>` |
-| Custom sender | `Dr. Smith <dr@oncoconnect.com>` |
+| Testing (instant) | `VELTRUVIA <onboarding@resend.dev>` |
+| Your domain verified | `VELTRUVIA <noreply@veltruvia.com>` |
+| Custom sender | `Dr. Smith <dr@veltruvia.com>` |
 
 ## Free Tier Limits
 - **100 emails/day**
@@ -92,11 +92,11 @@ EMAIL_FROM=OncoConnect <onboarding@resend.dev>
 - Check Resend dashboard → Logs for delivery status
 - Use dev mode: when email isn't configured, OTP shows on screen
 
-## What OncoConnect Sends
+## What VELTRUVIA Sends
 
 1. **Registration OTP** — 6-digit code, expires in 10 minutes
 2. **Appointment reminders** — sent by the doctor/scheduler
 3. **Password change codes** — for patient password resets
 4. **Broadcast emails** — doctor can email all patients
 
-All emails use branded HTML templates matching OncoConnect's design.
+All emails use branded HTML templates matching VELTRUVIA's design.

@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.oncoconnect.patient"
+    namespace "com.veltruvia.patient"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.oncoconnect.patient"
+        applicationId "com.veltruvia.patient"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

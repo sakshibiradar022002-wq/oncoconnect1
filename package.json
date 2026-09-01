@@ -1,7 +1,7 @@
 {
-  "name": "oncoconnect-server",
+  "name": "veltruvia-server",
   "version": "1.0.0",
-  "description": "OncoConnect neuro-oncology EMR — secure backend (Node + Express + SQLite)",
+  "description": "VELTRUVIA neuro-oncology EMR — secure backend (Node + Express + SQLite)",
   "type": "module",
   "main": "electron/main.js",
   "engines": {

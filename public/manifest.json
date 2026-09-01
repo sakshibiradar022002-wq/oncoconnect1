@@ -1,6 +1,6 @@
 {
-  "name": "OncoConnect — Neuro-Oncology EMR",
-  "short_name": "OncoConnect",
+  "name": "VELTRUVIA — Neuro-Oncology EMR",
+  "short_name": "VELTRUVIA",
   "description": "Secure neuro-oncology electronic medical records system for doctors, patients, and laboratories",
   "start_url": "/",
   "display": "standalone",

@@ -1,5 +1,5 @@
 /**
- * OncoConnect Blockchain — Lightweight chain for cross-app linking.
+ * VELTRUVIA Blockchain — Lightweight chain for cross-app linking.
  * 
  * Each app (Doctor, Patient, Lab) writes blocks to a shared JSON file.
  * No external blockchain node needed. Provides tamper-evident linking:
@@ -72,7 +72,7 @@ class Blockchain {
     return {
       index: 0,
       timestamp: new Date().toISOString(),
-      data: { type: 'genesis', message: 'OncoConnect Blockchain Initialized' },
+      data: { type: 'genesis', message: 'VELTRUVIA Blockchain Initialized' },
       previousHash: '0'.repeat(64),
       hash: '',
       app: 'system',

@@ -1,4 +1,4 @@
-// OncoConnect Mobile — API configuration
+// VELTRUVIA Mobile — API configuration
 // This script runs before patient.html and sets up the API endpoint
 
 (function() {
@@ -9,7 +9,7 @@
   // Default API URLs
   const CONFIG = {
     // Remote server (Vercel deployment)
-    remote: 'https://oncoconnect1.vercel.app',
+    remote: 'https://veltruvia1.vercel.app',
     // Local development server
     local: 'http://10.0.2.2:3000', // Android emulator
     // iOS simulator

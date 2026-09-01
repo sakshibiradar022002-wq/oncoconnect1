@@ -94,7 +94,7 @@ export function verifyTOTP(secretBase32, code, timeStep = 30) {
 }
 
 // Generate a QR code URL for authenticator apps
-export function getTOTPAuthURL(email, secretBase32, issuer = 'OncoConnect') {
+export function getTOTPAuthURL(email, secretBase32, issuer = 'VELTRUVIA') {
   const encodedIssuer = encodeURIComponent(issuer);
   const encodedEmail = encodeURIComponent(email);
   return `otpauth://totp/${encodedIssuer}:${encodedEmail}?secret=${secretBase32}&issuer=${encodedIssuer}&algorithm=SHA1&digits=6&period=30`;

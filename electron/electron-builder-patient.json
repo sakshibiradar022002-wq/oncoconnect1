@@ -1,6 +1,6 @@
 {
-  "appId": "com.oncoconnect.patient",
-  "productName": "OncoConnect Patient",
+  "appId": "com.veltruvia.patient",
+  "productName": "VELTRUVIA Patient",
   "directories": {
     "output": "dist-desktop"
   },

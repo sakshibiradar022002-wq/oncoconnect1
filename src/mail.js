@@ -5,7 +5,7 @@
 //  1. Resend (RECOMMENDED — works everywhere, incl. Vercel/serverless and
 //     behind proxies, because it sends over HTTPS not SMTP; easiest setup):
 //       RESEND_API_KEY=re_xxx           (free at https://resend.com)
-//       EMAIL_FROM="OncoConnect <onboarding@resend.dev>"   (or your domain)
+//       EMAIL_FROM="VELTRUVIA <onboarding@resend.dev>"   (or your domain)
 //
 //  2. Gmail App Password (Google Account → Security → 2-Step Verification →
 //     App passwords). Note: many serverless hosts BLOCK outbound SMTP, so
@@ -34,7 +34,7 @@ function build() {
   if (process.env.RESEND_API_KEY) {
     resend = {
       apiKey: process.env.RESEND_API_KEY,
-      from: process.env.EMAIL_FROM || process.env.SMTP_FROM || 'OncoConnect <onboarding@resend.dev>',
+      from: process.env.EMAIL_FROM || process.env.SMTP_FROM || 'VELTRUVIA <onboarding@resend.dev>',
     };
     return;
   }
@@ -52,7 +52,7 @@ function build() {
       auth: { user: gmailUser, pass: gmailPass },
       ...timeouts,
     });
-    fromAddr = process.env.SMTP_FROM || `OncoConnect <${gmailUser}>`;
+    fromAddr = process.env.SMTP_FROM || `VELTRUVIA <${gmailUser}>`;
     return;
   }
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
@@ -65,7 +65,7 @@ function build() {
       auth: { user: SMTP_USER, pass: SMTP_PASS },
       ...timeouts,
     });
-    fromAddr = process.env.SMTP_FROM || `OncoConnect <${SMTP_USER}>`;
+    fromAddr = process.env.SMTP_FROM || `VELTRUVIA <${SMTP_USER}>`;
   }
 }
 

@@ -1,4 +1,4 @@
-// OpenAPI 3.0 documentation for OncoConnect API.
+// OpenAPI 3.0 documentation for VELTRUVIA API.
 
 import { Router } from 'express';
 import { readFileSync } from 'node:fs';
@@ -12,15 +12,15 @@ export const openapiRouter = Router();
 const spec = {
   openapi: '3.0.3',
   info: {
-    title: 'OncoConnect API',
+    title: 'VELTRUVIA API',
     description: 'Secure healthcare API for neuro-oncology clinical workflows. Handles authentication, patient data sync, lab result management, team collaboration, and push notifications.',
     version: '2.0.0',
-    contact: { name: 'OncoConnect Support', email: 'support@oncoconnect.io' },
+    contact: { name: 'VELTRUVIA Support', email: 'support@veltruvia.io' },
     license: { name: 'HIPAA Compliant', url: 'https://en.wikipedia.org/wiki/Health_Insurance_Portability_and_Accountability_Act' },
   },
   servers: [
     { url: '/', description: 'Current server' },
-    { url: 'https://oncoconnect-server.onrender.com', description: 'Production (Render)' },
+    { url: 'https://veltruvia-server.onrender.com', description: 'Production (Render)' },
   ],
   components: {
     securitySchemes: {
@@ -286,7 +286,7 @@ openapiRouter.get('/', (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OncoConnect API Docs</title>
+  <title>VELTRUVIA API Docs</title>
   <style>
     body{font-family:system-ui,sans-serif;background:#fafafa;color:#333;margin:0;padding:20px;}
     h1{color:#1a56db;margin-bottom:4px;}
@@ -305,7 +305,7 @@ openapiRouter.get('/', (req, res) => {
   </style>
 </head>
 <body>
-  <h1>🧬 OncoConnect API Documentation</h1>
+  <h1>🧬 VELTRUVIA API Documentation</h1>
   <div class="subtitle">OpenAPI 3.0 · ${spec.info.version} · <a href="/api/docs/openapi.json">Download JSON Spec</a></div>
   <p style="font-size:12px;color:#888;">All authenticated endpoints require the <code>cc_session</code> httpOnly cookie. Click any endpoint for details.</p>
   ${spec.tags.map(tag => {

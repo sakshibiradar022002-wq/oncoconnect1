@@ -1,6 +1,6 @@
-# OncoConnect Server — Secure Neuro-Oncology EMR Backend
+# VELTRUVIA Server — Secure Neuro-Oncology EMR Backend
 
-Real backend for the OncoConnect platform. Node + Express + SQLite, built security-first:
+Real backend for the VELTRUVIA platform. Node + Express + SQLite, built security-first:
 **PHI encrypted at rest, revocable server-side sessions, and role-based access control.**
 
 This turns the single-file HTML prototype into real software — cross-device sync, real
@@ -105,14 +105,14 @@ The platform ships as **two separate installable apps**, both served by this one
 
 | App | URL | Installs as | Theme |
 |---|---|---|---|
-| **OncoConnect Pro** (Doctor) | `/` | Desktop/laptop software | Blue |
-| **OncoConnect** (Patient) | `/patient.html` | Phone app (home screen) | Green |
+| **VELTRUVIA Pro** (Doctor) | `/` | Desktop/laptop software | Blue |
+| **VELTRUVIA** (Patient) | `/patient.html` | Phone app (home screen) | Green |
 
 Each has its own web manifest, service worker (scoped so they never collide), and app icon.
 Once deployed over HTTPS, the browser offers an **Install** button:
 
 - **Doctor (desktop):** Chrome/Edge show an install icon in the address bar, or use the
-  in-app "Install OncoConnect Pro" banner. It then opens in its own window like native software.
+  in-app "Install VELTRUVIA Pro" banner. It then opens in its own window like native software.
 - **Patient (phone):** Android Chrome shows an "Install" banner; iOS Safari shows a hint to
   tap **Share → Add to Home Screen**. It launches full-screen with no browser chrome.
 
@@ -225,7 +225,7 @@ Free at https://resend.com — 100 emails/day, 3,000/month.
 
 ```
 RESEND_API_KEY=re_your_key_here
-EMAIL_FROM="OncoConnect <onboarding@resend.dev>"
+EMAIL_FROM="VELTRUVIA <onboarding@resend.dev>"
 ```
 
 **Quick setup:**
@@ -257,7 +257,7 @@ SMTP_HOST=smtp.yourprovider.com
 SMTP_PORT=587
 SMTP_USER=your_user
 SMTP_PASS=your_password
-SMTP_FROM=OncoConnect <no-reply@yourdomain.com>
+SMTP_FROM=VELTRUVIA <no-reply@yourdomain.com>
 ```
 
 ### Dev Mode (no email configured)
@@ -272,7 +272,7 @@ When none of the above are set, the app falls back to **dev mode**:
 ## Deploying
 
 **Render (recommended, one-click-ish):**
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sakshibiradar022002-wq/OncoConnect)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sakshibiradar022002-wq/VELTRUVIA)
 
 Click the button (or Render → New → Blueprint → this repo → Apply). Render
 auto-generates both app secrets; you only paste a free Turso database URL +

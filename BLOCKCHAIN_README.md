@@ -1,14 +1,14 @@
-# 🔗 OncoConnect Blockchain Audit Trail
+# 🔗 VELTRUVIA Blockchain Audit Trail
 
 ## Overview
 
-OncoConnect now includes a **hybrid blockchain architecture** that provides tamper-proof audit trails for medical records while maintaining HIPAA compliance.
+VELTRUVIA now includes a **hybrid blockchain architecture** that provides tamper-proof audit trails for medical records while maintaining HIPAA compliance.
 
 ### How It Works
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Doctor App    │────▶│  OncoConnect    │────▶│   Blockchain    │
+│   Doctor App    │────▶│  VELTRUVIA    │────▶│   Blockchain    │
 │   Patient App   │     │    Server       │     │   (Local)       │
 │   Lab App       │     │  (Express)      │     │   Audit Trail   │
 └─────────────────┘     └────────┬────────┘     └─────────────────┘
@@ -56,7 +56,7 @@ npm run blockchain:compile
 npm run blockchain:deploy
 ```
 
-### 3. Start OncoConnect Server
+### 3. Start VELTRUVIA Server
 
 ```bash
 # Start the server (blockchain connects automatically)

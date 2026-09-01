@@ -1,4 +1,4 @@
-# OncoConnect Security Scanning Guide
+# VELTRUVIA Security Scanning Guide
 
 **Last Updated:** July 30, 2026  
 **Purpose:** Automated security scanning to detect vulnerabilities in dependencies  
@@ -193,7 +193,7 @@ Same as npm audit — update vulnerable packages
 
 ---
 
-## Common Vulnerabilities in OncoConnect
+## Common Vulnerabilities in VELTRUVIA
 
 ### Dependency-Related
 - **better-sqlite3:** Native module security updates

@@ -267,9 +267,9 @@ function getIsolationJS(portal) {
   }
 
   // Set document title
-  ${portal === 'doctor' ? "document.title = 'OncoConnect Doctor';" : ''}
-  ${portal === 'patient' ? "document.title = 'OncoConnect Patient';" : ''}
-  ${portal === 'lab' ? "document.title = 'OncoConnect Lab';" : ''}
+  ${portal === 'doctor' ? "document.title = 'VELTRUVIA Doctor';" : ''}
+  ${portal === 'patient' ? "document.title = 'VELTRUVIA Patient';" : ''}
+  ${portal === 'lab' ? "document.title = 'VELTRUVIA Lab';" : ''}
 })();
 `;
 }

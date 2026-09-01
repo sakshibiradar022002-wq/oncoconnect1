@@ -1,5 +1,5 @@
 /**
- * Shared Configuration for OncoConnect Desktop Apps
+ * Shared Configuration for VELTRUVIA Desktop Apps
  * 
  * Minimal backend-only mechanism for client apps to discover the server URL.
  * No UI — connection happens silently in the background.

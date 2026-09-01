@@ -103,7 +103,7 @@ emailOtpRouter.post('/send', otpLimiter, validate(sendOtpSchema), asyncHandler(a
       const text = buildOtpEmailText(otp, purpose);
       await sendMail({
         to: email,
-        subject: `Your OncoConnect verification code: ${otp}`,
+        subject: `Your VELTRUVIA verification code: ${otp}`,
         text,
         html,
       });
@@ -225,7 +225,7 @@ function buildOtpEmailHtml(otp, purpose) {
   <div style="max-width:480px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
     <div style="background:linear-gradient(135deg,#1d4ed8,#2563eb,#3b82f6);padding:32px;text-align:center">
       <div style="font-size:32px;margin-bottom:8px">🧬</div>
-      <div style="color:#fff;font-size:20px;font-weight:800">OncoConnect</div>
+      <div style="color:#fff;font-size:20px;font-weight:800">VELTRUVIA</div>
       <div style="color:rgba(255,255,255,.8);font-size:13px;margin-top:4px">Email Verification</div>
     </div>
     <div style="padding:32px">
@@ -246,7 +246,7 @@ function buildOtpEmailHtml(otp, purpose) {
       </div>
     </div>
     <div style="padding:16px 32px;background:#f8faff;text-align:center;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0">
-      OncoConnect — Secure Neuro-Oncology EMR
+      VELTRUVIA — Secure Neuro-Oncology EMR
     </div>
   </div>
 </body>
@@ -256,7 +256,7 @@ function buildOtpEmailHtml(otp, purpose) {
 function buildOtpEmailText(otp, purpose) {
   const action = purpose === 'register' ? 'create your account' : 'reset your password';
   return `
-OncoConnect — Email Verification
+VELTRUVIA — Email Verification
 
 Use this code to ${action}:
 

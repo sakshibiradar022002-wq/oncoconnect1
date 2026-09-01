@@ -1,4 +1,4 @@
-// Sentry error tracking integration for OncoConnect.
+// Sentry error tracking integration for VELTRUVIA.
 // Optional dependency: if @sentry/node not installed, gracefully disables.
 
 import { config } from '../config.js';

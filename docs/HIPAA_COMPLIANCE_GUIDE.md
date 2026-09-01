@@ -1,4 +1,4 @@
-# OncoConnect HIPAA Compliance Guide
+# VELTRUVIA HIPAA Compliance Guide
 
 **Last Updated:** July 30, 2026  
 **Status:** Compliance Framework Documented  
@@ -8,7 +8,7 @@
 
 ## 1. System Security Plan (SSP) Overview
 
-OncoConnect implements comprehensive HIPAA Security Rule compliance through:
+VELTRUVIA implements comprehensive HIPAA Security Rule compliance through:
 
 ### Administrative Safeguards ✅
 - **Security Management Process:** Risk-based access controls
@@ -191,7 +191,7 @@ For international (EU) patients:
 Must be visible on login screen and patient/doctor apps:
 
 ```
-OncoConnect Privacy Policy
+VELTRUVIA Privacy Policy
 
 INFORMATION WE COLLECT:
 - Medical information (patient data, oncology history)
@@ -355,7 +355,7 @@ Subject: HIPAA Business Associate Agreement Request
 ```
 Dear [Vendor] Team,
 
-We are planning to deploy OncoConnect, a healthcare application that will handle Protected Health Information (PHI) under HIPAA.
+We are planning to deploy VELTRUVIA, a healthcare application that will handle Protected Health Information (PHI) under HIPAA.
 
 To comply with HIPAA Security Rule, we require a Business Associate Agreement (BAA) with [Vendor].
 

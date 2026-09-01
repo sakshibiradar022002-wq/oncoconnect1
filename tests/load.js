@@ -1,4 +1,4 @@
-// Load testing suite for OncoConnect API — baseline performance validation
+// Load testing suite for VELTRUVIA API — baseline performance validation
 // Run with: k6 run tests/load.js
 // With options: k6 run tests/load.js -e BASE_URL=http://localhost:3000 -e VUS=10 -e DURATION=30s
 

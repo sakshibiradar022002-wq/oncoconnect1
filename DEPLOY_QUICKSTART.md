@@ -1,4 +1,4 @@
-# 🚀 OncoConnect Pro — 5-Minute Deploy to Render + Turso
+# 🚀 VELTRUVIA Pro — 5-Minute Deploy to Render + Turso
 
 ## Step 1: Create Turso Database (2 min)
 
@@ -11,21 +11,21 @@ npm install -g @turso/cli
 turso auth signup
 
 # Create database
-turso db create oncoconnect
+turso db create veltruvia
 
 # Get the database URL
-turso db show oncoconnect --url
-# → Copy: libsql://oncoconnect-xxxx.turso.io
+turso db show veltruvia --url
+# → Copy: libsql://veltruvia-xxxx.turso.io
 
 # Create auth token
-turso db tokens create oncoconnect
+turso db tokens create veltruvia
 # → Copy: eyJhbG... (the full token)
 ```
 
 **Option B — Using Turso Dashboard (no CLI):**
 1. Go to https://turso.tech → Sign up with GitHub/Google
 2. Click **Create Database**
-3. Name: `oncoconnect` → Region: closest to your users
+3. Name: `veltruvia` → Region: closest to your users
 4. Go to **Database Tokens** → Create token → Copy it
 5. Go to **Database URL** → Copy it
 
@@ -37,10 +37,10 @@ turso db tokens create oncoconnect
 # If not already a git repo
 git init
 git add .
-git commit -m "OncoConnect ready for deployment"
+git commit -m "VELTRUVIA ready for deployment"
 
 # Create repo on GitHub, then:
-git remote add origin https://github.com/YOUR_USERNAME/oncoconnect.git
+git remote add origin https://github.com/YOUR_USERNAME/veltruvia.git
 git push -u origin main
 ```
 
@@ -52,27 +52,27 @@ git push -u origin main
 
 2. Click **New +** → **Blueprint**
 
-3. Connect your GitHub repo → Select `oncoconnect` repo
+3. Connect your GitHub repo → Select `veltruvia` repo
 
 4. Render reads `render.yaml` and sets up everything automatically
 
 5. When prompted, paste your Turso credentials:
-   - `TURSO_DATABASE_URL` = `libsql://oncoconnect-xxxx.turso.io`
+   - `TURSO_DATABASE_URL` = `libsql://veltruvia-xxxx.turso.io`
    - `TURSO_AUTH_TOKEN` = `eyJhbG...`
 
 6. Click **Apply** → Render builds and deploys (~2 min)
 
-7. 🎉 Your app is live at: `https://oncoconnect-server.onrender.com`
+7. 🎉 Your app is live at: `https://veltruvia-server.onrender.com`
 
 ---
 
 ## Step 4: Verify
 
-1. Open: `https://oncoconnect-server.onrender.com/health`
+1. Open: `https://veltruvia-server.onrender.com/health`
    → Should show: `{"ok":true,"ts":"..."}`
 
-2. Open: `https://oncoconnect-server.onrender.com`
-   → OncoConnect login page
+2. Open: `https://veltruvia-server.onrender.com`
+   → VELTRUVIA login page
 
 3. Create your first doctor account and start using it!
 
@@ -94,7 +94,7 @@ git push -u origin main
 ## After Deploy — Your App URL
 
 ```
-https://oncoconnect-server.onrender.com
+https://veltruvia-server.onrender.com
 ```
 
 ### Default Test Accounts (auto-created):
@@ -107,12 +107,12 @@ https://oncoconnect-server.onrender.com
 ## Troubleshooting
 
 **Build fails?**
-- Check Render logs: Dashboard → oncoconnect-server → Logs
+- Check Render logs: Dashboard → veltruvia-server → Logs
 - Most common: Node.js version → Render defaults to Node 20 ✅
 
 **Database errors?**
 - Verify Turso URL starts with `libsql://`
-- Verify token is valid: `turso db tokens list oncoconnect`
+- Verify token is valid: `turso db tokens list veltruvia`
 
 **App won't start?**
 - Check environment variables are set correctly

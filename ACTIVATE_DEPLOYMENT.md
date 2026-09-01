@@ -1,4 +1,4 @@
-# 🚀 Activate Your OncoConnect Deployment
+# 🚀 Activate Your VELTRUVIA Deployment
 
 Your backend code is deployed, but needs **one quick configuration** to start working.
 
@@ -19,7 +19,7 @@ Your backend code is deployed, but needs **one quick configuration** to start wo
 **Steps:**
 
 1. Go to: https://dashboard.render.com/
-2. Select **oncoconnect-server** service
+2. Select **veltruvia-server** service
 3. Click **Environment** tab
 4. Click **Add Environment Variable**
 5. Enter:
@@ -57,18 +57,18 @@ Your backend code is deployed, but needs **one quick configuration** to start wo
    turso auth signup
    
    # Create database
-   turso db create oncoconnect
+   turso db create veltruvia
    
    # Get URL (copy this)
-   turso db show oncoconnect --url
+   turso db show veltruvia --url
    
    # Get token (copy this)
-   turso db tokens create oncoconnect
+   turso db tokens create veltruvia
    ```
 
 2. **Update Render** (3 min):
    - Go to: https://dashboard.render.com/
-   - Select **oncoconnect-server**
+   - Select **veltruvia-server**
    - Click **Environment** tab
    - **Remove** `DB_EPHEMERAL` if you added it (Path A)
    - Add these variables:

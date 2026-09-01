@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OncoConnect Pro — Doctor Software</title>
+<title>VELTRUVIA Pro — Doctor Software</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1a56db">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="OncoConnect Pro">
+<meta name="apple-mobile-web-app-title" content="VELTRUVIA Pro">
 <link rel="apple-touch-icon" href="/icons/doctor-192.png">
 <link rel="icon" type="image/png" href="/icons/doctor-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
-   ONCOCONNECT DOCTOR — Blue & White Aesthetic Design System
+   VELTRUVIA DOCTOR — Blue & White Aesthetic Design System
    ═══════════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
@@ -367,7 +367,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon">🧬</div>
-      <div><div class="auth-logo-text">OncoConnect Pro</div><div style="font-size:11px;color:var(--text-muted);">Doctor Software · v2.0</div></div>
+      <div><div class="auth-logo-text">VELTRUVIA Pro</div><div style="font-size:11px;color:var(--text-muted);">Doctor Software · v2.0</div></div>
     </div>
     <div class="tab-switcher">
       <button class="ts-btn active" onclick="switchATab('login',this)">Sign In</button>
@@ -436,7 +436,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
     <div class="sidebar">
       <div style="padding:16px 14px 8px;display:flex;align-items:center;gap:10px;">
         <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-size:16px;">🧬</div>
-        <div><div style="font-weight:800;font-size:13px;color:var(--text);">OncoConnect</div><div style="font-size:9px;color:var(--text-dim);font-family:var(--mono);">SOFTWARE</div></div>
+        <div><div style="font-weight:800;font-size:13px;color:var(--text);">VELTRUVIA</div><div style="font-size:9px;color:var(--text-dim);font-family:var(--mono);">SOFTWARE</div></div>
       </div>
       <div class="sidebar-scroll">
       <button class="nav-item" onclick="openPatientSearch()"><span class="ni">🔍</span>Search patients <span style="margin-left:auto;font-size:10px;opacity:.6;font-family:var(--mono);">Ctrl K</span></button>
@@ -761,7 +761,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
         <div class="g2">
           <div class="card">
             <div class="card-title" style="margin-bottom:8px;">⬇ Export Backup</div>
-            <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Download all OncoConnect data as a single JSON file.</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Download all VELTRUVIA data as a single JSON file.</div>
             <button class="btn btn-primary btn-full" onclick="exportAllData()">⬇ Download JSON Backup</button>
           </div>
           <div class="card">
@@ -823,7 +823,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--blue-glow);bo
         </div>
         <div class="card" style="border-color:rgba(220,38,38,.2);">
           <div class="card-title" style="color:var(--red);margin-bottom:8px;">⚠ Danger Zone</div>
-          <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Permanently delete all OncoConnect data from this browser.</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Permanently delete all VELTRUVIA data from this browser.</div>
           <button class="btn btn-danger btn-full" onclick="clearAllData()">🗑 Clear All Data</button>
         </div>
       </div>
@@ -2482,7 +2482,7 @@ function buildRecordTabs(p){
           <div class="cred-label">🔑 Patient Login Credentials</div>
           <div class="cred-row"><span class="cred-key">MRN</span><span class="cred-val">${p.mrn}</span></div>
           <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val">${String(p.pass||'').startsWith('pbkdf2')?'•••••••• (encrypted)':esc(p.pass||'—')}</span></div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">Share with patient for OncoConnect Patient App.</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">Share with patient for VELTRUVIA Patient App.</div>
         </div>
         <div class="info-card">
           <div class="info-card-title">Reset Password</div>
@@ -2842,7 +2842,7 @@ function deletePatient(){if(!confirm('DELETE this patient record? This cannot be
 // ── AI Analysis ──
 // ── FHIR ──
 function renderFHIRPatSel(){const sel=document.getElementById('fhir-pat-sel');if(!sel)return;sel.innerHTML='<option value="">— Choose —</option>'+getMyPatients().map(p=>`<option value="${p.mrn}">${esc(p.name)} (${p.mrn})</option>`).join('');}
-function exportFHIR(){const mrn=v('fhir-pat-sel');const p=LS.get('pat_'+mrn);if(!p){alert('Select a patient.');return;}const bundle={resourceType:'Bundle',type:'collection',entry:[{resource:{resourceType:'Patient',identifier:[{system:'urn:oid:oncoconnect',value:p.mrn}],name:[{family:p.name?.split(' ').pop(),given:p.name?.split(' ').slice(0,-1)}],gender:(p.gender||'unknown').toLowerCase(),birthDate:p.dob||undefined}}]};if(p.diag){bundle.entry.push({resource:{resourceType:'Condition',code:{coding:[{system:'http://hl7.org/fhir/sid/icd-10',code:p.icd10||'C71.9'}],text:p.diag}}});}(p.meds||[]).forEach(m=>{bundle.entry.push({resource:{resourceType:'MedicationRequest',medicationCodeableConcept:{text:m.name},dosageInstruction:[{text:m.dose+' '+m.route+' '+m.freq}]}});});const blob=new Blob([JSON.stringify(bundle,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FHIR_'+p.mrn+'.json';a.click();flash('FHIR bundle downloaded');}
+function exportFHIR(){const mrn=v('fhir-pat-sel');const p=LS.get('pat_'+mrn);if(!p){alert('Select a patient.');return;}const bundle={resourceType:'Bundle',type:'collection',entry:[{resource:{resourceType:'Patient',identifier:[{system:'urn:oid:veltruvia',value:p.mrn}],name:[{family:p.name?.split(' ').pop(),given:p.name?.split(' ').slice(0,-1)}],gender:(p.gender||'unknown').toLowerCase(),birthDate:p.dob||undefined}}]};if(p.diag){bundle.entry.push({resource:{resourceType:'Condition',code:{coding:[{system:'http://hl7.org/fhir/sid/icd-10',code:p.icd10||'C71.9'}],text:p.diag}}});}(p.meds||[]).forEach(m=>{bundle.entry.push({resource:{resourceType:'MedicationRequest',medicationCodeableConcept:{text:m.name},dosageInstruction:[{text:m.dose+' '+m.route+' '+m.freq}]}});});const blob=new Blob([JSON.stringify(bundle,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FHIR_'+p.mrn+'.json';a.click();flash('FHIR bundle downloaded');}
 function sendFHIRToServer(){alert('FHIR server POST — configure server URL first.');}
 
 // ── Lab Management ──
@@ -2855,9 +2855,9 @@ function sendLabTask(){const patient=v('pqr-patient'),labId=v('pqr-lab'),desc=v(
 function renderLabTaskQueue(){const tokens=(LS.get('pat_tokens_'+currentDoc.docId)||[]).filter(t=>!t.used&&t.status!=='Cancelled');const el=document.getElementById('lab-task-queue');if(!el)return;if(!tokens.length){el.innerHTML='<div class="empty-card">No active tasks.</div>';return;}tokens.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));el.innerHTML=tokens.map(t=>{const now=new Date();const due=new Date(t.dueDate);const diff=Math.ceil((due-now)/(1000*60*60*24));let urgency='',borderCol='';if(diff<0){urgency='🔴 Overdue!';borderCol='var(--red)';}else if(diff===0){urgency='🔴 Due today';borderCol='var(--red)';}else if(diff===1){urgency='⚠ Due tomorrow';borderCol='var(--orange)';}else if(diff<=3){urgency='⚠ Due in '+diff+' days';borderCol='var(--orange)';}else{urgency='📅 Due '+t.dueDate;borderCol='';}const prioCol={STAT:'var(--red)',Urgent:'var(--orange)',Routine:'var(--green)'}[t.priority]||'var(--text-dim)';return `<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${prioCol};border-radius:8px;padding:12px;margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;"><span style="color:${borderCol};font-weight:600;">${urgency}</span><span class="badge" style="background:${prioCol}22;color:${prioCol};">${t.priority}</span></div><div style="font-weight:600;font-size:13px;margin-bottom:4px;">${esc(t.desc)}</div><div style="font-size:11px;color:var(--text-muted);">Patient: ${esc(t.patName)} · Lab: ${esc(t.labName)}</div></div>`;}).join('');}
 
 // ── Data & Backup ──
-function exportAllData(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('cc_'))data[k]=localStorage.getItem(k);}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='OncoConnect_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();flash('Backup downloaded');}
+function exportAllData(){const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('cc_'))data[k]=localStorage.getItem(k);}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='VELTRUVIA_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();flash('Backup downloaded');}
 function importBackup(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);let count=0;Object.entries(data).forEach(([k,v])=>{if(k.startsWith('cc_')){localStorage.setItem(k,v);count++;}});const ok=document.getElementById('import-ok');ok.className='msg ok';ok.textContent='Imported '+count+' keys.';ok.style.display='block';refreshAll();}catch(e){const err=document.getElementById('import-err');err.className='msg err';err.textContent='Invalid file: '+e.message;err.style.display='block';}};reader.readAsText(file);}
-function clearAllData(){if(!confirm('DELETE ALL OncoConnect data? This cannot be undone.'))return;Object.keys(localStorage).filter(k=>k.startsWith('cc_')).forEach(k=>localStorage.removeItem(k));flash('All data cleared');refreshAll();}
+function clearAllData(){if(!confirm('DELETE ALL VELTRUVIA data? This cannot be undone.'))return;Object.keys(localStorage).filter(k=>k.startsWith('cc_')).forEach(k=>localStorage.removeItem(k));flash('All data cleared');refreshAll();}
 function saveEmailJSConfig(){const cfg={publicKey:v('ejs-pubkey'),serviceId:v('ejs-service'),verifyTemplate:v('ejs-tmpl-verify'),apptTemplate:v('ejs-tmpl-appt')};LS.set('email_config',cfg);flash('Email config saved');}
 function testEmailJS(){alert('Test email — configure EmailJS keys first.');}
 
@@ -2941,7 +2941,7 @@ function previewBroadcast(){
   if(!body){alert('Write a message first.');return;}
   const preview=body.replace(/\{name\}/gi,'John Doe');
   const win=window.open('','_blank','width=600,height=500');
-  win.document.write(`<html><head><title>Email Preview</title><style>body{font-family:system-ui,sans-serif;max-width:520px;margin:40px auto;padding:24px;}</style></head><body><h2 style="color:#2C5EAD;">OncoConnect</h2><p>Hello John Doe,</p><div style="white-space:pre-wrap;line-height:1.6;">${preview}</div><hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;"><p style="color:#94a3b8;font-size:11px;">This message was sent via OncoConnect Neuro-Oncology EMR.</p></body></html>`);
+  win.document.write(`<html><head><title>Email Preview</title><style>body{font-family:system-ui,sans-serif;max-width:520px;margin:40px auto;padding:24px;}</style></head><body><h2 style="color:#2C5EAD;">VELTRUVIA</h2><p>Hello John Doe,</p><div style="white-space:pre-wrap;line-height:1.6;">${preview}</div><hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;"><p style="color:#94a3b8;font-size:11px;">This message was sent via VELTRUVIA Neuro-Oncology EMR.</p></body></html>`);
 }
 function refreshStorageInfo(){let total=0;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('cc_'))total+=localStorage.getItem(k).length;}const pct=Math.min(100,Math.round(total/5242880*100));document.getElementById('storage-pct').textContent=pct+'%';document.getElementById('storage-bar').style.width=pct+'%';if(pct>80)document.getElementById('storage-bar').style.background='var(--orange)';}
 function openPatientSearch(){const q=prompt('Search patients by name or MRN:');if(!q)return;const pats=getMyPatients().filter(p=>p.name?.toLowerCase().includes(q.toLowerCase())||p.mrn?.toLowerCase().includes(q.toLowerCase()));if(pats.length===1)openRecord(pats[0].mrn);else if(pats.length>1){showPanel('patients',document.querySelectorAll('.nav-item')[1]);document.getElementById('pat-search').value=q;renderPatList();}}
@@ -3205,7 +3205,7 @@ function printPatientSummary(){
   // Doctor info
   const docName=currentDoc?.name||'Attending Physician';
   const docSpec=currentDoc?.spec||'Neuro-Oncology';
-  const docInst=currentDoc?.institution||'OncoConnect Medical Center';
+  const docInst=currentDoc?.institution||'VELTRUVIA Medical Center';
   const docEmail=currentDoc?.email||'';
   const reportId='RPT-'+Date.now().toString(36).toUpperCase()+'-'+(p.mrn||'0000');
   const reportDate=new Date();
@@ -3219,7 +3219,7 @@ function printPatientSummary(){
   let html=`
   <!-- PAGE 1 -->
   <div class="page">
-    <div class="watermark">ONCOCONNECT CONFIDENTIAL</div>
+    <div class="watermark">VELTRUVIA CONFIDENTIAL</div>
     <div class="conf-banner">CONFIDENTIAL — PROTECTED HEALTH INFORMATION — AUTHORIZED PERSONNEL ONLY</div>
     
     ${lhHTML}
@@ -3230,7 +3230,7 @@ function printPatientSummary(){
         <div style="display:flex;align-items:center;gap:10px;">
           <div class="logo-svg">${_SVG_LOGO}</div>
           <div>
-            <h1>OncoConnect Pro</h1>
+            <h1>VELTRUVIA Pro</h1>
             <div class="inst-name">${esc(docInst)}</div>
             <div class="sub">Department of ${esc(docSpec)} · Clinical Patient Report</div>
           </div>
@@ -3548,7 +3548,7 @@ function printPatientSummary(){
     <!-- FOOTER -->
     <div class="footer">
       <div class="left">
-        OncoConnect Pro · Neuro-Oncology EMR<br>
+        VELTRUVIA Pro · Neuro-Oncology EMR<br>
         ${esc(docInst)} · ${esc(docSpec)} Department<br>
         Report ID: ${reportId} · Generated: ${reportDateStr} ${reportTimeStr}<br>
         This document is auto-generated from the patient electronic medical record.<br>
@@ -3572,7 +3572,7 @@ function downloadPrescription(){
   
   const docName=currentDoc?.name||'Attending Physician';
   const docSpec=currentDoc?.spec||'Neuro-Oncology';
-  const docInst=currentDoc?.institution||'OncoConnect Medical Center';
+  const docInst=currentDoc?.institution||'VELTRUVIA Medical Center';
   const rxId='RX-'+Date.now().toString(36).toUpperCase();
   const rxDate=new Date();
   const rxDateStr=rxDate.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
@@ -3692,7 +3692,7 @@ function downloadPrescription(){
     
     <div class="footer">
       <div class="left">
-        OncoConnect Pro · Neuro-Oncology EMR<br>
+        VELTRUVIA Pro · Neuro-Oncology EMR<br>
         ${esc(docInst)} · Rx ID: ${rxId}<br>
         Generated: ${rxDateStr} ${rxTimeStr} · This prescription is generated from the electronic medical record system.<br>
         Verify with original records. Not valid without prescriber signature.
@@ -5325,7 +5325,7 @@ async function saveAvailability(){
 <script>
 (function(){
   if(new URLSearchParams(location.search).get('standalone')==='1'){
-    document.title='OncoConnect Doctor';
+    document.title='VELTRUVIA Doctor';
     window._standaloneMode=true;
     // Hide portal switcher section
     var el=document.getElementById('portal-switcher');

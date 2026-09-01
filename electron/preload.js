@@ -1,4 +1,4 @@
-// OncoConnect Desktop — preload script
+// VELTRUVIA Desktop — preload script
 // Exposes safe APIs to the renderer process via contextBridge.
 
 const { contextBridge, ipcRenderer } = require('electron');

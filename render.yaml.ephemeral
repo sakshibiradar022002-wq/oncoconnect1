@@ -4,7 +4,7 @@
 
 services:
   - type: web
-    name: oncoconnect-server
+    name: veltruvia-server
     runtime: node
     plan: free
     buildCommand: npm install

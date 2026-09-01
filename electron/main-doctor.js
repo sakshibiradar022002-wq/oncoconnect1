@@ -1,5 +1,5 @@
 /**
- * OncoConnect Doctor — Standalone Desktop App
+ * VELTRUVIA Doctor — Standalone Desktop App
  * 
  * Fully self-contained. Runs its own local Express API + SQLite database.
  * Linked to Patient and Lab apps via blockchain.
@@ -104,7 +104,7 @@ async function tryLoadExpress(port) {
     const userData = electronApp.getPath('userData');
     const dataDir = join(userData, 'data');
     try { mkdirSync(dataDir, { recursive: true }); } catch {}
-    process.env.DB_PATH = join(dataDir, 'oncoconnect.db');
+    process.env.DB_PATH = join(dataDir, 'veltruvia.db');
     await import('dotenv/config').catch(() => {});
     const mod = await import(pathToFileURL(join(ROOT, 'src', 'app.js')).href);
     expressApp = mod.app;
@@ -121,7 +121,7 @@ function createWindow() {
     height: 750,
     minWidth: 800,
     minHeight: 600,
-    title: 'OncoConnect Doctor',
+    title: 'VELTRUVIA Doctor',
     icon: join(PUBLIC, 'icons', 'doctor-512.png'),
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
@@ -139,7 +139,7 @@ function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null; });
 
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'OncoConnect Doctor', submenu: [
+    { label: 'VELTRUVIA Doctor', submenu: [
       { label: '🔄 Refresh', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
       { type: 'separator' },
       { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
@@ -174,7 +174,7 @@ app.whenReady().then(async () => {
 
     createWindow();
   } catch (err) {
-    dialog.showErrorBox('OncoConnect Doctor — Error', err.message || String(err));
+    dialog.showErrorBox('VELTRUVIA Doctor — Error', err.message || String(err));
     app.quit();
   }
 });

@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="OncoConnect Lab">
+<meta name="apple-mobile-web-app-title" content="VELTRUVIA Lab">
 <meta name="theme-color" content="#6d28d9">
-<title>OncoConnect — Lab Portal</title>
+<title>VELTRUVIA — Lab Portal</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/patient-192.png">
 <link rel="icon" type="image/png" href="/icons/patient-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
-   ONCOCONNECT LAB PORTAL — Purple & White Native App Design
+   VELTRUVIA LAB PORTAL — Purple & White Native App Design
    ═══════════════════════════════════════════════════════════════ */
 :root,[data-theme="dark"]{
   --bg:#0c0a1a;--surface:#141225;--surface2:#1c1a30;--surface3:#252240;
@@ -361,7 +361,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--purple-glow);
 <!-- ═══ SPLASH SCREEN ═══ -->
 <div id="splash">
   <div class="splash-icon">🔬</div>
-  <div class="splash-title">OncoConnect Lab</div>
+  <div class="splash-title">VELTRUVIA Lab</div>
   <div class="splash-sub">Laboratory Management Portal</div>
   <div class="splash-loader"><div class="splash-loader-bar"></div></div>
 </div>
@@ -371,7 +371,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--purple-glow);
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon">🔬</div>
-      <div class="auth-title">OncoConnect Lab</div>
+      <div class="auth-title">VELTRUVIA Lab</div>
       <div class="auth-sub">Laboratory Portal</div>
     </div>
     <div class="err-box" id="login-err"></div>
@@ -393,7 +393,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--purple-glow);
   <!-- TOPBAR (becomes sidebar on desktop) -->
   <div class="topbar">
     <div>
-      <div class="topbar-title">🔬 OncoConnect Lab</div>
+      <div class="topbar-title">🔬 VELTRUVIA Lab</div>
       <div class="topbar-sub" id="lab-greeting">Laboratory Portal</div>
     </div>
     <nav class="sidebar-nav">
@@ -941,7 +941,7 @@ resetIdleTimer();
 // Standalone mode: LOCK to Lab portal only
 (function(){
   if(new URLSearchParams(location.search).get('standalone')==='1'){
-    document.title='OncoConnect Lab';
+    document.title='VELTRUVIA Lab';
     window._standaloneMode=true;
     // Hide cross-portal links on login screen (Patient Portal · Doctor Software)
     document.querySelectorAll('a[href="/patient.html"],a[href="/"],a[href="/admin.html"]').forEach(function(a){

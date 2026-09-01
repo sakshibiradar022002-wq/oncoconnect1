@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * build-all.mjs — Build all OncoConnect standalone apps.
+ * build-all.mjs — Build all VELTRUVIA standalone apps.
  *
  * Produces unpacked Electron app folders for:
- *   - OncoConnect Doctor   (Doctor Software)
- *   - OncoConnect Patient  (Patient App)
- *   - OncoConnect Lab      (Lab Portal)
- *   - OncoConnect Server   (Backend Server)
+ *   - VELTRUVIA Doctor   (Doctor Software)
+ *   - VELTRUVIA Patient  (Patient App)
+ *   - VELTRUVIA Lab      (Lab Portal)
+ *   - VELTRUVIA Server   (Backend Server)
  *
  * Each app is a self-contained Electron app that opens in a native window.
  *
@@ -55,7 +55,7 @@ const builder = existsSync(electronBuilder + ".cmd") ? electronBuilder + ".cmd" 
 // ── Build each variant ──────────────────────────────────────────
 for (const v of variants) {
   log(`\n${"═".repeat(50)}`);
-  log(`Building OncoConnect ${v.name}...`);
+  log(`Building VELTRUVIA ${v.name}...`);
   log(`${"═".repeat(50)}\n`);
 
   // Patch package.json main entry point
@@ -75,11 +75,11 @@ for (const v of variants) {
 
   // Save win-unpacked to a named folder before next build overwrites it
   const unpacked = join(DIST, "win-unpacked");
-  const named = join(DIST, `OncoConnect ${v.name}`);
+  const named = join(DIST, `VELTRUVIA ${v.name}`);
   if (existsSync(unpacked)) {
     if (existsSync(named)) rmSync(named, { recursive: true });
     cpSync(unpacked, named, { recursive: true });
-    log(`✅ Saved OncoConnect ${v.name}/ (${countFiles(named)} files)`);
+    log(`✅ Saved VELTRUVIA ${v.name}/ (${countFiles(named)} files)`);
   } else {
     log(`⚠️  win-unpacked not found for ${v.name}`);
   }
@@ -89,11 +89,11 @@ for (const v of variants) {
 log("\n📂 Deploying to Desktop...");
 
 for (const v of variants) {
-  const src = join(DIST, `OncoConnect ${v.name}`);
-  const dst = join(DESKTOP, `OncoConnect ${v.name}`);
+  const src = join(DIST, `VELTRUVIA ${v.name}`);
+  const dst = join(DESKTOP, `VELTRUVIA ${v.name}`);
 
   if (!existsSync(src)) {
-    log(`  ⚠️  OncoConnect ${v.name} not built — skipping`);
+    log(`  ⚠️  VELTRUVIA ${v.name} not built — skipping`);
     continue;
   }
 
@@ -104,9 +104,9 @@ for (const v of variants) {
   // Find the main .exe
   const exe = findExe(dst);
   if (exe) {
-    log(`  ✅ OncoConnect ${v.name} → Desktop (${basename(exe)})`);
+    log(`  ✅ VELTRUVIA ${v.name} → Desktop (${basename(exe)})`);
   } else {
-    log(`  ✅ OncoConnect ${v.name} → Desktop (folder)`);
+    log(`  ✅ VELTRUVIA ${v.name} → Desktop (folder)`);
   }
 }
 

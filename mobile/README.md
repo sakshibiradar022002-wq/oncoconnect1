@@ -1,4 +1,4 @@
-# OncoConnect Patient Mobile App
+# VELTRUVIA Patient Mobile App
 
 ## How it works
 

@@ -1,6 +1,6 @@
 {
-  "appId": "com.oncoconnect.server",
-  "productName": "OncoConnect Server",
+  "appId": "com.veltruvia.server",
+  "productName": "VELTRUVIA Server",
   "directories": {
     "output": "dist-desktop"
   },

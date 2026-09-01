@@ -1,5 +1,5 @@
 /**
- * Verify records on the OncoConnect blockchain audit trail
+ * Verify records on the VELTRUVIA blockchain audit trail
  * Run: npm run blockchain:verify [record-hash]
  */
 
@@ -14,7 +14,7 @@ const ROOT = join(__dirname, '..');
 async function main() {
   const recordArg = process.argv[2];
   
-  console.log('🔗 OncoConnect Blockchain Verification\n');
+  console.log('🔗 VELTRUVIA Blockchain Verification\n');
 
   // Connect to blockchain
   const { ethers } = await import('ethers');

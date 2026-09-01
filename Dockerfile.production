@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════
-# OncoConnect — Production Dockerfile (multi-stage, hardened)
+# VELTRUVIA — Production Dockerfile (multi-stage, hardened)
 # ═══════════════════════════════════════════════════════════════════
 
 # ── Stage 1: Install dependencies ──────────────────────────────────
@@ -18,7 +18,7 @@ RUN npm install --omit=dev && npm cache clean --force
 FROM node:20-slim AS production
 
 # Security: Run as non-root user
-RUN groupadd -r oncoconnect && useradd -r -g oncoconnect -m -s /bin/bash oncoconnect
+RUN groupadd -r veltruvia && useradd -r -g veltruvia -m -s /bin/bash veltruvia
 
 WORKDIR /app
 
@@ -35,7 +35,7 @@ COPY scripts/ ./scripts/
 COPY package.json ./
 
 # Create data directory for SQLite
-RUN mkdir -p /data && chown -R oncoconnect:oncoconnect /data
+RUN mkdir -p /data && chown -R veltruvia:veltruvia /data
 
 # Set environment defaults
 ENV NODE_ENV=production
@@ -50,7 +50,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 EXPOSE 3000
 
 # Switch to non-root user
-USER oncoconnect
+USER veltruvia
 
 # Start the application
 CMD ["node", "src/server.js"]

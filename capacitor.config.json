@@ -1,10 +1,10 @@
 {
-  "appId": "com.oncoconnect.patient",
-  "appName": "OncoConnect",
+  "appId": "com.veltruvia.patient",
+  "appName": "VELTRUVIA",
   "webDir": "public",
   "server": {
     "androidScheme": "https",
-    "url": "https://oncoconnect1.vercel.app/patient.html",
+    "url": "https://veltruvia1.vercel.app/patient.html",
     "cleartext": true
   },
   "plugins": {

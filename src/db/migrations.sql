@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- ONCOCONNECT MIGRATION: Scheduling, E-Prescribing, Telehealth, CDS
+-- VELTRUVIA MIGRATION: Scheduling, E-Prescribing, Telehealth, CDS
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- ── Doctor Availability: weekly recurring slots ─────────────────────
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS drug_interactions (
   severity      TEXT NOT NULL CHECK (severity IN ('severe', 'moderate', 'mild')),
   description   TEXT NOT NULL,
   recommendation TEXT,
-  source        TEXT DEFAULT 'OncoConnect CDS',
+  source        TEXT DEFAULT 'VELTRUVIA CDS',
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_di_drug_a ON drug_interactions(drug_a);

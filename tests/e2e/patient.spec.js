@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Patient App — OncoConnect', () => {
+test.describe('Patient App — VELTRUVIA', () => {
   // Use test data from backend (auto-created on startup)
   const testMRN = '12345';
   const testPassword = 'testpat123';

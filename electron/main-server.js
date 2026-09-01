@@ -1,5 +1,5 @@
 /**
- * OncoConnect Server — Headless server-only Electron app
+ * VELTRUVIA Server — Headless server-only Electron app
  *
  * Runs the shared backend. Shows a simple status window.
  * Doctor / Patient / Lab apps run fully self-contained now.
@@ -14,7 +14,7 @@ import { chdir } from 'node:process';
 app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-gpu-compositing');
-app.commandLine.appendSwitch('user-data-dir', join(app.getPath('temp'), 'oncoconnect-server'));
+app.commandLine.appendSwitch('user-data-dir', join(app.getPath('temp'), 'veltruvia-server'));
 
 // Ensure working directory is next to the exe
 const exeDir = dirname(app.getPath('exe'));
@@ -92,7 +92,7 @@ async function tryLoadExpress(port) {
     const { mkdirSync } = await import('node:fs');
     const dataDir = join(userData, 'data');
     try { mkdirSync(dataDir, { recursive: true }); } catch {}
-    process.env.DB_PATH = join(dataDir, 'oncoconnect.db');
+    process.env.DB_PATH = join(dataDir, 'veltruvia.db');
     await import('dotenv/config').catch(() => {});
     const mod = await import(pathToFileURL(join(ROOT, 'src', 'app.js')).href);
     expressApp = mod.app;
@@ -119,7 +119,7 @@ function createWindow(port, lanIP) {
   mainWindow = new BrowserWindow({
     width: 480,
     height: 400,
-    title: 'OncoConnect Server',
+    title: 'VELTRUVIA Server',
     icon: join(PUBLIC, 'icons', 'doctor-512.png'),
     webPreferences: { contextIsolation: true, nodeIntegration: false },
     titleBarStyle: 'hiddenInset',
@@ -133,7 +133,7 @@ function createWindow(port, lanIP) {
   mainWindow.on('closed', () => { mainWindow = null; });
 
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'OncoConnect Server', submenu: [
+    { label: 'VELTRUVIA Server', submenu: [
       { label: '🔄  Restart Server', click: () => mainWindow?.webContents.reload() },
       { type: 'separator' },
       { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
@@ -148,7 +148,7 @@ function getServerHTML(port, lanIP) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OncoConnect Server</title>
+<title>VELTRUVIA Server</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#080d1a;--surface:#0f1729;--border:#1e2d4a;--text:#e2e8f0;--text-muted:#8494b2;--blue:#2563eb;--blue2:#1d4ed8;--green:#059669;--red:#dc2626;}
@@ -170,7 +170,7 @@ h1{font-size:1.5rem;font-weight:800;letter-spacing:-.4px;margin-bottom:4px;}
 <body>
 <div class="drag-bar"></div>
 <div class="logo">🧬</div>
-<h1>OncoConnect Server</h1>
+<h1>VELTRUVIA Server</h1>
 <div class="sub">Neuro-oncology EMR — Backend Server</div>
 <div class="status-badge online" id="status"><div class="pulse"></div>Server Running</div>
 <div class="info">All client apps (Doctor, Patient, Lab) are now fully self-contained and run their own local servers. No manual connection needed.</div>
@@ -221,7 +221,7 @@ app.whenReady().then(async () => {
     const lanIP = getLocalIP();
     createWindow(serverPort, lanIP);
   } catch (err) {
-    dialog.showErrorBox('OncoConnect Server — Error', err.message || String(err));
+    dialog.showErrorBox('VELTRUVIA Server — Error', err.message || String(err));
     app.quit();
   }
 });

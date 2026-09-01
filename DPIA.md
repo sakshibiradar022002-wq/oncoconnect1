@@ -1,6 +1,6 @@
-# OncoConnect — Data Protection Impact Assessment (DPIA)
+# VELTRUVIA — Data Protection Impact Assessment (DPIA)
 
-A DPIA template pre-filled for OncoConnect. The operating clinic (the Data
+A DPIA template pre-filled for VELTRUVIA. The operating clinic (the Data
 Fiduciary / Controller) should review, adapt to its jurisdiction and hosting,
 and sign off before processing real patient data. Review at least annually and
 whenever a new data flow is added (e.g. a new export or integration).

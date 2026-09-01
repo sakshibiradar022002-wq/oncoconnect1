@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OncoConnect Admin</title>
+<title>VELTRUVIA Admin</title>
 <meta name="theme-color" content="#2C5EAD">
 <style>
 /* ═══ ADMIN PANEL — Blue & White Aesthetic ═══ */
@@ -60,7 +60,7 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-pale);outli
 </style>
 </head>
 <body>
-<div class="top"><span>🛡️</span><h1>OncoConnect Admin</h1><div style="margin-left:auto;display:flex;align-items:center;gap:10px;"><a href="/" style="color:#fff;text-decoration:none;font-size:12px;opacity:.85;padding:5px 12px;border:1px solid rgba(255,255,255,.2);border-radius:8px;position:relative;z-index:1">👨‍⚕️ Software</a><a href="/patient.html" style="color:#fff;text-decoration:none;font-size:12px;opacity:.85;padding:5px 12px;border:1px solid rgba(255,255,255,.2);border-radius:8px;position:relative;z-index:1">📱 App</a><button class="theme-btn" onclick="toggleTheme()" id="theme-btn">🌙</button><span class="who" id="who"></span></div></div>
+<div class="top"><span>🛡️</span><h1>VELTRUVIA Admin</h1><div style="margin-left:auto;display:flex;align-items:center;gap:10px;"><a href="/" style="color:#fff;text-decoration:none;font-size:12px;opacity:.85;padding:5px 12px;border:1px solid rgba(255,255,255,.2);border-radius:8px;position:relative;z-index:1">👨‍⚕️ Software</a><a href="/patient.html" style="color:#fff;text-decoration:none;font-size:12px;opacity:.85;padding:5px 12px;border:1px solid rgba(255,255,255,.2);border-radius:8px;position:relative;z-index:1">📱 App</a><button class="theme-btn" onclick="toggleTheme()" id="theme-btn">🌙</button><span class="who" id="who"></span></div></div>
 <script>
 function toggleTheme(){const h=document.documentElement;const c=h.getAttribute('data-theme')||'light';const n=c==='light'?'dark':'light';h.setAttribute('data-theme',n);localStorage.setItem('onco_admin_theme',n);document.getElementById('theme-btn').textContent=n==='dark'?'☀️':'🌙';}
 (function(){const s=localStorage.getItem('onco_admin_theme')||'light';document.documentElement.setAttribute('data-theme',s);document.addEventListener('DOMContentLoaded',()=>{document.getElementById('theme-btn').textContent=s==='dark'?'☀️':'🌙';});})();
@@ -180,7 +180,7 @@ function exportAuditCSV(){
   }).join('\n');
   const blob=new Blob(['\uFEFF'+header+rows],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='oncoconnect-audit-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);
+  const a=document.createElement('a');a.href=url;a.download='veltruvia-audit-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);
 }
 // auto-resume an existing session
 api('/admin/users').then(()=>{document.getElementById('login-card').style.display='none';document.getElementById('panel').style.display='block';loadAll();loadDashboard();}).catch(()=>{});

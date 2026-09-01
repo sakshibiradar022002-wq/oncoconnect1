@@ -1,5 +1,5 @@
 /**
- * Deploy OncoConnect AuditTrail smart contract
+ * Deploy VELTRUVIA AuditTrail smart contract
  * Run: npm run blockchain:deploy
  */
 
@@ -12,7 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 
 async function main() {
-  console.log('🔗 Deploying OncoConnect AuditTrail contract...\n');
+  console.log('🔗 Deploying VELTRUVIA AuditTrail contract...\n');
 
   // Connect to local Hardhat network
   const provider = new ethers.JsonRpcProvider('http://127.0.0.1:8545');

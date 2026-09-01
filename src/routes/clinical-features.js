@@ -96,7 +96,7 @@ clinicalFeaturesRouter.post('/rx-totp/generate', requireRole('doctor', 'admin'),
 
   // Generate 6-digit TOTP code
   const code = String(Math.floor(100000 + Math.random() * 900000));
-  const codeHash = pbkdf2Sync(code, 'oncoconnect-totp', 10000, 32, 'sha256').toString('hex');
+  const codeHash = pbkdf2Sync(code, 'veltruvia-totp', 10000, 32, 'sha256').toString('hex');
   const id = randomToken(16);
   const now = new Date().toISOString();
   const expires = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 min expiry
@@ -132,7 +132,7 @@ clinicalFeaturesRouter.post('/rx-totp/confirm', requireRole('doctor', 'admin'), 
     return res.status(400).json({ error: 'Code expired. Please regenerate.' });
   }
 
-  const inputHash = pbkdf2Sync(code, 'oncoconnect-totp', 10000, 32, 'sha256').toString('hex');
+  const inputHash = pbkdf2Sync(code, 'veltruvia-totp', 10000, 32, 'sha256').toString('hex');
   const match = timingSafeEqual(Buffer.from(inputHash, 'hex'), Buffer.from(row.totp_code, 'hex'));
 
   if (!match) return res.status(400).json({ error: 'Invalid code' });

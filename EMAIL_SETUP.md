@@ -1,6 +1,6 @@
 # Making email work — real verification codes
 
-OncoConnect sends real registration codes and appointment reminders **from the
+VELTRUVIA sends real registration codes and appointment reminders **from the
 server**. Until you configure a provider, it runs in **dev mode**: the code is
 shown on screen instead of emailed (handy for demos, useless for real users).
 
@@ -23,7 +23,7 @@ other serverless platforms that block SMTP. Setup is ~2 minutes.
 3. Set on your server:
    ```
    RESEND_API_KEY=re_your_key_here
-   EMAIL_FROM=OncoConnect <onboarding@resend.dev>
+   EMAIL_FROM=VELTRUVIA <onboarding@resend.dev>
    ```
    `onboarding@resend.dev` works immediately with no domain setup. To send from
    your own address later, add and verify your domain in Resend, then change
@@ -41,7 +41,7 @@ Works well on hosts with a persistent server (Render, Fly). **Avoid on Vercel**
 (serverless functions usually can't open SMTP connections).
 
 1. Turn on **2-Step Verification**: Google Account → Security.
-2. Security → **App passwords** → create one (name it "OncoConnect") → copy the
+2. Security → **App passwords** → create one (name it "VELTRUVIA") → copy the
    16-character password.
 3. Set on your server:
    ```
@@ -60,7 +60,7 @@ SMTP_HOST=smtp.yourprovider.com
 SMTP_PORT=587
 SMTP_USER=...
 SMTP_PASS=...
-SMTP_FROM=OncoConnect <no-reply@yourdomain.com>
+SMTP_FROM=VELTRUVIA <no-reply@yourdomain.com>
 ```
 
 ---

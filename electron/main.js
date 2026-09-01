@@ -1,4 +1,4 @@
-// OncoConnect Desktop — Electron main process
+// VELTRUVIA Desktop — Electron main process
 // Uses a minimal static file server (Node built-ins only) + optional Express API.
 
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
@@ -108,7 +108,7 @@ async function tryLoadExpress(port) {
     const { mkdirSync } = await import('node:fs');
     const dataDir = join(userData, 'data');
     try { mkdirSync(dataDir, { recursive: true }); } catch {}
-    process.env.DB_PATH = join(dataDir, 'oncoconnect.db');
+    process.env.DB_PATH = join(dataDir, 'veltruvia.db');
 
     // Import dotenv (no-op if .env missing)
     await import('dotenv/config').catch(() => {});
@@ -142,7 +142,7 @@ function getLauncherHTML(port) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OncoConnect Pro — Choose Portal</title>
+<title>VELTRUVIA Pro — Choose Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#080d1a;--surface:#0f1729;--border:#1e2d4a;--text:#e2e8f0;--text-muted:#8494b2;--blue:#4a90e2;--blue2:#2563eb;--green:#059669;--green2:#34d399;--purple:#7c3aed;}
@@ -171,7 +171,7 @@ h1{font-size:1.8rem;font-weight:800;letter-spacing:-.5px;margin-bottom:4px;}
 <div class="drag-bar"></div>
 <div class="container">
   <div class="logo">🧬</div>
-  <h1>OncoConnect Pro</h1>
+  <h1>VELTRUVIA Pro</h1>
   <div class="sub">Neuro-oncology EMR — Choose your portal</div>
   <div class="portals">
     <a class="portal doctor" href="http://127.0.0.1:${port}/">
@@ -219,7 +219,7 @@ function createWindow() {
     height: 750,
     minWidth: 800,
     minHeight: 600,
-    title: 'OncoConnect Pro',
+    title: 'VELTRUVIA Pro',
     icon: join(ROOT, 'public', 'icons', 'doctor-512.png'),
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
@@ -264,7 +264,7 @@ function createWindow() {
     },
     {
       label: 'Help',
-      submenu: [{ label: 'About OncoConnect Pro', click: () => shell.openExternal('https://github.com') }]
+      submenu: [{ label: 'About VELTRUVIA Pro', click: () => shell.openExternal('https://github.com') }]
     }
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
@@ -298,7 +298,7 @@ app.whenReady().then(async () => {
 
   } catch (err) {
     console.error('[electron] Failed to start:', err);
-    dialog.showErrorBox('OncoConnect Pro — Startup Error', err.message || String(err));
+    dialog.showErrorBox('VELTRUVIA Pro — Startup Error', err.message || String(err));
     app.quit();
   }
 });

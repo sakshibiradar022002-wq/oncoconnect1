@@ -1,5 +1,5 @@
 /**
- * OncoConnect Blockchain Integration
+ * VELTRUVIA Blockchain Integration
  * 
  * Provides tamper-proof audit trail using a local Hardhat blockchain.
  * Medical record hashes are stored on-chain while actual data remains

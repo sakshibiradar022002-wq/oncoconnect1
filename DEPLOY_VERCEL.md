@@ -1,10 +1,10 @@
-# Deploying OncoConnect to Vercel
+# Deploying VELTRUVIA to Vercel
 
 ## Why you saw the "serverless" message
 
 Vercel runs your code as **serverless functions** on an **ephemeral, read-only
 filesystem**. A local SQLite file (`chemocure.db`) cannot be written or kept
-there, so OncoConnect deliberately refuses to start and prints:
+there, so VELTRUVIA deliberately refuses to start and prints:
 
 > This is a serverless deployment but no `TURSO_DATABASE_URL` is set…
 
@@ -22,9 +22,9 @@ your schema and code do not change at all.
 curl -sSfL https://get.tur.so/install.sh | bash
 turso auth signup            # opens the browser once
 
-turso db create oncoconnect
-turso db show oncoconnect --url        # -> libsql://oncoconnect-<you>.turso.io
-turso db tokens create oncoconnect     # -> eyJ...  (the auth token)
+turso db create veltruvia
+turso db show veltruvia --url        # -> libsql://veltruvia-<you>.turso.io
+turso db tokens create veltruvia     # -> eyJ...  (the auth token)
 ```
 
 ### 2. Generate the two app secrets
@@ -39,7 +39,7 @@ Vercel dashboard → your project → **Settings → Environment Variables**
 
 | Name | Value |
 |---|---|
-| `TURSO_DATABASE_URL` | `libsql://oncoconnect-<you>.turso.io` (from step 1) |
+| `TURSO_DATABASE_URL` | `libsql://veltruvia-<you>.turso.io` (from step 1) |
 | `TURSO_AUTH_TOKEN`   | `eyJ...` (from step 1) |
 | `JWT_SECRET`         | the hex string from step 2 |
 | `PHI_ENCRYPTION_KEY` | the **64-hex-char** string from step 2 |
@@ -78,7 +78,7 @@ the process a persistent disk. Then Turso is not required — just set
 
 - **Render** – uses the included `render.yaml`; add a disk mounted where
   `DB_PATH` points.
-- **Fly.io** – `fly volumes create oncoconnect_data --size 1`, mount at `/data`,
+- **Fly.io** – `fly volumes create veltruvia_data --size 1`, mount at `/data`,
   set `DB_PATH=/data/chemocure.db`.
 - **Railway** – add a volume and set `DB_PATH` onto it.
 

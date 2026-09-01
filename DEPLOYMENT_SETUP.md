@@ -1,4 +1,4 @@
-# OncoConnect Deployment Setup Guide
+# VELTRUVIA Deployment Setup Guide
 
 ## Current Status 🔴
 
@@ -17,7 +17,7 @@ Use ephemeral in-memory database. **Good for:** demos, testing, development.
 **Steps:**
 
 1. Go to your Render dashboard
-2. Select the `oncoconnect-server` service
+2. Select the `veltruvia-server` service
 3. Go to **Environment** tab
 4. Add new environment variable:
    - Key: `DB_EPHEMERAL`
@@ -53,21 +53,21 @@ Use Turso cloud database. **Good for:** real patients, production, persistent da
    turso auth signup
 
    # Create database
-   turso db create oncoconnect
+   turso db create veltruvia
 
    # Get the connection string
-   turso db show oncoconnect --url
+   turso db show veltruvia --url
    # Output: libsql://onco-xyz-abc.turso.io
    # Copy this value
 
    # Create auth token
-   turso db tokens create oncoconnect
+   turso db tokens create veltruvia
    # Output: eyJ0eXAiOiJKV1QiLCJhbGc...
    # Copy this value
    ```
 
 2. **Update Render environment:**
-   - Go to Render dashboard → `oncoconnect-server` service
+   - Go to Render dashboard → `veltruvia-server` service
    - Go to **Environment** tab
    - **Remove** `DB_EPHEMERAL` if you added it (Option A)
    - Add/update these variables:

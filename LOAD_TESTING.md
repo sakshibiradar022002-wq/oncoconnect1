@@ -1,4 +1,4 @@
-# OncoConnect Load Testing Guide
+# VELTRUVIA Load Testing Guide
 
 **Last Updated:** July 30, 2026  
 **Purpose:** Verify API performance under load and identify bottlenecks  

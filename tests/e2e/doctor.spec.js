@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Doctor App — OncoConnect Pro', () => {
+test.describe('Doctor App — VELTRUVIA Pro', () => {
   let doctorEmail = `doc_${Date.now()}@test.local`;
   let doctorPassword = 'TestPass123!@#';
   let testMRN = `TEST${Date.now()}`;

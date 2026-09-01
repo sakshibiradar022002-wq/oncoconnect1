@@ -1,6 +1,6 @@
 {
-  "appId": "com.oncoconnect.desktop",
-  "productName": "OncoConnect Pro",
+  "appId": "com.veltruvia.desktop",
+  "productName": "VELTRUVIA Pro",
   "directories": {
     "output": "dist-desktop"
   },
@@ -43,7 +43,7 @@
     "uninstallerIcon": "public/icons/doctor-512.png",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "OncoConnect Pro",
+    "shortcutName": "VELTRUVIA Pro",
     "installerHeaderIcon": "public/icons/doctor-512.png"
   }
 }

@@ -1,6 +1,6 @@
 {
-  "appId": "com.oncoconnect.lab",
-  "productName": "OncoConnect Lab",
+  "appId": "com.veltruvia.lab",
+  "productName": "VELTRUVIA Lab",
   "directories": {
     "output": "dist-desktop"
   },

@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="OncoConnect">
+<meta name="apple-mobile-web-app-title" content="VELTRUVIA">
 <meta name="theme-color" content="#059669">
-<title>OncoConnect — Patient App</title>
+<title>VELTRUVIA — Patient App</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/patient-192.png">
 <link rel="icon" type="image/png" href="/icons/patient-192.png">
@@ -112,7 +112,7 @@ input[type="range"]{width:100%;accent-color:var(--blue);height:6px}
 <!-- ═══ SPLASH SCREEN ═══ -->
 <div id="splash" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#040c0a 0%,#071210 35%,#0d1c18 70%,#122620 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s,visibility .5s">
   <div style="width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,#059669,#34d399);display:flex;align-items:center;justify-content:center;font-size:42px;box-shadow:0 12px 48px rgba(5,150,105,.4);animation:splashPulse 2s ease-in-out infinite;margin-bottom:20px">🧬</div>
-  <div style="font-size:1.6rem;font-weight:800;color:#e8faf2;letter-spacing:-.5px;margin-bottom:6px">OncoConnect</div>
+  <div style="font-size:1.6rem;font-weight:800;color:#e8faf2;letter-spacing:-.5px;margin-bottom:6px">VELTRUVIA</div>
   <div style="font-size:13px;color:#7d9b8e;margin-bottom:28px">Patient & Lab Portal</div>
   <div style="width:120px;height:3px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:0%;background:linear-gradient(90deg,#059669,#34d399,#60a5fa);border-radius:3px;animation:splashLoad 1.5s ease-in-out forwards"></div></div>
 </div>
@@ -121,7 +121,7 @@ input[type="range"]{width:100%;accent-color:var(--blue);height:6px}
 <div id="screen-login">
   <div class="auth-logo">
     <div class="auth-logo-icon">🧬</div>
-    <div class="app-title">OncoConnect</div>
+    <div class="app-title">VELTRUVIA</div>
     <div class="app-sub">Patient Portal</div>
   </div>
   <div class="conn-banner" id="conn-banner">🔗 Connected to Doctor Software</div>
@@ -1306,15 +1306,15 @@ function exportApptICS(){
   const mrn=currentPat.mrn;
   const appts=(LS.get('appts_'+mrn)||[]).filter(a=>a.date>=new Date().toISOString().slice(0,10));
   if(!appts.length){alert('No upcoming appointments to export.');return;}
-  let ics='BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//OncoConnect//EN\nCALSCALE:GREGORIAN\n';
+  let ics='BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//VELTRUVIA//EN\nCALSCALE:GREGORIAN\n';
   appts.forEach(a=>{
     const dt=(a.date||'').replace(/-/g,'')+(a.time?a.time.replace(':','')+'00':'T090000');
-    ics+=`BEGIN:VEVENT\nDTSTART:${dt}\nDTEND:${dt}\nSUMMARY:OncoConnect - ${a.type||'Follow-up'}\nDESCRIPTION:Patient: ${currentPat.name} (MRN: ${mrn})\nLOCATION:${a.notes||'Clinic'}\nEND:VEVENT\n`;
+    ics+=`BEGIN:VEVENT\nDTSTART:${dt}\nDTEND:${dt}\nSUMMARY:VELTRUVIA - ${a.type||'Follow-up'}\nDESCRIPTION:Patient: ${currentPat.name} (MRN: ${mrn})\nLOCATION:${a.notes||'Clinic'}\nEND:VEVENT\n`;
   });
   ics+='END:VCALENDAR';
   const blob=new Blob([ics],{type:'text/calendar'});
   const url=URL.createObjectURL(blob);
-  const link=document.createElement('a');link.href=url;link.download='OncoConnect_Appointments.ics';link.click();
+  const link=document.createElement('a');link.href=url;link.download='VELTRUVIA_Appointments.ics';link.click();
   URL.revokeObjectURL(url);
   alert('📅 Calendar file downloaded! Import into Google Calendar or Apple Calendar.');
 }
@@ -1515,7 +1515,7 @@ function submitBatchCSV() {
 <script>
 (function(){
   if(new URLSearchParams(location.search).get('standalone')==='1'){
-    document.title='OncoConnect Patient';
+    document.title='VELTRUVIA Patient';
     window._standaloneMode=true;
     // Hide portal switcher & links in sidebar
     var s=document.getElementById('portal-switcher');
