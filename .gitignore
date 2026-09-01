@@ -25,6 +25,8 @@ coverage/
 .env*
 
 # Desktop (Electron) builds
+Desktop/
+dist/
 dist-desktop/
 release/
 
