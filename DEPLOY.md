@@ -1,5 +1,8 @@
 # Deploying the VELTRUVIA Server to the cloud
 
+> ⚠️ **SUPERSEDED (2026-09-27):** production now runs on AWS Lightsail Mumbai.
+> See **DEPLOY-AWS.md** — this document is kept for reference only.
+
 Phones (Patient + Lab APKs) and the Doctor desktop app all talk to **one
 always-on server**. This guide puts that server on a cloud VM with HTTPS.
 ~30 minutes, one VM, one domain.

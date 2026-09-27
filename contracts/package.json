@@ -1,0 +1,15 @@
+{
+  "name": "veltruvia-audit-contracts",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy": "hardhat compile && node deploy.js",
+    "test": "hardhat test"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.7",
+    "chai": "^4.4.1",
+    "ethers": "^6.13.2",
+    "hardhat": "^2.22.10"
+  }
+}

@@ -1,0 +1,6 @@
+owner: videju
+repo: veltruvia
+provider: github
+updaterCacheDirName: veltruvia-server-updater
+publisherName:
+  - VELTRUVIA Code Signing

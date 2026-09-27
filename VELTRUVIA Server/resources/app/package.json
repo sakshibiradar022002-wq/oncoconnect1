@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
-    "@sentry/node": "^7.108.0",
+    "@sentry/node": "^7.120.4",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "electron-updater": "^6.8.9",

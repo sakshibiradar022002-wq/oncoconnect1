@@ -34,6 +34,20 @@ telehealthRouter.get('/ice-servers', authenticate, (req, res) => {
       username: TURN_USERNAME || undefined,
       credential: TURN_CREDENTIAL || undefined,
     });
+  } else {
+    // Free default relay (Open Relay Project, metered.ca): no signup, kept
+    // as a fallback so calls connect behind strict NAT out of the box.
+    // WebRTC media is DTLS-SRTP end-to-end encrypted — a shared relay only
+    // ever forwards ciphertext. Override with TURN_URL for self-hosted coturn.
+    ice.push({
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp',
+      ],
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    });
   }
   res.json({ iceServers: ice, turnConfigured: !!TURN_URL });
 });

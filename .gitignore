@@ -133,3 +133,12 @@ VELTRUVIA Server/resources/app/public/downloads/
 VELTRUVIA Doctor/resources/app/public/downloads/
 VELTRUVIA Patient/resources/app/public/downloads/
 VELTRUVIA Lab/resources/app/public/downloads/
+
+# ── Secrets & backups (never commit) ──
+.env.pre-email-backup
+.env*
+!contracts/.env.example
+veltruvia-codesign.cer
+*.asar.backup
+runtime-shell-*-backup/
+.freebuff/vm-debug-users.mjs

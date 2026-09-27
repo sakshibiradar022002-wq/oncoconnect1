@@ -631,7 +631,6 @@ function buildRecordTabs(p){
       <div style="display:flex;gap:6px;">
         <select id="r-note-type" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text);"><option value="progress">Progress Note</option><option value="soap">SOAP Note</option><option value="procedure">Procedure Note</option><option value="discharge">Discharge Summary</option><option value="consult">Consultation</option></select>
         <button class="btn btn-primary btn-sm" data-action="rNotesCreate">+ New Note</button>
-        <button class="btn btn-sm" id="r-dictate-btn" data-action="rToggleDictation" title="Voice-dictate into the SOAP fields (Chrome/Edge)">🎙 Dictate</button>
       </div>
     </div>
     <div id="r-notes-editor" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
@@ -1412,34 +1411,6 @@ function renderTrends(mrn){
   const sec=(t,h)=>h?`<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">${t}</div><div style="display:flex;gap:10px;flex-wrap:wrap;">${h}</div></div>`:'';
   return sec('Vitals',vCards)+sec('Lab results',lCards);
 }
-
-// ── v2.1 VOICE DICTATION → SOAP fields (Web Speech API) ──
-let _recog=null,_dictTarget=null;
-function rToggleDictation(){
-  const btn=document.getElementById('r-dictate-btn');
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){AppDialog.alert('Voice dictation needs Chrome or Edge (Web Speech API).');return;}
-  if(_recog){try{_recog.stop();}catch(e){}_recog=null;btn.textContent='🎙 Dictate';btn.style.background='';return;}
-  // Target selector: which SOAP field is focused, else S
-  _dictTarget=document.activeElement&&['r-note-s','r-note-o','r-note-a','r-note-p'].includes(document.activeElement.id)?document.activeElement.id:'r-note-s';
-  _recog=new SR();
-  _recog.continuous=true;_recog.interimResults=false;_recog.lang='en-US';
-  _recog.onresult=e=>{
-    let t='';
-    for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)t+=e.results[i][0].transcript;}
-    if(!t)return;
-    const el=document.getElementById(_dictTarget);if(!el)return;
-    const sep=el.value&&!/\s$/.test(el.value)?' ':'';
-    el.value+=sep+t.charAt(0).toUpperCase()+t.slice(1)+'. ';
-  };
-  _recog.onend=()=>{_recog=null;const b=document.getElementById('r-dictate-btn');if(b){b.textContent='🎙 Dictate';b.style.background='';}};
-  _recog.onerror=ev=>{if(ev.error==='not-allowed')AppDialog.alert('Microphone permission denied — allow mic access to dictate.');};
-  try{_recog.start();btn.textContent='⏺ Stop';btn.style.background='var(--red)';btn.style.color='#fff';
-    AppDialog.alert('Dictating into '+(document.getElementById(_dictTarget)?.previousElementSibling?.textContent||'the S field')+'. Click any SOAP box to switch target; click Stop when done.');}
-  catch(e){AppDialog.alert('Could not start dictation: '+e.message);}
-}
-// Keep target synced when the user clicks into a SOAP field while recording
-document.addEventListener('focusin',e=>{if(_recog&&['r-note-s','r-note-o','r-note-a','r-note-p'].includes(e.target.id))_dictTarget=e.target.id;});
 
 // ── v2.1 PRINT / PDF — prescription, invoice, day-sheet ──
 // Opens a print-optimized popup (system Save-as-PDF works from any OS)

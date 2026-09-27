@@ -1,0 +1,23 @@
+[Unit]
+Description=VELTRUVIA EMR Server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/veltruvia/app
+EnvironmentFile=/home/ubuntu/veltruvia/app/.env
+Environment=PORT=3000
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=5
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/ubuntu/veltruvia/app
+ProtectHome=read-only
+BindPaths=/home/ubuntu/veltruvia/app
+
+[Install]
+WantedBy=multi-user.target

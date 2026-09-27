@@ -1,5 +1,9 @@
 # VELTRUVIA — HTTPS on the Clinic LAN (LIVE since v2.0.5)
 
+> ⚠️ **SUPERSEDED (2026-09-27):** production is cloud-hosted with automatic
+> HTTPS (Caddy + Let's Encrypt) — see **DEPLOY-AWS.md**. LAN TLS kept for
+> offline/emergency use only.
+
 Phone-to-server traffic on the clinic Wi-Fi is now **encrypted**.
 
 ## Current state (already done)

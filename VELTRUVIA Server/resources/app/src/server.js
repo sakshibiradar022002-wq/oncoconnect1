@@ -15,7 +15,7 @@ import { closeDb, flushDb } from './db/index.js';
 import { attachTelehealthWs } from './routes/telehealth.js';
 import { startMllpServer, getMllpStatus } from './hl7/mllp.js';
 import { mailConfigured } from './mail.js';
-import { startBackups } from './db/backup.js';
+import { startBackups, backupDatabase } from './db/backup.js';
 import { installErrorHandlers } from './errors.js';
 import blockchain from './blockchain/index.js';
 
