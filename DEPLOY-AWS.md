@@ -192,6 +192,19 @@ this tier. Free via Free Tier credits: $7 × 6 months = $42, fully covered
 - ethers added to package.json dependencies (deployed with --omit=dev).
 - ON-CHAIN ANCHORING = LIVE. Cost: ~0.00002 test-ETH/day (0.1 funds years).
 
+## 📋 ROUND 5 — PAID-ITEM PREP + FINAL AUDIT (Sep 27, 2026 late night)
+- Free pen-test portion DONE: `npm audit --omit=dev` = **0 vulnerabilities**;
+  live security-header audit passed (CSP w/ frame-ancestors+upgrade-insecure,
+  HSTS preload, XFO SAMEORIGIN, nosniff, Referrer/Permissions-Policy);
+  TLS cert Let's Encrypt YE2, valid to Dec 26.
+- **UPGRADE-PATHS.md** written: exact purchase/wiring steps + costs + trigger
+  conditions for CA signing, pen-test, mainnet anchoring, UptimeRobot,
+  private repo, multi-clinic — with priority order.
+- **MULTI-CLINIC-PLAYBOOK.md** written: shared-vs-isolated decision, 10-step
+  per-clinic checklist reusing the .freebuff scripts, scaling table.
+- Remaining for a literal 10/10: phone APK test + UptimeRobot + private repo
+  (all user's, free) — CA/pen-test/mainnet are paid and properly deferred.
+
 ## ⏸ OLD STATE (kept for reference)
 - AWS account OPENED on the **Free plan** (no card on file — account cannot
   be billed, so the billing-budget alert is unnecessary until upgrade)
