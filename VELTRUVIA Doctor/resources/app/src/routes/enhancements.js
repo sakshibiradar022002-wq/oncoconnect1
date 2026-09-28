@@ -350,9 +350,18 @@ enhanceRouter.post('/attachments/:mrn', authenticate, requireRole('doctor', 'adm
 
 enhanceRouter.get('/attachments/:mrn', authenticate, requireRole('doctor', 'admin', 'kv-patient'), asyncHandler(async (req, res) => {
   const mrn = String(req.params.mrn || '').toUpperCase();
-  const rows = await db.prepare("SELECT k, v_enc FROM kv_store WHERE k LIKE 'att_%'").all();
+  // Cross-tenant guard: patients may only see their own chart; doctors only
+  // attachments under their own owner_id (their own patients). MRNs are
+  // guessable, so without this any doctor could enumerate another doctor's
+  // patient files. Admin sees all (operator console).
+  if (req.auth.role === 'kv-patient') {
+    const prow = await db.prepare('SELECT owner_id FROM kv_store WHERE k = ?').get('pat_' + mrn);
+    if (!prow || prow.owner_id !== req.auth.subjectId) return res.status(403).json({ error: 'Forbidden' });
+  }
+  const rows = await db.prepare("SELECT owner_id, k, v_enc FROM kv_store WHERE k LIKE 'att_%'").all();
   const list = [];
   for (const r of rows) {
+    if (req.auth.role !== 'admin' && r.owner_id !== req.auth.subjectId) continue;
     try {
       const m = JSON.parse(decryptPHI(r.v_enc));
       if (m.mrn === mrn) list.push(m);
@@ -368,9 +377,13 @@ enhanceRouter.get('/attachments/:mrn/:id', authenticate, requireRole('doctor', '
   const row = await db.prepare("SELECT owner_id, v_enc FROM kv_store WHERE k = ?").get('att_' + id);
   if (!row) return res.status(404).json({ error: 'Not found' });
   const m = JSON.parse(decryptPHI(row.v_enc));
+  // Cross-tenant guard (same rule as the list route): doctors/admins must own
+  // the attachment record; patients must own the chart it belongs to.
   if (req.auth.role === 'kv-patient') {
     const prow = await db.prepare('SELECT owner_id FROM kv_store WHERE k = ?').get('pat_' + mrn);
     if (!prow || prow.owner_id !== req.auth.subjectId) return res.status(403).json({ error: 'Forbidden' });
+  } else if (req.auth.role !== 'admin' && row.owner_id !== req.auth.subjectId) {
+    return res.status(403).json({ error: 'Forbidden' });
   }
   if (m.mrn !== mrn) return res.status(404).json({ error: 'Not found' });
   const p = _join(ATTACH_DIR, m.id + m.ext);
@@ -391,7 +404,10 @@ enhanceRouter.get('/attachments/:mrn/:id', authenticate, requireRole('doctor', '
   res.setHeader('Content-Type', m.ext === '.pdf' ? 'application/pdf'
     : ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'].includes(m.ext) ? `image/${m.ext.slice(1).replace('jpg', 'jpeg')}`
     : 'application/octet-stream');
-  res.setHeader('Content-Disposition', `inline; filename="${m.filename}"`);
+  // Header-injection guard: strip anything that could break out of the
+  // quoted filename parameter (quotes, backslashes, CR/LF, control chars).
+  const safeName = String(m.filename || 'file').replace(/[^\w.\- ()]/g, '_').slice(0, 120);
+  res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
   res.send(body);
 }));
 

@@ -26,7 +26,7 @@ export async function createSession(res, { subjectId, subjectType, role }) {
   const token = jwt.sign(
     { sub: subjectId, type: subjectType, role, jti },
     config.jwtSecret,
-    { expiresIn: `${config.sessionTtlMinutes}m` }
+    { expiresIn: `${config.sessionTtlMinutes}m`, algorithm: 'HS256' }
   );
 
   // NOTE: `partitioned: true` (CHIPS) is deliberately NOT set. The CHIPS
@@ -68,7 +68,9 @@ export async function authenticate(req, res, next) {
 
   let payload;
   try {
-    payload = jwt.verify(token, config.jwtSecret);
+    // Algorithm pinned: without this, an attacker-crafted token could name a
+    // different algorithm (e.g. 'none' family tricks in older libs).
+    payload = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'] });
   } catch {
     return res.status(401).json({ error: 'Invalid or expired session' });
   }
