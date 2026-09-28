@@ -329,8 +329,10 @@ async function submitUpload(){
   const subs=LS.get('lab_subs_'+_docId)||[];
   subs.push({labId:currentLab.labId,labName:currentLab.name,mrn,test,date,results:res,notes,taskId,submittedAt:Date.now()});
   LS.set('lab_subs_'+_docId,subs);
-  // Push to server so the doctor's record picks the result up (offline-safe)
-  try{await api('/sync/lab',{method:'PUT',body:JSON.stringify({changes:{['pat_tokens_'+_docId]:tokens,['lab_subs_'+_docId]:subs}})})}catch(e){console.warn('[lab] push failed:',e.message)}
+  // Push to server so the doctor's record picks the result up — and report
+  // honestly which happened. "Submitted" must mean the doctor can see it.
+  let delivered=false;
+  try{await api('/sync/lab',{method:'PUT',body:JSON.stringify({changes:{['pat_tokens_'+_docId]:tokens,['lab_subs_'+_docId]:subs}})});delivered=true}catch(e){console.warn('[lab] push failed:',e.message)}
   // Clear form
   document.getElementById('ul-taskid').value='';
   document.getElementById('ul-mrn').value='';
@@ -338,7 +340,7 @@ async function submitUpload(){
   document.getElementById('ul-res').value='';
   document.getElementById('ul-notes').value='';
   document.getElementById('ul-mrn-manual').value='';
-  showToast('✅ Report submitted successfully!');
+  showToast(delivered?'✅ Report submitted — the doctor\'s record is updated':'⚠️ Saved on this phone — server unreachable, the doctor cannot see it yet. Submit again when online.');
   renderUpload();
 }
 
@@ -363,16 +365,18 @@ function previewBatchCSV(input){
   reader.readAsText(file);
 }
 
-function submitBatchCSV(){
+async function submitBatchCSV(){
   if(!_batchData.length)return;
   const subs=LS.get('lab_subs_'+_docId)||[];
   _batchData.forEach(r=>{
     subs.push({labId:currentLab.labId,labName:currentLab.name,mrn:r.mrn,test:r.test,date:r.date,results:r.results,notes:r.notes,submittedAt:Date.now()});
   });
   LS.set('lab_subs_'+_docId,subs);
+  let delivered=false;
+  try{await api('/sync/lab',{method:'PUT',body:JSON.stringify({changes:{['lab_subs_'+_docId]:subs}})});delivered=true}catch(e){console.warn('[lab] batch push failed:',e.message)}
   _batchData=[];
   closeSheet('batch-sheet');
-  showToast(`✅ ${subs.length} results uploaded!`);
+  showToast(delivered?`✅ Results uploaded — the doctor\'s record is updated`:`⚠️ Saved on this phone — server unreachable. Upload again when online so the doctor can see them.`);
   renderUpload();
 }
 

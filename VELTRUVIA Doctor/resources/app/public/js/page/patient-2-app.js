@@ -12,10 +12,33 @@ async function sendSOS(){
     `Timestamp: ${new Date().toLocaleString()}\n` +
     `Diagnosis: ${currentPat.diag||'—'}\n` +
     `Phase: ${currentPat.phase||'—'}`;
-  msgs.push({role:'patient',text:vitals,timestamp:Date.now(),urgent:true});
+  const entry={role:'patient',text:vitals,timestamp:Date.now(),urgent:true};
+  msgs.push(entry);
   LS.set(key,msgs);
-  AppDialog.alert('🚨 Emergency alert sent to your doctor!');
+  // Save locally (offline-safe), then attempt server delivery — and tell the
+  // truth about which happened. An SOS the doctor never receives is a safety
+  // failure, so the message must never claim success it did not earn.
+  let delivered=false;
+  try{
+    await api('/sync/send-message',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,docId:_docId,role:'patient',text:vitals,urgent:true})});
+    delivered=true;
+  }catch(e){console.warn('[sos] server delivery failed:',e.message)}
+  if(delivered){
+    AppDialog.alert('🚨 Emergency alert DELIVERED to your doctor.\n\nIf this is a life-threatening emergency, call your local emergency number now.');
+  }else{
+    const retry=await AppDialog.confirm('⚠️ NOT delivered — no connection to the server.\n\nThe alert is saved on this phone and will stay here. Do you want to try sending again?',{okLabel:'Retry now',cancelLabel:'Close'});
+    if(retry)sendSOS._retry(entry,key);
+  }
 }
+// Retry helper: attempt delivery of an already-saved alert.
+sendSOS._retry=async function(entry,key){
+  try{
+    await api('/sync/send-message',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,docId:_docId,role:'patient',text:entry.text,urgent:true})});
+    AppDialog.alert('🚨 Emergency alert DELIVERED on retry.');
+  }catch(e){
+    AppDialog.alert('⚠️ Still no connection. The alert remains saved on this phone — please call your doctor or emergency services directly.');
+  }
+};
 // Add SOS button to profile screen
 const _origRenderProfile=window.renderProfile;
 window.renderProfile=function(){
@@ -186,7 +209,7 @@ function addPhotoToLog(){
       // Keep only last 20 photos to manage localStorage
       if(photos.length>20)photos.splice(0,photos.length-20);
       LS.set('photos_'+currentPat.mrn,photos);
-      AppDialog.alert('📷 Photo added to your record!');
+      AppDialog.alert('📷 Photo saved on this phone and attached to today\'s log.\n\nNote: photos stay on this device — show them to your doctor at your next visit.');
     };
     reader.readAsDataURL(file);
   };
@@ -295,6 +318,7 @@ async function submitBatchCSV() {
   if (!validRows.length) { AppDialog.alert('No valid rows to submit (each row needs at least a test name and results).'); return; }
   if (!await AppDialog.confirm('Upload ' + validRows.length + ' lab results?')) return;
   const subs = LS.get('lab_subs_' + _docId) || [];
+  const allTokens = LS.get('pat_tokens_' + _docId) || [];
   let count = 0;
   validRows.forEach(row => {
     subs.push({
@@ -304,17 +328,21 @@ async function submitBatchCSV() {
       submittedAt: Date.now(), batch: true
     });
     // Mark corresponding task as used if MRN matches
-    const tokens = LS.get('pat_tokens_' + _docId) || [];
-    const tok = tokens.find(t => t.labId === currentLab.labId && t.mrn === row.mrn && !t.used);
+    const tok = allTokens.find(t => t.labId === currentLab.labId && t.mrn === row.mrn && !t.used);
     if (tok) { tok.used = true; count++; }
-    LS.set('pat_tokens_' + _docId, tokens);
   });
+  if (count) LS.set('pat_tokens_' + _docId, allTokens);
   LS.set('lab_subs_' + _docId, subs);
   _batchCSVData = [];
   document.getElementById('batch-csv-preview').style.display = 'none';
   document.getElementById('batch-csv-submit').style.display = 'none';
   document.getElementById('batch-csv-input').value = '';
-  AppDialog.alert('✅ ' + validRows.length + ' lab results uploaded!' + (count ? ' (' + count + ' tasks marked complete)' : ''));
+  // Push to the server so the doctor receives the results — report honestly.
+  let delivered = false;
+  try { await api('/sync/lab', { method: 'PUT', body: JSON.stringify({ changes: { ['pat_tokens_' + _docId]: allTokens, ['lab_subs_' + _docId]: subs } }) }); delivered = true; } catch (e) { console.warn('[lab] batch push failed:', e.message); }
+  AppDialog.alert(delivered
+    ? '✅ ' + validRows.length + ' lab results uploaded — the doctor\'s record has been updated.' + (count ? ' (' + count + ' tasks marked complete)' : '')
+    : '⚠️ ' + validRows.length + ' results saved on this phone, but the server was unreachable — the doctor cannot see them yet. Try Upload again when you have internet.');
   renderLabUpload();
   refreshLabTasks();
 }

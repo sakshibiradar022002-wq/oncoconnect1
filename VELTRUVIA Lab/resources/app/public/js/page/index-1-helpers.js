@@ -126,7 +126,18 @@ function v(id){const el=document.getElementById(id);return el?(el.value||'').tri
 function flash(msg){const d=document.createElement('div');d.style.cssText='position:fixed;top:16px;right:16px;background:var(--green);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:var(--shadow-lg);';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
 
 // ── Server Sync Push ──
-async function pushToServer(changes){try{await api('/sync',{method:'PUT',body:JSON.stringify({changes})})}catch(e){console.warn('[sync] push failed:',e.message)}}
+// Returns true when the server accepted the changes, false when it could not
+// be reached. Callers that show a success message to the user MUST use this
+// result — a toast that says "saved" after a failed push is a lie.
+async function pushToServer(changes){
+  try{await api('/sync',{method:'PUT',body:JSON.stringify({changes})});return true}
+  catch(e){
+    console.warn('[sync] push failed:',e.message);
+    if(window.AppDialog&&AppDialog.toast)AppDialog.toast('📴 Server unreachable — saved on this computer, will sync when connection returns');
+    else flash('⚠️ Server unreachable — saved locally only');
+    return false;
+  }
+}
 
 // ── Auth ──
 function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('a-login').style.display=tab==='login'?'block':'none';document.getElementById('a-register').style.display=tab==='register'?'block':'none';

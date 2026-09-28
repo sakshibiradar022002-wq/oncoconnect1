@@ -659,11 +659,13 @@ async function saveLog(){
   const tempVal=Number.isFinite(tempRaw)&&tempRaw>=30&&tempRaw<=45?tempRaw:'';
   const log={date,cognitive:clamp(v('s-cog'),0,10,5),seizure:clamp(v('s-sz'),0,10,0),vision:clamp(v('s-vis'),0,10,5),headache:clamp(v('s-head'),0,10,0),fatigue:clamp(v('s-fat'),0,10,3),nausea:clamp(v('s-naus'),0,10,0),appetite:clamp(v('s-app'),0,10,7),sleep:clamp(v('s-sleep'),0,10,6),mood:clamp(v('s-mood'),0,10,6),temp:tempVal,bp:v('v-bp'),weight:v('v-weight'),meds:v('v-meds'),notes:v('v-notes'),items,savedAt:Date.now()};
   LS.set('log_'+currentPat.mrn+'_'+date,log);
-  // Also save to shared store so Doctor can see it
-  try{await api('/sync/save-log',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,date,log})})}catch(e){console.warn('[log] save to store failed:',e.message)}
+  // Also save to shared store so Doctor can see it — and tell the truth
+  // about whether it reached the server.
+  let delivered=true;
+  try{await api('/sync/save-log',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,date,log})})}catch(e){delivered=false;console.warn('[log] save to store failed:',e.message)}
   closeSheet('log-sheet');
   renderCalendar();
-  AppDialog.alert('Log saved! ✓');
+  AppDialog.alert(delivered?'Log saved! ✓ Your doctor can see today\'s entry.':'⚠️ Log saved on this phone only — no connection to the server. It will stay here; try Save again later to sync.');
 }
 
 // ═══ FACT-BR ═══
@@ -806,11 +808,19 @@ async function sendPatMsg(){
   const text=v('chat-inp');if(!text)return;
   const key='msgs_'+_docId+'_'+currentPat.mrn;
   const msgs=LS.get(key)||[];
-  msgs.push({role:'patient',text,timestamp:Date.now()});
+  const entry={role:'patient',text,timestamp:Date.now(),sent:false};
+  msgs.push(entry);
   LS.set(key,msgs);
-  // Also save to shared store
-  try{await api('/sync/send-message',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,docId:_docId,role:'patient',text})})}catch(e){console.warn('[chat] save to store failed:',e.message)}
   document.getElementById('chat-inp').value='';
+  renderChat();
+  // Mark the message honestly: sent = delivered to the server (queued for
+  // the doctor); otherwise it stays local-only with a pending marker.
+  try{
+    await api('/sync/send-message',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,docId:_docId,role:'patient',text})});
+    entry.sent=true;
+  }catch(e){entry.pending=true;console.warn('[chat] save to store failed:',e.message)}
+  LS.set(key,msgs);
+  if(entry.pending&&window.AppDialog&&AppDialog.toast)AppDialog.toast('📴 Message saved on this phone — will not reach your doctor until connection returns');
   renderChat();
 }
 
@@ -929,7 +939,7 @@ function renderLabUpload(){
   })}
   document.getElementById('lab-screen-upload').innerHTML=h;
 }
-function submitUpload(taskId,mrn){
+async function submitUpload(taskId,mrn){
   if(!currentLab||!_docId)return;
   const date=v('ul-date-'+taskId),test=v('ul-test-'+taskId),res=v('ul-res-'+taskId),notes=v('ul-notes-'+taskId);
   if(!test){AppDialog.alert('Enter test name.');return}
@@ -939,7 +949,12 @@ function submitUpload(taskId,mrn){
   const subs=LS.get('lab_subs_'+_docId)||[];
   subs.push({labId:currentLab.labId,labName:currentLab.name,mrn,test,date,results:res,notes,submittedAt:Date.now()});
   LS.set('lab_subs_'+_docId,subs);
-  AppDialog.alert('Report submitted! ✓');
+  // Push to the server so the doctor actually receives it — and say which
+  // happened. "Submitted" must mean the doctor can see it, not just the phone.
+  let delivered=false;
+  try{await api('/sync/lab',{method:'PUT',body:JSON.stringify({changes:{['pat_tokens_'+_docId]:tokens,['lab_subs_'+_docId]:subs}})});delivered=true;}
+  catch(e){console.warn('[lab] push failed:',e.message)}
+  AppDialog.alert(delivered?'Report submitted ✓ — the doctor\'s record has been updated.':'⚠️ Saved on this phone, but the server was unreachable — the doctor cannot see it yet. Try Submit again when you have internet.');
   renderLabUpload();
   refreshLabTasks();
 }
