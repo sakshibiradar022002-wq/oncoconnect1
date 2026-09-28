@@ -441,7 +441,7 @@ async function confirmBookAppt(){
   // Also try server booking
   try{
     const r=await api('/schedule/book',{method:'POST',body:JSON.stringify({date:_selectedSlot.date,startTime:_selectedSlot.time,type,notes})});
-    if(r.ok){AppDialog.alert('✅ '+r.message)}else{AppDialog.alert('✅ Appointment request submitted!')}
+    if(r.ok){AppDialog.alert('✅ '+r.message)}else{AppDialog.alert('⚠️ The server refused this slot ('+(r.error||'unavailable')+') — saved on this device. Pick another time and try again.');}
   }catch(e){
     // Honest failure: the shared-store save above is the local record; the
     // doctor-visible booking failed. Say so instead of faking success.
