@@ -324,6 +324,9 @@ function genLabUser(name){
 }
 
 async function doLogin(){
+  const loginBtn=document.querySelector('[data-action="doLogin"]');
+  if(window.Busy&&Busy.isBusy(loginBtn))return;
+  const run=async()=>{
   const email=v('li-email').toLowerCase().trim(),pass=v('li-pass'),totp=v('li-totp');
   if(!email||!pass){showMsg('login-msg','Enter email and password.');return;}
   try{
@@ -362,6 +365,7 @@ async function doLogin(){
   const ok=await verifyPassword(pass,doc.pass);
   if(!ok){showMsg('login-msg','Wrong password.');return;}
   currentDoc=doc;
+  try{const cb=document.getElementById('stay-signed-in-doc');if(cb&&cb.checked&&window.VxSession)VxSession.remember({kind:'doctor',email:doc.email||email,name:doc.name||''});else if(window.VxSession)VxSession.forget();}catch(e){}
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   document.getElementById('doc-name').textContent=doc.name;
@@ -369,11 +373,14 @@ async function doLogin(){
   document.getElementById('doc-av').textContent=doc.name.charAt(0);
   document.getElementById('greet-text').textContent='Welcome back, '+doc.name.split(' ')[0];
   refreshAll();
+  };
+  if(window.Busy)Busy.btn(loginBtn,run);else run();
 }
 
 function doLogout(){
   // Revoke session server-side
   api('/auth/logout',{method:'POST'}).catch(()=>{});
+  if(window.VxSession)VxSession.forget();
   currentDoc=null;selectedMRN=null;
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('app').style.display='none';

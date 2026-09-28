@@ -35,6 +35,7 @@
       <div class="fg"><label for="li-email">Email</label><input id="li-email" type="email" placeholder="dr.smith@hospital.com"></div>
       <div class="fg"><label for="li-pass">Password</label><span class="pw-wrap"><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password"></span></div>
       <div id="li-totp-field" style="display:none"><div class="fg"><label for="li-totp">Authenticator Code</label><input id="li-totp" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" style="text-align:center;letter-spacing:4px;font-size:16px;"></div></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-muted);margin:6px 0 2px;cursor:pointer"><input type="checkbox" id="stay-signed-in-doc" checked style="width:16px;height:16px;accent-color:var(--blue)"> Stay signed in on this device</label>
       <button class="btn btn-primary btn-full" style="margin-top:4px;" data-action="doLogin">Sign In →</button>
       <div style="text-align:center;margin-top:10px;"><a href="#" data-recover="doctor" style="font-size:12px;color:var(--blue);text-decoration:none;">Forgot password?</a></div>
     </div>

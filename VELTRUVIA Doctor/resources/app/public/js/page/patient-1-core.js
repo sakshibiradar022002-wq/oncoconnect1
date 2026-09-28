@@ -35,6 +35,13 @@ window.addEventListener('DOMContentLoaded',async()=>{
   // No local data — check if server is reachable
   try{await api('/health');b.textContent='🟢 Server connected — log in to sync your data';b.className='conn-banner'}
   catch(e){b.textContent='⚠ Doctor Software not connected — data shared when served from same server';b.className='conn-banner warn'}
+  // Default the booking form's date range: today onward, 1 year out.
+  try{
+    const d=document.getElementById('appt-req-date');
+    if(d){const today=new Date().toISOString().slice(0,10);d.min=today;d.max=new Date(Date.now()+365*86400000).toISOString().slice(0,10);}
+  }catch(e){}
+  // Stay-logged-in: reopen → skip the login screen when previously chosen.
+  tryRestoreSession();
 });
 
 // Find which doctor owns a patient
@@ -53,6 +60,9 @@ function findDoctorForPatient(pat){
 }
 
 async function doLogin(){
+  const btn=document.querySelector('#login-patient .log-btn');
+  if(window.Busy&&Busy.isBusy(btn))return;
+  const run=async()=>{
   const mrn=v('li-mrn'),pass=v('li-pass');
   const errEl=document.getElementById('pat-login-err');
   if(!mrn||!pass){showErr(errEl,'Enter MRN and password.');return}
@@ -63,14 +73,7 @@ async function doLogin(){
       const pat={...result.patient,pass:undefined,passPlain:undefined};
       LS.set('pat_'+mrn,pat);
       currentPat=pat;_docId=findDoctorForPatient(pat);
-      document.getElementById('screen-login').style.display='none';
-      document.getElementById('app-shell').style.display='flex';
-      document.getElementById('cal-greeting').textContent='Hello, '+pat.name?.split(' ')[0]+' 👋';
-      document.getElementById('cal-phase').textContent=(pat.phase||'Treatment')+(pat.diag?' · '+pat.diag:'');
-      document.getElementById('cal-today-badge').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-      renderCalendar();
-      checkPendingPCR();
-      const b=document.getElementById('conn-banner');b.textContent='🔗 Connected to Doctor Software';b.className='conn-banner';
+      finishPatientLogin(pat,true);
       return;
     }
   }catch(e){/* store login failed, trying server */}
@@ -82,14 +85,7 @@ async function doLogin(){
       const pat=LS.get('pat_'+mrn);
       if(pat){
         currentPat=pat;_docId=findDoctorForPatient(pat);
-        document.getElementById('screen-login').style.display='none';
-        document.getElementById('app-shell').style.display='flex';
-        document.getElementById('cal-greeting').textContent='Hello, '+pat.name?.split(' ')[0]+' 👋';
-        document.getElementById('cal-phase').textContent=(pat.phase||'Treatment')+(pat.diag?' · '+pat.diag:'');
-        document.getElementById('cal-today-badge').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-        renderCalendar();
-        checkPendingPCR();
-        const b=document.getElementById('conn-banner');b.textContent='🔗 Connected to Doctor Software';b.className='conn-banner';
+        finishPatientLogin(pat,true);
         return;
       }
     }
@@ -103,9 +99,16 @@ async function doLogin(){
     if(!await verifyPBKDF2v2(pass,pat.pass)){showErr(errEl,'Wrong password.');return}
   }else if(pat.pass&&pat.pass.startsWith('pbkdf2:')){
     if(!await verifyPBKDF2(pass,pat.pass)){showErr(errEl,'Wrong password.');return}
-  }else if(pat.passPlain){if(pass!==pat.passPlain){showErr(errEl,'Wrong password.');return}}
+  }  else if(pat.passPlain){if(pass!==pat.passPlain){showErr(errEl,'Wrong password.');return}}
   else if(pat.pass){if(pass!==pat.pass){showErr(errEl,'Wrong password.');return}}
   currentPat=pat;_docId=findDoctorForPatient(pat);
+  finishPatientLogin(pat,false);
+  };
+  if(window.Busy)Busy.btn(btn,run);else run();
+}
+
+// Shared post-login: enter the app + honor the Stay signed-in checkbox.
+function finishPatientLogin(pat, viaServer){
   document.getElementById('screen-login').style.display='none';
   document.getElementById('app-shell').style.display='flex';
   document.getElementById('cal-greeting').textContent='Hello, '+pat.name?.split(' ')[0]+' 👋';
@@ -113,6 +116,42 @@ async function doLogin(){
   document.getElementById('cal-today-badge').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   renderCalendar();
   checkPendingPCR();
+  const b=document.getElementById('conn-banner');
+  if(b){b.textContent=viaServer?'🔗 Connected to Doctor Software':'🔗 Offline mode — data will sync when the server is reachable';b.className='conn-banner';}
+  try{
+    const cb=document.getElementById('stay-signed-in');
+    if(cb&&cb.checked&&window.VxSession){VxSession.remember({kind:'patient',mrn:pat.mrn,name:pat.name||''});}
+    else if(window.VxSession){VxSession.forget();}
+  }catch(e){}
+}
+
+// Reopen → skip login when the user chose Stay signed-in. Uses the existing
+// session (cookie in web/Electron, Bearer token in native apps) — never a
+// password retry, so lockout counters are untouched.
+async function tryRestoreSession(){
+  try{
+    if(!window.VxSession)return;
+    const who=VxSession.restore();
+    if(!who||who.kind!=='patient'||!who.mrn)return;
+    const mrn=who.mrn;
+    let pat=LS.get('pat_'+mrn);
+    let viaServer=false;
+    if(pat){
+      try{
+        const r=await api('/sync/patient');
+        if(r&&r.ok&&r.keys){mergeServerKeys(r.keys);pat=LS.get('pat_'+mrn)||pat;viaServer=true;}
+      }catch(e){/* offline or session expired — restore locally */}
+    } else {
+      // No local profile: try pulling from the server session alone.
+      try{
+        const r=await api('/sync/patient');
+        if(r&&r.ok&&r.keys){mergeServerKeys(r.keys);pat=LS.get('pat_'+mrn);viaServer=true;}
+      }catch(e){}
+    }
+    if(!pat)return;
+    currentPat=pat;_docId=findDoctorForPatient(pat);
+    finishPatientLogin(pat,viaServer);
+  }catch(e){/* never block manual login over restore */}
 }
 
 async function verifyPBKDF2(input,stored){
@@ -220,6 +259,7 @@ function updateThemeUI(theme){
 function doLogout(){
   // Revoke session server-side
   fetch('/api/auth/logout',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}}).catch(()=>{});
+  if(window.VxSession)VxSession.forget();
   currentPat=null;currentLab=null;_docId=null;
   document.getElementById('screen-login').style.display='flex';
   document.getElementById('app-shell').style.display='none';
@@ -390,17 +430,23 @@ function selectSlot(date,time,endTime,dur){
 
 async function confirmBookAppt(){
   if(!_selectedSlot)return AppDialog.alert('Select a time slot first');
+  const btn=document.querySelector('[data-action="confirmBookAppt"]');
+  const run=async()=>{
   const type=document.getElementById('book-appt-type').value;
   const notes=document.getElementById('book-appt-notes').value;
   // Save to shared appointment store (works in desktop mode)
   try{
     await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:{date:_selectedSlot.date,time:_selectedSlot.time,type,notes,status:'Scheduled',createdAt:Date.now()}})});
-  }catch(e){}
+  }catch(e){console.warn('[appt] shared-store save failed:',e.message)}
   // Also try server booking
   try{
     const r=await api('/schedule/book',{method:'POST',body:JSON.stringify({date:_selectedSlot.date,startTime:_selectedSlot.time,type,notes})});
     if(r.ok){AppDialog.alert('✅ '+r.message)}else{AppDialog.alert('✅ Appointment request submitted!')}
-  }catch(e){AppDialog.alert('✅ Appointment request submitted!')}
+  }catch(e){
+    // Honest failure: the shared-store save above is the local record; the
+    // doctor-visible booking failed. Say so instead of faking success.
+    AppDialog.alert('⚠️ Saved on this device, but the server could not be reached.\n\nYour appointment is queued locally — please check My Appts later or rebook when you have internet.');
+  }
   _selectedSlot=null;
   document.getElementById('slot-selected-info').style.display='none';
   // Refresh slots
@@ -409,6 +455,8 @@ async function confirmBookAppt(){
     const sr=await api(url);if(sr.ok&&sr.slots)_slotData=sr.slots;
   }catch(e){}
   renderSlotDate();
+  };
+  if(window.Busy)Busy.btn(btn,run);else run();
 }
 
 async function renderMyAppts(){
@@ -606,7 +654,10 @@ async function saveLog(){
   const date=new Date().toISOString().slice(0,10);
   const items=[];
   document.querySelectorAll('#log-form-content .check-item.checked').forEach(ci=>items.push(ci.textContent.trim()));
-  const log={date,cognitive:+v('s-cog')||5,seizure:+v('s-sz')||0,vision:+v('s-vis')||5,headache:+v('s-head')||0,fatigue:+v('s-fat')||3,nausea:+v('s-naus')||0,appetite:+v('s-app')||7,sleep:+v('s-sleep')||6,mood:+v('s-mood')||6,temp:v('v-temp'),bp:v('v-bp'),weight:v('v-weight'),meds:v('v-meds'),notes:v('v-notes'),items,savedAt:Date.now()};
+  const clamp=(x,lo,hi,fb)=>{const n=+x;return Number.isFinite(n)?Math.min(hi,Math.max(lo,n)):fb};
+  const tempRaw=parseFloat(v('v-temp'));
+  const tempVal=Number.isFinite(tempRaw)&&tempRaw>=30&&tempRaw<=45?tempRaw:'';
+  const log={date,cognitive:clamp(v('s-cog'),0,10,5),seizure:clamp(v('s-sz'),0,10,0),vision:clamp(v('s-vis'),0,10,5),headache:clamp(v('s-head'),0,10,0),fatigue:clamp(v('s-fat'),0,10,3),nausea:clamp(v('s-naus'),0,10,0),appetite:clamp(v('s-app'),0,10,7),sleep:clamp(v('s-sleep'),0,10,6),mood:clamp(v('s-mood'),0,10,6),temp:tempVal,bp:v('v-bp'),weight:v('v-weight'),meds:v('v-meds'),notes:v('v-notes'),items,savedAt:Date.now()};
   LS.set('log_'+currentPat.mrn+'_'+date,log);
   // Also save to shared store so Doctor can see it
   try{await api('/sync/save-log',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,date,log})})}catch(e){console.warn('[log] save to store failed:',e.message)}
@@ -715,16 +766,22 @@ async function renderVisits(){
 }
 async function submitApptRequest(){
   if(!currentPat)return;
+  const run=async()=>{
   const date=v('appt-req-date'),time=v('appt-req-time'),type=v('appt-req-type'),notes=v('appt-req-notes');
   if(!date){AppDialog.alert('Select a date.');return}
+  if(date<new Date().toISOString().slice(0,10)){AppDialog.alert('That date is in the past — please pick today or a future date.');return}
   const appt={date,time,type,notes,status:'Requested',createdAt:Date.now()};
   const appts=LS.get('appts_'+currentPat.mrn)||[];
   appts.push(appt);
   LS.set('appts_'+currentPat.mrn,appts);
-  try{await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:appt})})}catch(e){console.warn('[appt] save to store failed:',e.message)}
+  let delivered=true;
+  try{await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:appt})})}catch(e){delivered=false;console.warn('[appt] save to store failed:',e.message)}
   closeSheet('appt-sheet');
-  AppDialog.alert('Appointment request submitted! ✓');
+  AppDialog.alert(delivered?'Appointment request submitted! ✓':'⚠️ Saved on this device — the server was unreachable, so your doctor may not see it yet. It will show in Visits.');
   renderVisits();
+  };
+  const btn=document.querySelector('[data-action="submitApptRequest"]');
+  if(window.Busy)Busy.btn(btn,run);else run();
 }
 
 // ═══ MESSAGES ═══

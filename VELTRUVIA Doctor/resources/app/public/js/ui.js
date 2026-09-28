@@ -415,3 +415,155 @@ html.vd-text-sm{font-size:92%}html.vd-text-lg{font-size:110%}html.vd-text-xl{fon
     getTextSize() { try { return localStorage.getItem('vd_text_size') || 'md'; } catch { return 'md'; } },
   };
 })();
+
+// ═══════════════════════════════════════════════════════════════════
+// UX Toolkit — shared helpers for the whole suite (V2, Sep 2026):
+//   Busy.btn(btn, fn)      double-submit guard: disables the control and
+//                          shows a Working… label until the async fn settles
+//   Busy.wrap(el, fn)      same guard for any element (cards, rows)
+//   OfflineBanner          fixed "You are offline" bar; live via events
+//   StuckLoader.watch()    Loading… placeholders get a timeout + Retry
+//   Session.remember(who)  store encrypted identity for next-visit restore
+//   Session.restore()      → {kind:'patient'|'lab'|'doctor', name, mrn…}|null
+//   Session.forget()       clear it
+// ═══════════════════════════════════════════════════════════════════
+(function () {
+  'use strict';
+
+  // ── Busy guard ────────────────────────────────────────────────────
+  const busySet = new WeakSet();
+  function wrap(el, fn) {
+    if (!el || busySet.has(el)) return undefined;
+    busySet.add(el);
+    const restoreLabel = el.dataset ? el.dataset.busyRestore : null;
+    const prev = restoreLabel || el.textContent;
+    if (el.dataset) el.dataset.busyRestore = prev;
+    el.__veltruviaDisabled = true;
+    el.style.opacity = '0.65';
+    el.style.pointerEvents = 'none';
+    if (prev && prev.length < 40) el.textContent = 'Working…';
+    const done = () => {
+      busySet.delete(el);
+      el.__veltruviaDisabled = false;
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+      el.textContent = prev;
+      if (el.dataset) delete el.dataset.busyRestore;
+    };
+    try {
+      const out = fn();
+      if (out && typeof out.finally === 'function') return out.finally(done);
+      done();
+      return out;
+    } catch (e) { done(); throw e; }
+  }
+  const Busy = {
+    wrap,
+    btn(el, fn) {
+      if (el && el.tagName === 'BUTTON') el.type = el.type || 'button';
+      return wrap(el, fn);
+    },
+    isBusy(el) { return !!(el && busySet.has(el)); },
+  };
+
+  // ── Offline banner ────────────────────────────────────────────────
+  const OfflineBanner = {
+    el: null,
+    _ensure() {
+      if (this.el) return this.el;
+      const b = document.createElement('div');
+      b.className = 'vx-offline-banner';
+      b.setAttribute('role', 'status');
+      b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99998;display:none;'
+        + 'padding:9px 16px;text-align:center;font:600 13px system-ui,sans-serif;'
+        + 'background:#b45309;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.3);';
+      b.textContent = '📡 You are offline — changes will not reach your doctor until connection returns';
+      (document.body || document.documentElement).appendChild(b);
+      this.el = b;
+      return b;
+    },
+    init() {
+      const b = this._ensure();
+      const update = () => {
+        const off = navigator.onLine === false;
+        b.style.display = off ? 'block' : 'none';
+        document.documentElement.classList.toggle('vx-offline', off);
+      };
+      window.addEventListener('online', update);
+      window.addEventListener('offline', update);
+      update();
+    },
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => OfflineBanner.init());
+  else OfflineBanner.init();
+
+  // ── Stuck loader watcher ─────────────────────────────────────────
+  const StuckLoader = {
+    started: false,
+    watch() {
+      if (this.started) return;
+      this.started = true;
+      setInterval(() => {
+        document.querySelectorAll('.empty-card').forEach(el => {
+          const t = (el.textContent || '').trim();
+          if (t !== 'Loading...' && t !== 'Loading…') return;
+          const since = Number(el.dataset.vxLoadingSince || 0);
+          if (!since) { el.dataset.vxLoadingSince = String(Date.now()); return; }
+          if (Date.now() - since < 8000) return;
+          if (el.dataset.vxStuckNoted) return;
+          el.dataset.vxStuckNoted = '1';
+          el.innerHTML = '<div style="padding:6px 0;">⏳ Still loading… the server may be slow or unreachable.</div>'
+            + '<button class="big-btn" data-vx-retry style="margin-top:8px;padding:8px 18px;font-size:13px;">↻ Retry</button>'
+            + '<div style="font-size:11px;color:var(--text-dim);margin-top:6px;">If this keeps happening, check your internet or the server status page.</div>'
+            + '<style>[data-vx-retry]{background:var(--green,#059669);color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:inherit;}</style>';
+          const btn = el.querySelector('[data-vx-retry]');
+          if (btn) btn.addEventListener('click', () => { delete el.dataset.vxLoadingSince; delete el.dataset.vxStuckNoted; el.innerHTML = 'Loading...'; location.reload(); });
+        });
+      }, 4000);
+    },
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => StuckLoader.watch());
+  else StuckLoader.watch();
+
+  // ── Session restore (encrypted-at-rest identity) ─────────────────
+  const SESSION_KEY = 'veltruvia_session_identity';
+  function b64e(s) { return btoa(unescape(encodeURIComponent(s))); }
+  function b64d(s) { try { return decodeURIComponent(escape(atob(s))); } catch (e) { return ''; } }
+  const Session = {
+    remember(who) {
+      try { localStorage.setItem(SESSION_KEY, b64e(JSON.stringify({ who, at: Date.now() }))); } catch (e) {}
+    },
+    restore() {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) return null;
+        const obj = JSON.parse(b64d(raw));
+        return obj && obj.who ? obj.who : null;
+      } catch (e) { return null; }
+    },
+    forget() { try { localStorage.removeItem(SESSION_KEY); } catch (e) {} },
+  };
+
+  window.Busy = Busy;
+  window.VxOfflineBanner = OfflineBanner;
+  window.VxStuckLoader = StuckLoader;
+  window.VxSession = Session;
+
+  // ── Enter key submits the login card the focus is inside ─────────
+  function wireEnterSubmit() {
+    const containers = document.querySelectorAll('#login-patient,#login-lab,#a-login,#login-card');
+    containers.forEach(c => {
+      if (c.dataset.vxEnterWired) return;
+      c.dataset.vxEnterWired = '1';
+      c.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        const t = e.target;
+        if (!t || t.tagName !== 'INPUT' || t.type === 'checkbox') return;
+        const btn = c.querySelector('button.btn, button.big-btn, button');
+        if (btn) { e.preventDefault(); btn.click(); }
+      });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireEnterSubmit);
+  else wireEnterSubmit();
+})();

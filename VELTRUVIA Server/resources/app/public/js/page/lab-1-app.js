@@ -62,12 +62,34 @@ window.addEventListener('DOMContentLoaded',()=>{
       initDashboard();
     }else{
       document.getElementById('auth-screen').style.display='flex';
+      // Stay-logged-in restore (lab)
+      (async function(){
+        try{
+          if(!window.VxSession)return;
+          const who=VxSession.restore();
+          if(!who||who.kind!=='lab'||!who.username)return;
+          let found=null,foundDoc=null;
+          for(const name of SecureStore.names('lab_')){
+            const l=await SecureStore.getAsync(name);
+            if(l&&l.username===who.username){found=l;foundDoc=name.split('_')[1];break}
+          }
+          if(!found)return;
+          currentLab=found;_docId=foundDoc;
+          LS.set('current_lab',found);LS.set('current_docId',foundDoc);
+          document.getElementById('auth-screen').style.display='none';
+          document.getElementById('app-shell').style.display='flex';
+          initDashboard();
+        }catch(e){}
+      })();
     }
   },1600);
 });
 
 // ═══ AUTH ═══
 async function doLogin(){
+  const btn=document.querySelector('#login-lab .log-btn, #login-lab button') || document.querySelector('[data-action="doLogin"]');
+  if(window.Busy&&Busy.isBusy(btn))return;
+  const run=async()=>{
   const user=v('li-user'),pass=v('li-pass');
   const errEl=document.getElementById('login-err');
   if(!user||!pass){showErr(errEl,'Enter username and password.');return}
@@ -117,9 +139,12 @@ async function doLogin(){
   if(!foundLab){showErr(errEl,'No matching lab account found.');return}
   currentLab=foundLab;_docId=foundDocId;
   LS.set('current_lab',foundLab);LS.set('current_docId',foundDocId);
+  try{const cb=document.getElementById('stay-signed-in-lab');if(cb&&cb.checked&&window.VxSession)VxSession.remember({kind:'lab',username:foundLab.username,name:foundLab.name||''});else if(window.VxSession)VxSession.forget();}catch(e){}
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app-shell').style.display='flex';
   initDashboard();
+  };
+  if(window.Busy)Busy.btn(btn,run);else run();
 }
 
 async function checkAccounts(){
@@ -135,6 +160,7 @@ async function checkAccounts(){
 
 function doLogout(){
   fetch('/api/auth/logout',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}}).catch(()=>{});
+  if(window.VxSession)VxSession.forget();
   currentLab=null;_docId=null;
   LS.del('current_lab');LS.del('current_docId');
   document.getElementById('app-shell').style.display='none';
