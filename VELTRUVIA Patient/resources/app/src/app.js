@@ -198,8 +198,16 @@ app.get('/health', async (req, res) => {
       health.ok = false;
     }
     
-    // Blockchain status
-    health.blockchain = 'electron-module';
+    // Blockchain status — the real backend (file / hardhat / sepolia), not a
+    // hardcoded placeholder. Non-fatal: a failed read is reported, not 500.
+    try {
+      const { default: blockchain } = await import('./blockchain/index.js');
+      const stats = await blockchain.getStats();
+      health.blockchain = stats.connected ? (stats.backend || 'unknown') : 'disconnected';
+      health.blockchainEntryCount = stats.entryCount;
+    } catch (e) {
+      health.blockchain = 'error';
+    }
     
     if (!health.ok) {
       return res.status(503).json(health);

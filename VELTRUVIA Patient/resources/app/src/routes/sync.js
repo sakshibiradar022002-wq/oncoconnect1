@@ -678,11 +678,15 @@ This code expires in 30 minutes. If you didn't request this, contact your doctor
   // 2) Try SMS if email didn't work and patient has a phone and SMS is configured
   if (deliveryMethod === 'doctor' && pat.phone && await smsConfigured()) {
     try {
-      await sendSms(pat.phone,
+      // sendSms RETURNS {sent:false} (does not throw) when Twilio rejects or is
+      // mid-config — only claim SMS delivery when it actually sent.
+      const smsResult = await sendSms(pat.phone,
         `VELTRUVIA: Your password change code is ${otp}. Enter it in the Patient App to approve. Expires in 30 min.`
       );
-      deliveryMethod = 'sms';
-      deliveryDetail = pat.phone;
+      if (smsResult && smsResult.sent) {
+        deliveryMethod = 'sms';
+        deliveryDetail = pat.phone;
+      }
     } catch (e) { /* SMS failed — fallback to doctor */ }
   }
 
@@ -1022,7 +1026,7 @@ syncRouter.post('/save-log', authenticate, validate(saveLogSchema), asyncHandler
   const store = readLogStore();
   if (!store[mrn]) store[mrn] = {};
   store[mrn][date] = { ...log, savedAt: new Date().toISOString() };
-  writeLogStore(store);
+  if (!writeLogStore(store)) return res.status(500).json({ ok: false, error: 'Could not save log — server storage write failed. Try again.' });
   res.json({ ok: true });
 }));
 
@@ -1057,7 +1061,7 @@ syncRouter.post('/send-message', authenticate, validate(sendMessageSchema), asyn
   const key = docId + '_' + mrn;
   if (!store[key]) store[key] = [];
   store[key].push({ role, text, timestamp: Date.now() });
-  writeMsgStore(store);
+  if (!writeMsgStore(store)) return res.status(500).json({ ok: false, error: 'Could not save message — server storage write failed. Try again.' });
   res.json({ ok: true });
 }));
 
@@ -1091,7 +1095,7 @@ syncRouter.post('/save-appointment', authenticate, validate(saveAppointmentSchem
   const store = readApptStore();
   if (!store[mrn]) store[mrn] = [];
   store[mrn].push({ ...appointment, savedAt: new Date().toISOString() });
-  writeApptStore(store);
+  if (!writeApptStore(store)) return res.status(500).json({ ok: false, error: 'Could not save appointment — server storage write failed. Try again.' });
   res.json({ ok: true });
 }));
 
@@ -1101,7 +1105,10 @@ syncRouter.post('/update-appointment', authenticate, validate(updateAppointmentS
   if (!(await requireMrnAccess(req, res, mrn))) return;
   const store = readApptStore();
   const appts = store[mrn] || [];
-  if (appts[index]) { appts[index].status = status; appts[index].respondedAt = new Date().toISOString(); writeApptStore(store); }
+  if (!appts[index]) return res.status(404).json({ ok: false, error: 'Appointment not found — it may have already been removed.' });
+  appts[index].status = status;
+  appts[index].respondedAt = new Date().toISOString();
+  if (!writeApptStore(store)) return res.status(500).json({ ok: false, error: 'Could not save status — server storage write failed. Try again.' });
   res.json({ ok: true });
 }));
 
