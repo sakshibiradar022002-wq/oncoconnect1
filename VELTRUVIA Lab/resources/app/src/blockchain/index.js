@@ -119,6 +119,42 @@ class BlockchainAudit {
    * file chain when no node is running (normal desktop operation).
    */
   async connect(rpcUrl = 'http://127.0.0.1:8545') {
+    // 0) Sepolia anchor mode: BLOCKCHAIN_MODE=sepolia + a deployed contract.
+    //    Anchors the audit chain onto the public testnet (tamper-evidence
+    //    beyond the VM). Uses its own wallet (ANCHOR_PRIVATE_KEY), NOT the
+    //    Hardhat getSigner path below.
+    if (String(process.env.BLOCKCHAIN_MODE || '').toLowerCase() === 'sepolia'
+        && process.env.ANCHOR_PRIVATE_KEY) {
+      try {
+        const { ethers } = await import('ethers');
+        const deploymentPath = join(PROJECT_ROOT, 'deployment.json');
+        if (existsSync(deploymentPath)) {
+          const deployment = JSON.parse(readFileSync(deploymentPath, 'utf8'));
+          this.provider = new ethers.JsonRpcProvider(
+            process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com');
+          this.signer = new ethers.Wallet(process.env.ANCHOR_PRIVATE_KEY, this.provider);
+          // Minimal ABI — only what anchoring needs.
+          const abi = [
+            'function recordAudit(bytes32 recordHash, string action, string targetId)',
+            'function verifyRecord(bytes32 recordHash) view returns (bool, uint256[])',
+            'function getEntry(uint256 id) view returns (bytes32, string, string, uint64, bytes32)',
+            'function getEntryCount() view returns (uint256)',
+            'function latestChainHashValue() view returns (bytes32)',
+            'event EntryRecorded(uint256 indexed id, bytes32 recordHash, string action, bytes32 previousHash)',
+          ];
+          this.contract = new ethers.Contract(deployment.address, abi, this.signer);
+          this.connected = true;
+          this.backend = 'sepolia';
+          const addr = await this.signer.getAddress();
+          console.log(`[blockchain] ✅ Sepolia anchor active: contract ${deployment.address}, wallet ${addr}`);
+          return true;
+        }
+        console.warn('[blockchain] sepolia mode but deployment.json missing — file chain fallback');
+      } catch (error) {
+        console.warn('[blockchain] sepolia anchor init failed:', error.message, '— file chain fallback');
+      }
+    }
+
     // 1) Try Hardhat briefly so a real deployment still uses on-chain storage.
     try {
       const { ethers } = await import('ethers');
@@ -168,6 +204,29 @@ class BlockchainAudit {
   async recordAudit({ record, action, targetId, actorId }) {
     this._ensureBackend();
     if (!this.connected) return null;
+
+    // Sepolia mode: the FILE chain stays the local source of truth (fast,
+    // always works); the record hash is additionally stamped on-chain
+    // asynchronously — a failed tx never blocks or loses the local block.
+    if (this.backend === 'sepolia' && this.contract) {
+      const local = fileAppend({ type: 'audit', action, details: { record, targetId, actorId } }, 'server');
+      const recordHash = this.hashRecord(record);
+      let txInfo = null;
+      try {
+        const tx = await this.contract.recordAudit('0x' + recordHash, String(action || 'audit'), String(targetId || 'unknown'));
+        const receipt = await tx.wait();
+        txInfo = { txHash: receipt.hash, blockNumber: receipt.blockNumber };
+      } catch (error) {
+        console.error('[blockchain] sepolia anchor tx failed (local chain unaffected):', error.message);
+      }
+      return {
+        txHash: txInfo?.txHash ?? local?.hash,
+        blockNumber: txInfo?.blockNumber ?? local?.index,
+        recordHash,
+        timestamp: local?.timestamp ?? new Date().toISOString(),
+        backend: 'file+sepolia',
+      };
+    }
 
     if (this.backend === 'file') {
       const block = fileAppend({
@@ -308,15 +367,19 @@ class BlockchainAudit {
     }
     try {
       const entryCount = await this.contract.getEntryCount();
-      const latestHash = await this.contract.latestChainHash();
+      // Sepolia contract exposes latestChainHashValue(); Hardhat artifact ABI
+      // historically used latestChainHash() — try both.
+      const latestHash = this.backend === 'sepolia'
+        ? await this.contract.latestChainHashValue()
+        : await this.contract.latestChainHash();
       const network = await this.provider.getNetwork();
       return {
         connected: true,
-        backend: 'hardhat',
+        backend: this.backend,
         entryCount: Number(entryCount),
         latestChainHash: latestHash,
-        network: network.name,
-        chainId: Number(network.chainId)
+        network: this.backend === 'sepolia' ? 'sepolia' : network.name,
+        chainId: Number(network.chainId),
       };
     } catch (error) {
       return { connected: false, error: error.message };

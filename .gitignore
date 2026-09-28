@@ -141,4 +141,7 @@ VELTRUVIA Lab/resources/app/public/downloads/
 veltruvia-codesign.cer
 *.asar.backup
 runtime-shell-*-backup/
+*.asar.*-backup
 .freebuff/vm-debug-users.mjs
+# real VM address for the offsite pull script (repo stays public-safe)
+.freebuff/.vm-target

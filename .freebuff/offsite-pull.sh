@@ -4,7 +4,11 @@
 # and prunes the local store to the newest 30. Exit 0 = OK, non-zero = problem.
 set -u
 KEY="C:/Users/Sara/.ssh/lightsail-mumbai.pem"
-VM="ubuntu@REDACTED-VM-IP"
+# VM target lives in an untracked local file (.vm-target, "ubuntu@<ip>")
+# so this repo can stay public without leaking the server address.
+TARGET_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.vm-target"
+if [ ! -f "$TARGET_FILE" ]; then echo "!!! missing $TARGET_FILE" >&2; exit 9; fi
+VM="$(tr -d '\r\n ' < "$TARGET_FILE")"
 DEST="C:/Users/Sara/Desktop/veltruvia-offsite-backups"
 LOG="$DEST/pull.log"
 

@@ -12,9 +12,53 @@
 //
 // Include order: js/ui.js FIRST, then js/utils.js, then page scripts.
 // Per-app accent: set <html data-app="patient|lab|doctor">.
+// PWToggle: show/hide (👁) toggle for password fields.
+//   Wrap a password input in <span class="pw-wrap">…</span>; on DOM ready the
+//   toggle is injected automatically. New dynamically created fields work too
+//   (call PWToggle.scan(root)).
 // ═══════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+
+  // ── Password show/hide (👁) — zero dependencies, works on phone + desktop ──
+  const PW_CSS = `.pw-wrap{position:relative;display:block;}`
+    + `.pw-wrap input{width:100%;padding-right:46px;}`
+    + `.pw-eye{position:absolute;top:50%;right:10px;transform:translateY(-50%);`
+    + `width:34px;height:34px;border:none;background:transparent;border-radius:50%;`
+    + `display:flex;align-items:center;justify-content:center;cursor:pointer;`
+    + `font-size:18px;line-height:1;color:var(--text-muted,#8494b2);padding:0;z-index:2;`
+    + `-webkit-tap-highlight-color:transparent;touch-action:manipulation;`
+    + `.pw-eye:hover{background:rgba(127,127,127,.12);color:var(--text,#e2e8f0);}`
+    + `.pw-eye:active{transform:translateY(-50%) scale(.92);}`
+    + `.pw-eye:focus-visible{outline:2px solid var(--blue,#4a90e2);outline-offset:2px;}`;
+  try { const st = document.createElement('style'); st.textContent = PW_CSS; document.head.appendChild(st); } catch (e) {}
+  function scanPasswords(root) {
+    const scope = root && root.querySelectorAll ? root : document;
+    let n = 0;
+    scope.querySelectorAll('input[type="password"]').forEach(inp => {
+      const wrap = inp.parentElement;
+      if (!wrap || !wrap.classList.contains('pw-wrap') || wrap.querySelector('.pw-eye')) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pw-eye';
+      btn.textContent = '👁';
+      btn.setAttribute('aria-label', 'Show password');
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('tabindex', '-1');
+      btn.addEventListener('click', () => {
+        const show = inp.type === 'password';
+        inp.type = show ? 'text' : 'password';
+        btn.textContent = show ? '🙈' : '👁';
+        btn.setAttribute('aria-pressed', String(show));
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      });
+      wrap.appendChild(btn);n++;
+    });
+    return n;
+  }
+  scanPasswords();
+  document.addEventListener('DOMContentLoaded', () => scanPasswords());
+  window.PWToggle = { scan: scanPasswords };
 
   const THEMES = {
     doctor:  { accent: 'var(--blue, #2563eb)' },

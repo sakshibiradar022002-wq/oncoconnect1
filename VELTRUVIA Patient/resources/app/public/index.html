@@ -33,7 +33,7 @@
     <div id="a-login">
       <div class="msg err" id="login-msg"></div>
       <div class="fg"><label for="li-email">Email</label><input id="li-email" type="email" placeholder="dr.smith@hospital.com"></div>
-      <div class="fg"><label for="li-pass">Password</label><input id="li-pass" type="password" placeholder="••••••••"></div>
+      <div class="fg"><label for="li-pass">Password</label><span class="pw-wrap"><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password"></span></div>
       <div id="li-totp-field" style="display:none"><div class="fg"><label for="li-totp">Authenticator Code</label><input id="li-totp" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" style="text-align:center;letter-spacing:4px;font-size:16px;"></div></div>
       <button class="btn btn-primary btn-full" style="margin-top:4px;" data-action="doLogin">Sign In →</button>
       <div style="text-align:center;margin-top:10px;"><a href="#" data-recover="doctor" style="font-size:12px;color:var(--blue);text-decoration:none;">Forgot password?</a></div>
@@ -50,7 +50,7 @@
         </div>
         <div class="fg">
           <label>Password <span style="font-weight:400;color:var(--text-dim);">(min 10 characters)</span></label>
-          <input id="rg-pass" type="password" placeholder="Min 10 characters" data-action-input="checkPassStrength:@value">
+          <span class="pw-wrap"><input id="rg-pass" type="password" placeholder="Min 10 characters" autocomplete="new-password" data-action-input="checkPassStrength:@value"></span>
           <div id="rg-pass-bar" style="height:4px;border-radius:2px;background:var(--border2);margin-top:6px;overflow:hidden;"><div id="rg-pass-fill" style="height:100%;width:0%;border-radius:2px;transition:all .3s;"></div></div>
           <div id="rg-pass-label" style="font-size:11px;color:var(--text-dim);margin-top:3px;"></div>
         </div>

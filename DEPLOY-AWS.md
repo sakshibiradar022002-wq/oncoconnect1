@@ -15,7 +15,8 @@ this tier. Free via Free Tier credits: $7 × 6 months = $42, fully covered
 
 ## ⏸ STATE — MIGRATION COMPLETE (Sep 27, 2026)
 - VM: Lightsail `veltruvia-prod`, Mumbai ap-south-1a, Ubuntu 24.04, $7/mo
-  (Free plan account), static IP **REDACTED-VM-IP**, SSH key at
+  (Free plan account), static IP (kept out of this repo — see
+  `.freebuff/.vm-target` locally / the AWS console), SSH key at
   `C:\Users\Sara\.ssh\lightsail-mumbai.pem`
 - Stack: Node v24.21.0, 2 GB swap, deps via `npm install --omit=dev`
   (local package-lock was out of sync → `npm ci` unusable; consider
@@ -89,7 +90,8 @@ this tier. Free via Free Tier credits: $7 × 6 months = $42, fully covered
 
 ## 🌐 PERMANENT URL LIVE (Sep 27, 2026 night)
 - **https://veltruvia.duckdns.org** is now the canonical address (free DuckDNS
-  subdomain, Sara's account) → A record REDACTED-VM-IP (static IP — manual set
+  subdomain, Sara's account) → A record → the VM's static IP (kept out of
+  this repo — set manually in the DuckDNS panel; a one-time manual set
   is fine; no auto-updater needed).
 - Caddy 2.6.2 on the VM (systemd `caddy`, enabled), /etc/caddy/Caddyfile:
   `veltruvia.duckdns.org → reverse_proxy 127.0.0.1:3000`. Let's Encrypt cert
