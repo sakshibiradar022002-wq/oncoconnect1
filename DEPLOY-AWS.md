@@ -303,3 +303,24 @@ an upgrade, not a dependency, until you say otherwise.
 - [ ] Phone (mobile data, not Wi-Fi) loads patient app via new URL
 - [ ] Telehealth call completes end-to-end
 - [ ] Budget alert email confirmed working
+
+## 🔍 Honesty audit (Sep 28, 2026) — the software never fakes success
+
+A three-pass audit (app UI → server routes → Electron mains) found and fixed
+**14 places** where a success message was shown without the work having
+happened. Rule now enforced everywhere: **"success" is only claimed when it
+actually happened; otherwise the message says what did happen and what to do
+next.**
+
+| Commit | Layer | Fixes |
+|---|---|---|
+| `63d00a5` | Web/mobile UI | SOS said "alert sent!" without touching the server; chat bubble appeared on failed delivery; "Log saved ✓" and lab-report/CSV "submitted ✓" were local-only; photos "added to your record"; doctor's `pushToServer` swallowed all errors ("Task sent to lab" could be a lie) — **7 fixes** |
+| `22a08fa` | Server | "OTP sent via SMS" claimed on silent Twilio failures; reminders marked sent + audited even when every channel failed (reminder lost forever); `save-log`/`send-message`/`save-appointment` answered ok on disk failure; `update-appointment` ok on missing rows; `/health?deep=1` had a hardcoded blockchain placeholder — **5 fixes** |
+| `e93bf48` | Electron + routes | Electron mains audited clean; team invites wrote "invite_sent" audit while email was a TODO — now really sends (or says to hand over the code), revoke verifies deletion — **1 fix + clean bill for Electron** |
+| `2a52615` | Enforcement | `.freebuff/truth-check.sh` + monthly Task Scheduler task "VELTRUVIA Monthly Truth-Check" (1st, 09:00): regression-greps every fixed pattern and flags any new unreviewed `ok:true`. Caught one more lie on day one: slot-refusal still showed "✅ submitted" — fixed. **14th fix** |
+
+Usability fixes shipped alongside (`28b59c6`): stay-signed-in on all portals,
+honest offline booking errors, double-submit guard, Enter-key login, offline
+banner, stuck-"Loading..." retry, copy button for one-time lab credentials,
+vitals range clamping. All verified live: 39/39 tests, bundle checks green,
+`/health?deep=1` → `blockchain:"sepolia"`.
