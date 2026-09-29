@@ -16,5 +16,9 @@
     "apk:patient": "node scripts/build-apk.mjs patient",
     "apk:lab": "node scripts/build-apk.mjs lab",
     "precommit": "npm run check && npm run test && npm run verify"
+  },
+  "dependencies": {
+    "png-to-ico": "^3.0.2",
+    "sharp": "^0.35.5"
   }
 }
