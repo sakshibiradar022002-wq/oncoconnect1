@@ -18,6 +18,6 @@ VELTRUVIA Server/resources/app/src/routes/openapi.js:0
 VELTRUVIA Server/resources/app/src/routes/prescriptions.js:7
 VELTRUVIA Server/resources/app/src/routes/push.js:2
 VELTRUVIA Server/resources/app/src/routes/scheduling.js:9
-VELTRUVIA Server/resources/app/src/routes/sync.js:42
+VELTRUVIA Server/resources/app/src/routes/sync.js:44
 VELTRUVIA Server/resources/app/src/routes/team.js:4
 VELTRUVIA Server/resources/app/src/routes/telehealth.js:5

@@ -908,8 +908,9 @@ const saveAvailabilitySchema = z.object({
   })).max(50),
 });
 
-// Doctor: save patient to shared JSON store (authenticated — writes credentials)
-syncRouter.post('/save-patient', authenticate, validate(savePatientSchema), asyncHandler(async (req, res) => {
+// Doctor: save patient to shared JSON store (doctor/admin only — writes credentials,
+// so patients/labs must never be able to call it)
+syncRouter.post('/save-patient', authenticate, requireRole('doctor', 'admin'), validate(savePatientSchema), asyncHandler(async (req, res) => {
   const { mrn, patient } = req.valid;
   const store = readPatientStore();
   store[mrn] = { ...patient, mrn, _ownerId: req.auth?.subjectId || patient.docId || 'local', _savedAt: new Date().toISOString() };
@@ -1063,6 +1064,87 @@ syncRouter.post('/send-message', authenticate, validate(sendMessageSchema), asyn
   store[key].push({ role, text, timestamp: Date.now() });
   if (!writeMsgStore(store)) return res.status(500).json({ ok: false, error: 'Could not save message — server storage write failed. Try again.' });
   res.json({ ok: true });
+}));
+
+// ── Doctor: register a lab account in the shared login store ──
+// The Lab app's FIRST login path (lab-store-login) checks this store; without
+// it a freshly created lab can only log in via the kv fallback. Password is
+// received once over TLS, stored hashed, never persisted in plaintext.
+const saveLabSchema = z.object({
+  labId: z.string().min(1).max(64),
+  username: z.string().min(1).max(40).transform(s => s.trim().toLowerCase()),
+  name: z.string().min(1).max(120),
+  password: z.string().min(8).max(200),
+});
+syncRouter.post('/save-lab', authenticate, requireRole('doctor', 'admin'), validate(saveLabSchema), asyncHandler(async (req, res) => {
+  const { labId, username, name, password } = req.valid;
+  const store = readPatientStore();
+  const key = 'lab_' + username;
+  const existing = store[key];
+  // Username hijack guard: a doctor may overwrite only their own lab accounts.
+  if (existing && req.auth.role !== 'admin' && String(existing.docId || '') !== req.auth.subjectId) {
+    return res.status(409).json({ error: 'That username is already taken' });
+  }
+  store[key] = {
+    labId, username, name,
+    docId: req.auth.subjectId,
+    password: hashUiPasswordV2(password),
+    _ownerId: req.auth.subjectId,
+    _savedAt: new Date().toISOString(),
+  };
+  if (!writePatientStore(store)) return res.status(500).json({ error: 'Failed to save lab account' });
+  await writeAudit({ actorId: req.auth.subjectId, actorRole: 'doctor', action: 'lab_store.save', targetId: username, ip: req.ip }).catch(() => {});
+  res.json({ ok: true });
+}));
+
+// ── Doctor: rotate a patient's portal password (lost one-time credentials) ──
+// Generates a new password server-side, updates the shared login store AND the
+// doctor's kv copy, and returns the plaintext exactly once for the doctor to
+// hand over. Owner-scoped: doctors may only reset their own patients.
+syncRouter.post('/reset-patient-password', authenticate, requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
+  const mrn = String(req.body?.mrn || '').trim().toUpperCase();
+  if (!mrn || mrn.length > 40) return res.status(400).json({ error: 'mrn required' });
+
+  // Plaintext charset mirrors the doctor app's genPass(): no chars that need
+  // escaping when read aloud or handwritten.
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*+-=?';
+  const arr = randomBytes(16);
+  let pass = '';
+  for (const b of arr) pass += chars[b % chars.length];
+  const newHash = hashUiPasswordV2(pass);
+
+  // 1. Shared login store (what store-login / patient-login verify against)
+  const store = readPatientStore();
+  const rec = store[mrn];
+  if (!rec) return res.status(404).json({ error: 'Patient not found in login store' });
+  // Ownership: doctors may only reset their own patients; admins are global.
+  if (req.auth.role !== 'admin') {
+    const owner = String(rec.docId || rec._ownerId || '');
+    if (owner && owner !== req.auth.subjectId) {
+      return res.status(403).json({ error: 'Not your patient' });
+    }
+  }
+  store[mrn] = { ...rec, pass: newHash };
+  delete store[mrn].passPlain;
+  if (!writePatientStore(store)) return res.status(500).json({ error: 'Could not update login store' });
+
+  // 2. Doctor's encrypted kv copy, if present (keeps record + store consistent)
+  try {
+    const kvKey = 'pat_' + mrn;
+    const rows = await db.prepare('SELECT v_enc FROM kv_store WHERE owner_id = ? AND k = ?')
+      .all(req.auth.subjectId, kvKey);
+    if (rows.length) {
+      const rec2 = decryptPHI(rows[0].v_enc);
+      rec2.pass = newHash;
+      delete rec2.passPlain;
+      await upsertKey(req.auth.subjectId, kvKey, rec2, new Date().toISOString());
+    }
+  } catch { /* kv copy is optional — store above is authoritative for login */ }
+
+  await writeAudit({ actorId: req.auth.subjectId, actorRole: 'doctor', action: 'patient_store.password_reset', targetId: mrn, ip: req.ip }).catch(() => {});
+
+  // Shown exactly once, like registration — never stored in plaintext anywhere.
+  res.json({ ok: true, mrn, password: pass });
 }));
 
 // Get messages for a doctor-patient conversation

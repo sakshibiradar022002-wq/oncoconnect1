@@ -55,8 +55,10 @@
   function hasSubtle() { return !!(window.crypto && window.crypto.subtle); }
 
   // Names (after prefix strip) that must stay plaintext / out of PHI set.
+  // _sync_dirty = the sync engine's persisted upload queue (engine metadata,
+  // not PHI) — migrating it to ccenc_ would hide it from sync-client.js.
   function isExcluded(name) {
-    if (name === '_wrap' || name === '_sync_meta' || name === '_meta') return true;
+    if (name === '_wrap' || name === '_sync_meta' || name === '_meta' || name === '_sync_dirty') return true;
     if (name.startsWith('enc_')) return true;      // legacy cc_enc_* artifacts
     if (name.startsWith('onco_')) return true;     // theme prefs
     if (name.startsWith('veltruvia_')) return true;

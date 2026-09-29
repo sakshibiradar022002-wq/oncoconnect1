@@ -766,8 +766,10 @@ window.openRecord=function(mrn){
   const btnPdf=document.createElement('button');btnPdf.id='btn-pdf-download';btnPdf.className='btn btn-primary btn-sm';btnPdf.style.cssText='margin-right:4px';btnPdf.textContent='⬇ PDF';btnPdf.title='Opens print dialog — choose Save as PDF';btnPdf.onclick=printPatientSummary;
   const btnSummary=document.createElement('button');btnSummary.id='btn-print-summary';btnSummary.className='btn btn-ghost btn-sm';btnSummary.style.cssText='margin-right:4px';btnSummary.textContent='📄 Report';btnSummary.onclick=printPatientSummary;
   const btnRx=document.createElement('button');btnRx.id='btn-rx-download';btnRx.className='btn btn-ghost btn-sm';btnRx.style.cssText='color:var(--blue)';btnRx.textContent='℞ Rx';btnRx.onclick=downloadPrescription;
+  const btnReset=document.createElement('button');btnReset.id='btn-reset-password';btnReset.className='btn btn-ghost btn-sm';btnReset.style.cssText='margin-right:4px;color:var(--orange)';btnReset.textContent='🔑 Reset Password';btnReset.title='Patient lost their one-time password? Generate a new one (shown once)';btnReset.onclick=function(){if(typeof resetPatientPassword==='function')resetPatientPassword(window.selectedMRN||selectedMRN);};
   // Insert before the existing close button (first child)
-  btnsDiv.insertBefore(btnRx,btnsDiv.firstChild);
+  btnsDiv.insertBefore(btnReset,btnsDiv.firstChild);
+  btnsDiv.insertBefore(btnRx,btnReset);
   btnsDiv.insertBefore(btnSummary,btnRx);
   btnsDiv.insertBefore(btnPdf,btnSummary);
   },200);};

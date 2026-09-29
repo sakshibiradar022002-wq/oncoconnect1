@@ -513,6 +513,97 @@ async function createPatient(){
   flash('Patient created: '+name);
 }
 
+// ── Lost credentials: rotate the patient's portal password ──
+// The server generates + hashes the new password (plaintext is shown to the
+// doctor exactly once, like registration) and updates the shared login store.
+async function resetPatientPassword(mrn){
+  mrn=mrn||selectedMRN;
+  if(!mrn)return;
+  const ok=await AppDialog.confirm('Generate a new portal password for '+mrn+'?\nThe current password stops working immediately.',{title:'🔑 Reset Patient Password',danger:true,okLabel:'Generate New Password'});
+  if(!ok)return;
+  try{
+    const r=await api('/sync/reset-patient-password',{method:'POST',body:JSON.stringify({mrn})});
+    if(r&&r.ok&&r.password){
+      // Keep the local + kv record copies consistent with the login store.
+      try{
+        const p=LS.get('pat_'+mrn);
+        if(p){p.pass=await makePasswordHash(r.password);delete p.passPlain;LS.set('pat_'+mrn,p);pushToServer({['pat_'+mrn]:p});}
+      }catch(e){/* store is authoritative for login — record sync is best-effort */}
+      AppDialog.alert('🔑 New password for '+mrn+':\n\n'+r.password+'\n\nCopy it now — it is shown only this once.\nThe previous password no longer works.',{title:'Password Reset Complete'});
+    }else{
+      AppDialog.alert((r&&r.error)||'Password reset failed — please try again.');
+    }
+  }catch(e){
+    AppDialog.alert('Password reset failed: '+(e.message||'server unreachable'));
+  }
+}
+
+// ── Onboarding handout: copy credentials / print welcome card ──
+async function copyPatientCreds(){
+  const mrn=document.getElementById('ap-creds-mrn').textContent.trim();
+  const pass=document.getElementById('ap-creds-pass').textContent.trim();
+  const base=(window.location&&window.location.origin&&window.location.origin.indexOf('http')===0)?window.location.origin:'https://veltruvia.duckdns.org';
+  const txt='VELTRUVIA Patient login\nMRN: '+mrn+'\nPassword: '+pass+'\nServer: '+base;
+  try{await navigator.clipboard.writeText(txt);flash('Credentials copied to clipboard');}
+  catch(e){
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');flash('Credentials copied to clipboard');}
+    catch(e2){AppDialog.alert('Copy failed — please select the values manually.');}
+    document.body.removeChild(ta);
+  }
+}
+
+function patientWelcomeCardHtml(mrn,pass,name){
+  const base=(window.location&&window.location.origin&&window.location.origin.indexOf('http')===0)?window.location.origin:'https://veltruvia.duckdns.org';
+  let qrSvg='';
+  try{const qr=window.qrcode(0,'M');qr.addData(base+'/download.html');qr.make();qrSvg=qr.createSvgTag({cellSize:2,margin:4,scalable:true});}catch(e){qrSvg='';}
+  return `<div class="page" style="width:186mm;min-height:104mm;box-sizing:border-box;padding:14mm 16mm;background:#fff;color:#111;font-family:'Segoe UI',Arial,sans-serif;position:relative;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px;">
+    <div>
+      <div style="font-size:24px;font-weight:800;letter-spacing:.5px;">🧬 VELTRUVIA</div>
+      <div style="font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;">Neuro-Oncology EMR — Patient Welcome</div>
+    </div>
+    <div style="text-align:right;font-size:10px;color:#666;">${new Date().toLocaleDateString()}<br>Your care team<br>Dr. ${esc(currentDoc?.name||'')}</div>
+  </div>
+  <div style="display:flex;gap:10mm;">
+    <div style="flex:1.4">
+      <p style="font-size:12px;line-height:1.55;margin:0 0 12px;">Hello${name?' <b>'+esc(name)+'</b>':''}, welcome. This card has everything you need to start using the VELTRUVIA patient app on your phone — it lets you log symptoms, message your care team, and share results securely.</p>
+      <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Your login</div>
+        <table style="font-size:13px;border-collapse:collapse;width:100%">
+          <tr><td style="padding:4px 12px 4px 0;color:#475569;white-space:nowrap;">Patient ID (MRN)</td><td style="font-family:Consolas,monospace;font-weight:700;">${esc(mrn)}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0;color:#475569;">Password</td><td style="font-family:Consolas,monospace;font-weight:700;word-break:break-all;">${esc(pass)}</td></tr>
+        </table>
+      </div>
+      <div style="font-size:11px;line-height:1.6;color:#334155;">
+        <b>Getting started</b><br>
+        1. Scan the QR code with your phone camera<br>
+        2. Tap <b>Patient app</b> and install it (allow "install unknown apps" if asked)<br>
+        3. Open the app and sign in with the ID and password above<br>
+        4. iPhone? Skip the install — open the link in Safari and choose <b>Add to Home Screen</b><br>
+        <span style="color:#b91c1c;">Keep this card private. It gives access to your medical record.</span>
+      </div>
+    </div>
+    <div style="flex:1;text-align:center;">
+      <div style="border:1px dashed #94a3b8;border-radius:12px;padding:12px;background:#fff;">
+        <div style="width:30mm;height:30mm;margin:0 auto;">${qrSvg}</div>
+        <div style="font-size:10px;color:#475569;margin-top:6px;">Scan → app downloads<br>${base.replace('https://','')}/download.html</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:8mm;left:16mm;right:16mm;border-top:1px solid #cbd5e1;padding-top:6px;font-size:9px;color:#94a3b8;display:flex;justify-content:space-between;">
+    <span>VELTRUVIA Pro · v2.3.0</span><span>This card contains protected health information — handle per clinic policy.</span>
+  </div>
+</div>`;
+}
+
+function printPatientWelcomeCard(){
+  const mrn=document.getElementById('ap-creds-mrn').textContent.trim();
+  const pass=document.getElementById('ap-creds-pass').textContent.trim();
+  const p=LS.get('pat_'+mrn);
+  _openReport('Patient Welcome Card — '+mrn, patientWelcomeCardHtml(mrn,pass,(p&&p.name)||''));
+}
+
 // ── Overview ──
 function refreshOverview(){
   const pats=getMyPatients();

@@ -727,7 +727,11 @@
         <div class="cred-row"><span class="cred-key">MRN</span><span class="cred-val" id="ap-creds-mrn"></span></div>
         <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val" id="ap-creds-pass" style="word-break:break-all;"></span></div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">⚠ Copy these now — password cannot be viewed again after closing.</div>
-        <button class="btn btn-primary btn-full" style="margin-top:14px" data-action="closeOverlay:add-pat-modal">Done — Close</button>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-ghost" style="flex:1" id="ap-creds-copy-btn" data-action="copyPatientCreds">📋 Copy</button>
+          <button class="btn btn-primary" style="flex:2" data-action="printPatientWelcomeCard">🖨 Print Welcome Card</button>
+        </div>
+        <button class="btn btn-primary btn-full" style="margin-top:8px" data-action="closeOverlay:add-pat-modal">Done — Close</button>
       </div>
     </div>
   </div>
@@ -762,6 +766,8 @@
 <!-- SCRIPT BLOCK 1 — Core, Auth, Storage                       -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script src="js/actions.js"></script>
+<script src="js/vendor/qrcode-generator.js"></script>
+<script src="sync-client.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/secure-store.js"></script>
 <script src="js/utils.js"></script>
