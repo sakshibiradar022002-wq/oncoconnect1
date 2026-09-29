@@ -147,7 +147,6 @@ function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.c
     document.getElementById('rg-verify-send').style.display='block';
     document.getElementById('rg-verify-input').style.display='none';
     document.getElementById('rg-verify-done').style.display='none';
-    document.getElementById('rg-otp-dev').style.display='none';
     document.getElementById('btn-send-otp').disabled=false;
     document.getElementById('btn-send-otp').textContent='📧 Send Verification Code';
     document.getElementById('btn-create-account').disabled=true;
@@ -194,12 +193,6 @@ async function sendRegOtp(){
     const r=await api('/auth/otp/send',{method:'POST',body:JSON.stringify({email,purpose:'register'})});
     document.getElementById('rg-verify-send').style.display='none';
     document.getElementById('rg-verify-input').style.display='block';
-    // Show dev OTP if returned
-    if(r.otp){
-      const devEl=document.getElementById('rg-otp-dev');
-      devEl.style.display='block';
-      devEl.innerHTML=`🔑 <strong>Dev Mode:</strong> Your code is <span style="font-weight:800;font-family:var(--mono);font-size:16px;letter-spacing:3px">${r.otp}</span>`;
-    }
     document.getElementById('rg-otp').focus();
   }catch(e){
     showMsg('reg-msg',e.message);

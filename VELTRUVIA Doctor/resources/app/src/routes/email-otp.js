@@ -2,8 +2,8 @@
 // EMAIL OTP — Registration Verification
 // ═══════════════════════════════════════════════════════════════════════
 // Sends a 6-digit OTP to the registrant's email. The OTP must be
-// verified before the account is created. In dev mode (no email
-// configured), the OTP is returned in the response so it shows on screen.
+// verified before the account is created. The code is only ever sent by
+// email — it is never echoed to the client, in any environment.
 
 import { Router } from 'express';
 import { z } from 'zod';
@@ -93,8 +93,7 @@ emailOtpRouter.post('/send', otpLimiter, validate(sendOtpSchema), asyncHandler(a
   });
 
   let delivered = false;
-  let deliveryMethod = 'dev';
-  let devOtp = null;
+  let deliveryMethod = 'none';
 
   // Try to send via email
   if (mailConfigured()) {
@@ -114,14 +113,11 @@ emailOtpRouter.post('/send', otpLimiter, validate(sendOtpSchema), asyncHandler(a
     }
   }
 
-  // Screen fallback ONLY outside production: in production an undeliverable
-  // OTP must NEVER be echoed to the client (anyone reaching the API could
-  // otherwise register or verify any email without owning it).
-  // Fix: configure SMTP — see SETUP-EMAIL.md at the repo root.
-  if (!delivered && process.env.NODE_ENV !== 'production') {
-    devOtp = otp;
-    deliveryMethod = 'dev';
-  }
+  // No screen fallback: an undeliverable OTP must NEVER be echoed to the
+  // client — anyone reaching the API could otherwise register or verify
+  // any email without owning it. Email sending must be configured (see
+  // SETUP-EMAIL.md); if delivery fails, the client is told to contact
+  // the administrator.
 
   await writeAudit({
     actorId: email, actorRole: 'anonymous',
@@ -133,12 +129,8 @@ emailOtpRouter.post('/send', otpLimiter, validate(sendOtpSchema), asyncHandler(a
     ok: true,
     message: delivered
       ? `Verification code sent to ${email}`
-      : (process.env.NODE_ENV === 'production'
-        ? 'Email delivery is not configured on this server — contact your administrator.'
-        : 'Email delivery is not configured on this server — contact your administrator.'),
+      : 'Email delivery is not configured on this server — contact your administrator.',
     delivery: deliveryMethod,
-    // Only include OTP in dev mode (when email didn't send)
-    ...(devOtp ? { otp: devOtp, expiresIn: '10 minutes' } : {}),
   });
 }));
 
