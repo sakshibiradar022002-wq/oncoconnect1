@@ -35,7 +35,10 @@
       if (!wrap) return;
       const img = wrap.querySelector('img[data-url]');
       if (img && !img.src) {
-        drawLocalQr(img, img.getAttribute('data-url'));
+        // QR payloads must be ABSOLUTE urls — phone cameras can't open
+        // relative paths. Resolve against the page location.
+        const u = img.getAttribute('data-url');
+        drawLocalQr(img, new URL(u, window.location.href).href);
       }
       wrap.hidden = !wrap.hidden;
     });
