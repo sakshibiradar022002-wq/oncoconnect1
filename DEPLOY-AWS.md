@@ -13,6 +13,32 @@ this tier. Free via Free Tier credits: $7 × 6 months = $42, fully covered
 
 ---
 
+## 🚀 SESSION (Sep 28–29, 2026) — sync hardening, password reset, lab registration, welcome card
+
+End-to-end QA session: pre-flighted the patient and lab apps, verified a
+phone-logged symptom from the doctor side, exercised offline sync, then
+fixed what the tests exposed. All changes deployed to the VM and verified
+live; installers + APKs rebuilt and re-uploaded (still v2.3.0).
+
+| Area | What changed | Verified live |
+|---|---|---|
+| Offline sync | Dirty queue persisted under `cc__sync_dirty` (kept on logout), flushed after any successful login (fetch hook on `*/login`), self-recovery on load/`online`. Wired into all 4 bundles + mobile `www` — all copies md5-identical | offline action survived logout + login, synced after reconnect |
+| SecureStore | Boot migration no longer encrypts/deletes `cc__sync_dirty` (root cause of the first sync-test failure) | queue survives boot across restarts |
+| Password reset | `POST /api/sync/reset-patient-password` (doctor/admin only, owner-scoped, server-side `hashUiPasswordV2`, audited, returns plaintext once) + 🔑 Reset Password button in the doctor record view | old pw → 401, new pw → 200; demo hash then restored |
+| RBAC hole | `/save-patient` had **no role check** — any authenticated user could overwrite patient credentials. Now `requireRole('doctor','admin')` | lab token → 403 |
+| Lab registration | New `POST /api/sync/save-lab` (zod-validated, username-hijack guard → 409, owner `docId`, audited); `createLab()` now hashes the password and shows an honest ⚠️ when either push fails | created lab → `lab-store-login` 200 (was broken), wrong pw 401 |
+| Welcome card | Printable A6 Patient Welcome Card (QR → download page) + Copy-credentials button in the doctor UI (vendored `qrcode-generator.js`) | card renders, QR scans, buttons verified on screen |
+
+Housekeeping: `sync-bundles` re-run and byte-identity re-verified across all
+bundles; `npm run check` ✅ + 39/39 tests + 69/69 feature sweep; monthly
+truth-check re-baselined (sync.js `ok:true` 42 → 44 = the two new audited
+routes); desktop installers + portable zips + APKs rebuilt with the new
+features, SHA256SUMS/`latest.yml`/QR sheet regenerated, all re-uploaded to
+`~/veltruvia/app/public/downloads/`. Demo accounts cleaned up after each
+test round; rotated credentials live only on the VM (`~/veltruvia-demo-*.txt`)
+and the printable QR sheet — **never committed to git** (op scripts in
+`.freebuff/` that embed them stay local-only).
+
 ## ⏸ STATE — MIGRATION COMPLETE (Sep 27, 2026)
 - VM: Lightsail `veltruvia-prod`, Mumbai ap-south-1a, Ubuntu 24.04, $7/mo
   (Free plan account), static IP (kept out of this repo — see
