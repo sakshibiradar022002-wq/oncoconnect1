@@ -146,9 +146,18 @@ h1 {
   max-width: 1140px; margin: 0 auto 72px; padding: 0 20px;
 }
 .download-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: start;
 }
-@media (max-width: 800px) { .download-grid { grid-template-columns: 1fr; } }
+@media (max-width: 980px) { .download-grid { grid-template-columns: 1fr; } }
+.server-strip {
+  margin-top: 18px; padding: 16px 18px;
+  border: 1px dashed var(--border-strong); border-radius: 16px;
+  background: rgba(245,158,11,0.04);
+}
+.server-strip-text { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; margin-bottom: 10px; }
+.server-strip-text strong { color: var(--text); }
+.server-strip .btn-row { margin: 0; }
+.server-strip .download-btn { padding: 10px 16px; font-size: 13.5px; border-radius: 11px; }
 .download-card {
   background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
   border: 1px solid var(--border); border-radius: 24px;
@@ -397,6 +406,13 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
         <span>🩺 full EMR dashboard</span>
         <span>🔑 login created by your admin</span>
       </div>
+      <div class="server-strip">
+        <div class="server-strip-text"><strong>Running a new clinic?</strong> The VELTRUVIA Server (the background software that stores records and links every app) is included here:</div>
+        <div class="btn-row">
+          <a class="download-btn btn-secondary" href="/downloads/VELTRUVIA-Server-Setup.exe" download>🖥️ Server Installer</a>
+          <a class="download-btn btn-secondary" href="/downloads/VELTRUVIA-Server-Portable.zip" download>Server Portable ZIP</a>
+        </div>
+      </div>
     </div>
 
     <!-- Lab -->
@@ -457,35 +473,6 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
         <span>🤖 Android 8+</span>
         <span>🍎 iPhone → web install below</span>
         <span>🔑 login on your Welcome Card</span>
-      </div>
-    </div>
-
-    <!-- Server (new clinics) -->
-    <div class="download-card server">
-      <div class="card-badge optional">For New Clinics</div>
-      <div class="card-header">
-        <div class="card-icon"><img src="/icons/brand/veltruvia-server.jpg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
-        <div>
-          <div class="card-title">VELTRUVIA Server</div>
-          <div class="card-subtitle">Only for setting up a new clinic</div>
-        </div>
-      </div>
-      <div class="card-desc">
-        Runs in the background, stores all records, and links every app. Doctors and patients of an existing clinic <strong>don't need this</strong> — your apps already connect to the clinic. Installing it on a personal PC does nothing useful.
-      </div>
-      <div class="btn-row">
-        <a class="download-btn" href="/downloads/VELTRUVIA-Server-Setup.exe" download>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-          Download Installer
-        </a>
-        <a class="download-btn btn-secondary" href="/downloads/VELTRUVIA-Server-Portable.zip" download>
-          Portable ZIP
-        </a>
-      </div>
-      <div class="download-meta">
-        <span>💻 Windows 10/11 · ☁️ Cloud</span>
-        <span>⚙️ runs in system tray</span>
-        <span>📖 setup guide in the Complete Pack</span>
       </div>
     </div>
 
