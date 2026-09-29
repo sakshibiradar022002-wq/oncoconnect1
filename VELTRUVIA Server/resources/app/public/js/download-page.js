@@ -46,6 +46,38 @@
     });
   });
 
+  // ── Live stats in the hero mockup ─────────────────────────────────
+  // Tiles show real aggregate counters from /health?deep=1 (counts only,
+  // never patient data). Poll every 30s; keep the last good values on
+  // failure. Falls back to '—' until the first successful read.
+  (function () {
+    var kpis = { doctors: null, patients: null, audit: null };
+    function paint() {
+      var d = document.querySelector('[data-live="doctors"]');
+      var p = document.querySelector('[data-live="patients"]');
+      var a = document.querySelector('[data-live="audit"]');
+      if (d && kpis.doctors !== null) d.textContent = kpis.doctors;
+      if (p && kpis.patients !== null) p.textContent = kpis.patients;
+      if (a && kpis.audit !== null) a.textContent = kpis.audit.toLocaleString();
+      var bar = document.querySelector('.mock-title');
+      if (bar && kpis.doctors !== null) bar.textContent = 'VELTRUVIA DOC · LIVE';
+    }
+    function tick() {
+      fetch('/health?deep=1', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (h) {
+          if (!h) return;
+          if (typeof h.doctors === 'number') kpis.doctors = h.doctors;
+          if (typeof h.patients === 'number') kpis.patients = h.patients;
+          if (typeof h.auditEntries === 'number') kpis.audit = h.auditEntries;
+          paint();
+        })
+        .catch(function () { /* keep last good values */ });
+    }
+    tick();
+    setInterval(tick, 30000);
+  })();
+
   // ── PWA install (beforeinstallprompt) ─────────────────────────────
   const banner = document.getElementById('pwa-banner');
   const installBtn = document.getElementById('pwa-install');

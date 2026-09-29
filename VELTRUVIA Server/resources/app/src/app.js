@@ -197,6 +197,28 @@ app.get('/health', async (req, res) => {
       health.db = false;
       health.ok = false;
     }
+
+    // Live aggregate counters for the public download page mockup.
+    // Counts only — no patient identifiers or clinical data leave the box.
+    try {
+      const docs = await db.prepare("SELECT COUNT(*) AS n FROM users WHERE role IN ('doctor','admin')").get();
+      health.doctors = docs ? Number(docs.n) : 0;
+    } catch (e) { /* non-fatal */ }
+    try {
+      const entries = await db.prepare('SELECT COUNT(*) AS n FROM audit_log').get();
+      health.auditEntries = entries ? Number(entries.n) : 0;
+    } catch (e) { /* non-fatal */ }
+    try {
+      const { readFileSync: _rf, existsSync: _ex } = await import('node:fs');
+      const pStore = join(process.env.DB_PATH || '.', 'patient-store.json');
+      if (_ex(pStore)) {
+        const store = JSON.parse(_rf(pStore, 'utf-8'));
+        health.patients = Object.keys(store || {}).filter(function (k) { return !/^lab_/.test(k); }).length;
+      }
+    } catch (e) { /* non-fatal */ }
+    try {
+      health.uptimeHours = Math.floor(process.uptime() / 3600);
+    } catch (e) { /* non-fatal */ }
     
     // Blockchain status — the real backend (file / hardhat / sepolia), not a
     // hardcoded placeholder. Non-fatal: a failed read is reported, not 500.

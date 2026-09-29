@@ -387,6 +387,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
 .mock-chart i.g{background:linear-gradient(180deg,#34d399,#065f46);animation-delay:.15s;}
 .mock-chart i.p{background:linear-gradient(180deg,#a78bfa,#4c1d95);animation-delay:.25s;}
 @keyframes grow{from{height:0!important}}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 6px #34d399}50%{opacity:.55;box-shadow:0 0 1px #34d399}}
 .mock-row{display:flex;gap:8px;align-items:center;}
 .mock-row span{height:8px;border-radius:6px;background:rgba(148,163,184,.14);flex:1;}
 .mock-row span.w1{flex:.5}.mock-row span.w2{flex:.75}
@@ -422,14 +423,14 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
     </div>
     <div class="hero-visual">
       <div class="app-mock">
-        <div class="mock-bar"><span class="mock-dot r"></span><span class="mock-dot y"></span><span class="mock-dot g"></span><span class="mock-title">VELTRUVIA DOC · LIVE</span></div>
+        <div class="mock-bar"><span class="mock-dot g" style="animation:pulse 2s ease-in-out infinite"></span><span class="mock-dot y"></span><span class="mock-dot r"></span><span class="mock-title">VELTRUVIA DOC · CONNECTING…</span></div>
         <div class="mock-body">
           <div class="mock-side"><span class="on"></span><span style="width:78%"></span><span style="width:88%"></span><span style="width:70%"></span><span style="width:82%"></span></div>
           <div class="mock-main">
             <div class="mock-kpis">
-              <div class="mock-kpi"><b>128</b><i>PATIENTS</i></div>
-              <div class="mock-kpi"><b>36</b><i>APPTS</i></div>
-              <div class="mock-kpi"><b>99.9%</b><i>UPTIME</i></div>
+              <div class="mock-kpi"><b data-live="patients">—</b><i>PATIENTS</i></div>
+              <div class="mock-kpi"><b data-live="doctors">—</b><i>DOCTORS</i></div>
+              <div class="mock-kpi"><b data-live="audit">—</b><i>RECORDS SECURED</i></div>
             </div>
             <div class="mock-chart"><i style="height:45%"></i><i style="height:62%"></i><i class="g" style="height:38%"></i><i style="height:74%"></i><i class="p" style="height:55%"></i><i style="height:86%"></i><i class="g" style="height:64%"></i><i style="height:92%"></i><i class="p" style="height:70%"></i><i style="height:58%"></i><i class="g" style="height:80%"></i><i style="height:66%"></i></div>
             <div class="mock-row"><span class="w1"></span><span class="mock-pill"></span><span class="w2"></span><span class="mock-pill a"></span><span class="w1"></span><span class="mock-pill w"></span></div>
