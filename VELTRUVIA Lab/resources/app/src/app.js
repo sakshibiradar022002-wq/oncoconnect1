@@ -272,10 +272,11 @@ app.all('/api/*', (req, res) => {
 // ── Serve the frontend (built HTML apps) ──────────────────────────
 app.use(express.static(join(__dirname, '..', 'public')));
 
-// SPA-ish fallback: send the doctor app for unknown non-API GETs.
+// Unknown non-API GETs get a real 404 (the SPA fallback previously served
+// index.html with HTTP 200 for ANY path, hiding broken links).
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
-  res.sendFile(join(__dirname, '..', 'public', 'index.html'));
+  res.status(404).sendFile(join(__dirname, '..', 'public', 'index.html'));
 });
 
 // ── Error handlers (order matters: Sentry before custom) ────────────

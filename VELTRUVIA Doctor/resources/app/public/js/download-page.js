@@ -18,8 +18,10 @@
       const h = await fetch('/health').then(r => r.json());
       if (h.version) text = 'This server: v' + h.version;
     } catch (e) { /* not served by VELTRUVIA Server — skip local line */ }
+    // GitHub release check: query THIS project's repo (origin), never a
+    // third-party archive. 404 (no releases yet) is expected and silent.
     try {
-      const r = await fetch('https://api.github.com/repos/videju/veltruvia/releases/latest', { cache: 'no-store' });
+      const r = await fetch('https://api.github.com/repos/sakshibiradar022002-wq/oncoconnect1/releases/latest', { cache: 'no-store' });
       if (r.ok) {
         const j = await r.json();
         if (j && j.tag_name) text = 'Latest release: ' + j.tag_name;
