@@ -210,10 +210,10 @@ app.get('/health', async (req, res) => {
     } catch (e) { /* non-fatal */ }
     try {
       const { readFileSync: _rf, existsSync: _ex } = await import('node:fs');
-      const pStore = join(_dirname(process.env.DB_PATH || '.'), 'patient-store.json');
+      const pStore = join(process.env.DB_PATH || '.', 'patient-store.json');
       if (_ex(pStore)) {
         const store = JSON.parse(_rf(pStore, 'utf-8'));
-        health.patients = Object.keys(store || {}).length;
+        health.patients = Object.keys(store || {}).filter(function (k) { return !/^lab_/.test(k); }).length;
       }
     } catch (e) { /* non-fatal */ }
     try {
