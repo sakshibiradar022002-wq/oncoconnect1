@@ -154,7 +154,7 @@
 // qrcode-generator lib (local file, CSP-safe).
 function drawLocalQr(img, text) {
   var hide = function () {
-    var wrap = img.closest('.connect-qr');
+    var wrap = img.closest('.qr-wrap') || img.closest('.connect-qr');
     if (wrap) wrap.style.display = 'none';
   };
   var render = function () {

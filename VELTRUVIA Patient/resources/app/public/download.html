@@ -203,6 +203,7 @@ h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 1
 .btn-secondary:hover{border-color:var(--blue);color:var(--text);}
 button.download-btn{cursor:pointer;font-family:inherit;font-size:1rem;}
 .qr-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px;margin:6px 0 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;}
+.qr-wrap[hidden]{display:none;}
 .qr-wrap img{background:#fff;border-radius:8px;padding:6px;}
 .qr-wrap span{font-size:.85rem;color:var(--text-muted);}
 .ver-badge{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--green2);font-size:.85rem;letter-spacing:.5px;}
@@ -249,7 +250,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:1rem;}
   <div class="section-header">
     <h2>Choose Your App</h2>
     <div class="ver-badge" id="ver-badge" hidden></div>
-    <p>All apps connect to one VELTRUVIA Server — install it first (cloud or clinic PC). Phones and the Doctor PC share everything through it.</p>
+    <p>Pick your card below — apps connect to the VELTRUVIA cloud automatically. No setup needed.</p>
   </div>
 
   <div class="connect-card" id="everything-card">
@@ -261,35 +262,108 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:1rem;}
     </div>
   </div>
 
-  <div class="connect-card" id="connect-card" hidden>
-    <div class="connect-qr"><img id="connect-qr-img" alt="QR code — open this page on your phone"></div>
-    <div class="connect-info">
-      <h3>📱 Connect a phone — one scan</h3>
-      <p>This QR opens <strong>this exact page</strong> on any phone using the same Wi-Fi — no typing the address.</p>
-      <p id="connect-tls-hint" hidden style="color:#34d399;font-weight:600">🔒 This server also offers encrypted HTTPS on port 3001 — apps can use <code>https://&lt;address-host&gt;:3001</code> for encrypted Wi-Fi traffic.</p>
-      <ol class="connect-steps">
-        <li>Scan with the phone's camera → this page opens on the phone</li>
-        <li>Tap <strong>Patient</strong> or <strong>Lab</strong> below to install the app</li>
-        <li>Open the app → ⚙ → paste this address: <code id="connect-address"></code><button class="copy-btn" id="copy-address" type="button">Copy</button></li>
-      </ol>
-      <p class="connect-note">Phone is in a <strong>different building or city?</strong> Ask your clinic for the CONNECT-ANYWHERE guide — Tailscale (free &amp; private) or this cloud server (works worldwide).</p>
+    <!-- Doctor -->
+    <div class="download-card doctor">
+      <div class="card-badge optional">For Doctors</div>
+      <div class="card-header">
+        <div class="card-icon">👨‍⚕️</div>
+        <div>
+          <div class="card-title">Doctor Software</div>
+          <div class="card-subtitle">Windows · EMR &amp; Patient Management</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        Full EMR dashboard with patient records, appointment scheduling, clinical notes, lab management, billing, and video calls. Connects to the clinic automatically — your admin creates your login.
+      </div>
+      <div class="btn-row">
+        <a class="download-btn" href="/downloads/VELTRUVIA-Doctor-Setup.exe" download>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+          Download for Windows
+        </a>
+        <a class="download-btn btn-secondary" href="/downloads/VELTRUVIA-Doctor-Portable.zip" download>
+          Portable ZIP
+        </a>
+      </div>
+      <div class="download-meta">
+        <span>💻 Windows 10/11</span>
+        <span>🩺 full EMR dashboard</span>
+        <span>🔑 login created by your admin</span>
+      </div>
     </div>
-  </div>
 
-  <div class="download-grid">
+    <!-- Lab -->
+    <div class="download-card lab">
+      <div class="card-badge optional">For Labs</div>
+      <div class="card-header">
+        <div class="card-icon">🔬</div>
+        <div>
+          <div class="card-title">Lab App</div>
+          <div class="card-subtitle">Android · Test Management &amp; Results</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        Manage lab test orders, upload results, and track sample status from any phone. Task lists arrive from the doctor in real time.
+      </div>
+      <div class="btn-row">
+        <a class="download-btn" href="/downloads/VELTRUVIA-Lab.apk" download>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+          Download for Android
+        </a>
+        <button class="download-btn btn-secondary" type="button" data-qr="qr-lab">📱 Scan QR</button>
+      </div>
+      <div class="qr-wrap" id="qr-lab" hidden>
+        <img data-url="/downloads/VELTRUVIA-Lab.apk" alt="Lab APK QR code" width="260" height="260">
+        <span>Scan with your phone camera to install</span>
+      </div>
+      <div class="download-meta">
+        <span>🤖 Android 8+</span>
+        <span>🔑 login created by your admin</span>
+      </div>
+    </div>
 
-    <!-- Server -->
+    <!-- Patient -->
+    <div class="download-card patient">
+      <div class="card-badge optional">For Patients</div>
+      <div class="card-header">
+        <div class="card-icon">📱</div>
+        <div>
+          <div class="card-title">Patient App</div>
+          <div class="card-subtitle">Android · Symptom Tracker &amp; Care</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        Log daily symptoms, track medications, view appointments, and message your care team — right from your phone. Your doctor gives you a Welcome Card with your login.
+      </div>
+      <div class="btn-row">
+        <a class="download-btn" href="/downloads/VELTRUVIA-Patient.apk" download>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+          Download for Android
+        </a>
+        <button class="download-btn btn-secondary" type="button" data-qr="qr-patient">📱 Scan QR</button>
+      </div>
+      <div class="qr-wrap" id="qr-patient" hidden>
+        <img data-url="/downloads/VELTRUVIA-Patient.apk" alt="Patient APK QR code" width="260" height="260">
+        <span>Scan with your phone camera to install</span>
+      </div>
+      <div class="download-meta">
+        <span>🤖 Android 8+</span>
+        <span>🍎 iPhone → web install below</span>
+        <span>🔑 login on your Welcome Card</span>
+      </div>
+    </div>
+
+    <!-- Server (new clinics) -->
     <div class="download-card server">
-      <div class="card-badge required">Required First</div>
+      <div class="card-badge optional">For New Clinics</div>
       <div class="card-header">
         <div class="card-icon">🖥️</div>
         <div>
           <div class="card-title">Server</div>
-          <div class="card-subtitle">The Linking Software — runs in background</div>
+          <div class="card-subtitle">Only for setting up a new clinic</div>
         </div>
       </div>
       <div class="card-desc">
-        Links every app and stores all data. On Windows it sits quietly in the system tray and starts automatically with your PC. For phones to connect from anywhere, deploy it to a cloud VM instead — see <strong>DEPLOY.md</strong>.
+        Runs in the background, stores all records, and links every app. Doctors and patients of an existing clinic <strong>don't need this</strong> — your apps already connect to the clinic. Installing it on a personal PC does nothing useful.
       </div>
       <div class="btn-row">
         <a class="download-btn" href="/downloads/VELTRUVIA-Server-Setup.exe" download>
@@ -301,100 +375,9 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:1rem;}
         </a>
       </div>
       <div class="download-meta">
-        <span>📦 Windows installer + portable ZIP</span>
         <span>💻 Windows 10/11 · ☁️ Cloud</span>
         <span>⚙️ runs in system tray</span>
-      </div>
-    </div>
-
-    <!-- Doctor -->
-    <div class="download-card doctor">
-      <div class="card-badge optional">Doctor</div>
-      <div class="card-header">
-        <div class="card-icon">👨‍⚕️</div>
-        <div>
-          <div class="card-title">Doctor Software</div>
-          <div class="card-subtitle">Windows · EMR & Patient Management</div>
-        </div>
-      </div>
-      <div class="card-desc">
-        Full EMR dashboard with patient records, appointment scheduling, clinical notes, lab management, billing, and video calls. Connects to the shared server automatically.
-      </div>
-      <div class="btn-row">
-        <a class="download-btn" href="/downloads/VELTRUVIA-Doctor-Setup.exe" download>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-          Download Installer
-        </a>
-        <a class="download-btn btn-secondary" href="/downloads/VELTRUVIA-Doctor-Portable.zip" download>
-          Portable ZIP
-        </a>
-      </div>
-      <div class="download-meta">
-        <span>📦 Windows installer + portable ZIP</span>
-        <span>💻 Windows 10/11</span>
-        <span>🩺 full EMR dashboard</span>
-      </div>
-    </div>
-
-    <!-- Patient -->
-    <div class="download-card patient">
-      <div class="card-badge optional">Mobile</div>
-      <div class="card-header">
-        <div class="card-icon">📱</div>
-        <div>
-          <div class="card-title">Patient App</div>
-          <div class="card-subtitle">Android · Symptom Tracker & Care</div>
-        </div>
-      </div>
-      <div class="card-desc">
-        Log daily symptoms, track medications, view appointments, and message your care team — right from your phone. Everything syncs to the server.
-      </div>
-      <div class="btn-row">
-        <a class="download-btn" href="/downloads/VELTRUVIA-Patient.apk" download>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-          Download APK
-        </a>
-        <button class="download-btn btn-secondary" type="button" data-qr="qr-patient">📱 Scan QR</button>
-      </div>
-      <div class="qr-wrap" id="qr-patient" hidden>
-        <img data-url="/downloads/VELTRUVIA-Patient.apk" alt="Patient APK QR code" width="260" height="260">
-        <span>Scan with your phone camera to install</span>
-      </div>
-      <div class="download-meta">
-        <span>📦 ~7 MB APK</span>
-        <span>🤖 Android 8+</span>
-        <span>🍎 iPhone → web install below</span>
-      </div>
-    </div>
-
-    <!-- Lab -->
-    <div class="download-card lab">
-      <div class="card-badge optional">Mobile</div>
-      <div class="card-header">
-        <div class="card-icon">🔬</div>
-        <div>
-          <div class="card-title">Lab Portal</div>
-          <div class="card-subtitle">Android · Test Management & Results</div>
-        </div>
-      </div>
-      <div class="card-desc">
-        Manage lab test orders, upload results, and track sample status from any phone. Task lists arrive from the doctor in real time.
-      </div>
-      <div class="btn-row">
-        <a class="download-btn" href="/downloads/VELTRUVIA-Lab.apk" download>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-          Download APK
-        </a>
-        <button class="download-btn btn-secondary" type="button" data-qr="qr-lab">📱 Scan QR</button>
-      </div>
-      <div class="qr-wrap" id="qr-lab" hidden>
-        <img data-url="/downloads/VELTRUVIA-Lab.apk" alt="Lab APK QR code" width="260" height="260">
-        <span>Scan with your phone camera to install</span>
-      </div>
-      <div class="download-meta">
-        <span>📦 ~7 MB APK</span>
-        <span>🤖 Android 8+</span>
-        <span>🍎 iPhone → web install below</span>
+        <span>📖 setup guide in the Complete Pack</span>
       </div>
     </div>
 
@@ -424,15 +407,15 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:1rem;}
   <div class="step">
     <div class="step-num">1</div>
     <div class="step-text">
-      <h3>Install the Server</h3>
-      <p>The VELTRUVIA Server runs in the background (system tray on Windows, or a cloud VM — see <strong>DEPLOY.md</strong>). It links every app and stores all data.</p>
+      <h3>Get the App for Your Role</h3>
+      <p>Doctor: install the Windows software. Lab &amp; Patient: install the Android app (or scan its QR). The VELTRUVIA cloud is already running for your clinic — every app connects to it automatically, no addresses or setup needed.</p>
     </div>
   </div>
   <div class="step">
     <div class="step-num">2</div>
     <div class="step-text">
-      <h3>Install Your App</h3>
-      <p>Patient &amp; Lab: download the APK on an Android phone. Doctor: install the Windows software. Sign in with your credentials — no server address needed.</p>
+      <h3>Sign In</h3>
+      <p>Your login is created for you — doctors get theirs from the clinic admin, patients and labs receive a Welcome Card with credentials. Type it in once and you're in.</p>
     </div>
   </div>
   <div class="step">
