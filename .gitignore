@@ -145,3 +145,4 @@ runtime-shell-*-backup/
 .freebuff/vm-debug-users.mjs
 # real VM address for the offsite pull script (repo stays public-safe)
 .freebuff/.vm-target
+_ico_*.png
