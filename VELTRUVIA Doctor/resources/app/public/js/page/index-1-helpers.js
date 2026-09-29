@@ -560,7 +560,7 @@ function patientWelcomeCardHtml(mrn,pass,name){
   return `<div class="page" style="width:186mm;min-height:104mm;box-sizing:border-box;padding:14mm 16mm;background:#fff;color:#111;font-family:'Segoe UI',Arial,sans-serif;position:relative;">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px;">
     <div>
-      <div style="font-size:24px;font-weight:800;letter-spacing:.5px;">🧬 VELTRUVIA</div>
+      <div style="display:flex;align-items:center;gap:10px;justify-content:center;"><img src="/icons/brand/veltruvia-patient.jpg" alt="" style="width:38px;height:38px;border-radius:9px;object-fit:cover"><span style="font-size:24px;font-weight:800;letter-spacing:.5px;">VELTRUVIA Patient</span></div>
       <div style="font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;">Neuro-Oncology EMR — Patient Welcome</div>
     </div>
     <div style="text-align:right;font-size:10px;color:#666;">${new Date().toLocaleDateString()}<br>Your care team<br>Dr. ${esc(currentDoc?.name||'')}</div>
@@ -592,7 +592,7 @@ function patientWelcomeCardHtml(mrn,pass,name){
     </div>
   </div>
   <div style="position:absolute;bottom:8mm;left:16mm;right:16mm;border-top:1px solid #cbd5e1;padding-top:6px;font-size:9px;color:#94a3b8;display:flex;justify-content:space-between;">
-    <span>VELTRUVIA Pro · v2.3.0</span><span>This card contains protected health information — handle per clinic policy.</span>
+    <span>VELTRUVIA · v2.3.0</span><span>This card contains protected health information — handle per clinic policy.</span>
   </div>
 </div>`;
 }

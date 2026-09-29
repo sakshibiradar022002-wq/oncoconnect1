@@ -272,7 +272,7 @@ function printPatientSummary(){
         <div style="display:flex;align-items:center;gap:10px;">
           <div class="logo-svg">${_SVG_LOGO}</div>
           <div>
-            <h1>VELTRUVIA Pro</h1>
+            <h1>VELTRUVIA Doc</h1>
             <div class="inst-name">${esc(docInst)}</div>
             <div class="sub">Department of ${esc(docSpec)} · Clinical Patient Report</div>
           </div>
@@ -590,7 +590,7 @@ function printPatientSummary(){
     <!-- FOOTER -->
     <div class="footer">
       <div class="left">
-        VELTRUVIA Pro · Neuro-Oncology EMR<br>
+        VELTRUVIA Doc · Neuro-Oncology EMR<br>
         ${esc(docInst)} · ${esc(docSpec)} Department<br>
         Report ID: ${reportId} · Generated: ${reportDateStr} ${reportTimeStr}<br>
         This document is auto-generated from the patient electronic medical record.<br>
@@ -734,7 +734,7 @@ function downloadPrescription(){
     
     <div class="footer">
       <div class="left">
-        VELTRUVIA Pro · Neuro-Oncology EMR<br>
+        VELTRUVIA Doc · Neuro-Oncology EMR<br>
         ${esc(docInst)} · Rx ID: ${rxId}<br>
         Generated: ${rxDateStr} ${rxTimeStr} · This prescription is generated from the electronic medical record system.<br>
         Verify with original records. Not valid without prescriber signature.
