@@ -149,6 +149,9 @@ function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.c
     document.getElementById('rg-verify-done').style.display='none';
     document.getElementById('btn-send-otp').disabled=false;
     document.getElementById('btn-send-otp').textContent='📧 Send Verification Code';
+    const rb=document.getElementById('btn-resend-otp');
+    if(rb){rb.disabled=false;rb.textContent='📧 Send Code Again';}
+    if(_otpCooldownTimer){clearInterval(_otpCooldownTimer);_otpCooldownTimer=null;}
     document.getElementById('btn-create-account').disabled=true;
     document.getElementById('rg-create-hint').textContent='Verify your email above first';
     const badge=document.getElementById('rg-verify-badge');
@@ -187,19 +190,38 @@ let _regVerificationToken=null;
 
 let _otpSendBusy=false;
 let _otpLastSend=0;
+let _otpCooldownTimer=null;
+
+function _otpSetButtons(disabled,label){
+  const b1=document.getElementById('btn-send-otp');
+  const b2=document.getElementById('btn-resend-otp');
+  if(b1){b1.disabled=disabled;if(label)b1.textContent=label;}
+  if(b2){b2.disabled=disabled;if(label)b2.textContent=label;}
+}
+
+// Live countdown on the Resend button so the wait is visible, not a hang.
+function _otpStartCountdown(sec){
+  if(_otpCooldownTimer)clearInterval(_otpCooldownTimer);
+  const tick=()=>{
+    if(sec<=0){clearInterval(_otpCooldownTimer);_otpCooldownTimer=null;_otpSetButtons(false,'📧 Send Code Again');const rs=document.getElementById('rg-resend-status');if(rs)rs.textContent='';return;}
+    _otpSetButtons(true,'📧 Resend in '+sec+'s');sec--;
+  };
+  tick();_otpCooldownTimer=setInterval(tick,1000);
+}
 
 async function sendRegOtp(){
   const email=v('rg-email').toLowerCase().trim();
   if(!email||!email.includes('@')){showMsg('reg-msg','Enter your email address first.');return;}
   if(_otpSendBusy)return;
-  // 30s cooldown between sends (server allows 5 per 10 min — don't burn them)
+  // 30s visible cooldown between sends (server allows 5 per email per 10 min)
   const since=Date.now()-_otpLastSend;
-  if(since<30000){showMsg('reg-msg','A code was just sent to '+email+' — check the inbox and Spam. You can resend in '+Math.ceil((30000-since)/1000)+'s.','ok');return;}
+  if(since<30000){
+    showMsg('reg-msg','Code already sent to '+email+' — check the inbox and Spam folder. You can resend in '+Math.ceil((30000-since)/1000)+'s.','ok');
+    _otpStartCountdown(Math.ceil((30000-since)/1000));
+    return;
+  }
   _otpSendBusy=true;_otpLastSend=Date.now();
-  const btn=document.getElementById('btn-send-otp');
-  const rlink=document.querySelector('#rg-verify-input a[data-action="sendRegOtp"]');
-  if(btn){btn.disabled=true;btn.textContent='Sending…';}
-  if(rlink){rlink.dataset.label=rlink.textContent;rlink.textContent='Sending…';rlink.style.pointerEvents='none';rlink.style.opacity='.6';}
+  _otpSetButtons(true,'Sending…');
   try{
     await api('/auth/otp/send',{method:'POST',body:JSON.stringify({email,purpose:'register'})});
     document.getElementById('rg-verify-send').style.display='none';
@@ -207,14 +229,14 @@ async function sendRegOtp(){
     document.getElementById('rg-otp').focus();
     showMsg('reg-msg','📧 Code sent to '+email+' — check the inbox and Spam folder.','ok');
     const rs=document.getElementById('rg-resend-status');
-    if(rs){rs.textContent='✓ Sent!';setTimeout(()=>{if(rs)rs.textContent='';},5000);}
+    if(rs)rs.textContent='✓ Sent!';
+    _otpStartCountdown(30);
   }catch(e){
     showMsg('reg-msg',e.message);
     _otpLastSend=0;
+    _otpSetButtons(false,'📧 Send Code Again');
   }finally{
     _otpSendBusy=false;
-    if(btn){btn.disabled=false;btn.textContent='📧 Send Verification Code';}
-    if(rlink){rlink.textContent=rlink.dataset.label||'Resend';rlink.style.pointerEvents='';rlink.style.opacity='';}
   }
 }
 
