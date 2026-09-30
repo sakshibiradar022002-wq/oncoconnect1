@@ -154,6 +154,7 @@ function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.c
     const badge=document.getElementById('rg-verify-badge');
     badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--orange)';
     document.getElementById('rg-otp').value='';
+    const rs=document.getElementById('rg-resend-status');if(rs)rs.textContent='';
   }}
 function showMsg(id,msg,type='err'){const el=document.getElementById(id);if(!el)return;el.innerHTML=msg;el.className='msg '+type;el.style.display='block';if(type==='err')setTimeout(()=>{if(el)el.style.display='none';},5000);}
 function clearRegMsg(){['reg-msg','reg-ok'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
@@ -184,19 +185,36 @@ function checkPassStrength(pass){
 // ═══ EMAIL OTP VERIFICATION ═══
 let _regVerificationToken=null;
 
+let _otpSendBusy=false;
+let _otpLastSend=0;
+
 async function sendRegOtp(){
   const email=v('rg-email').toLowerCase().trim();
   if(!email||!email.includes('@')){showMsg('reg-msg','Enter your email address first.');return;}
+  if(_otpSendBusy)return;
+  // 30s cooldown between sends (server allows 5 per 10 min — don't burn them)
+  const since=Date.now()-_otpLastSend;
+  if(since<30000){showMsg('reg-msg','A code was just sent to '+email+' — check the inbox and Spam. You can resend in '+Math.ceil((30000-since)/1000)+'s.','ok');return;}
+  _otpSendBusy=true;_otpLastSend=Date.now();
   const btn=document.getElementById('btn-send-otp');
-  btn.disabled=true;btn.textContent='Sending…';
+  const rlink=document.querySelector('#rg-verify-input a[data-action="sendRegOtp"]');
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  if(rlink){rlink.dataset.label=rlink.textContent;rlink.textContent='Sending…';rlink.style.pointerEvents='none';rlink.style.opacity='.6';}
   try{
-    const r=await api('/auth/otp/send',{method:'POST',body:JSON.stringify({email,purpose:'register'})});
+    await api('/auth/otp/send',{method:'POST',body:JSON.stringify({email,purpose:'register'})});
     document.getElementById('rg-verify-send').style.display='none';
     document.getElementById('rg-verify-input').style.display='block';
     document.getElementById('rg-otp').focus();
+    showMsg('reg-msg','📧 Code sent to '+email+' — check the inbox and Spam folder.','ok');
+    const rs=document.getElementById('rg-resend-status');
+    if(rs){rs.textContent='✓ Sent!';setTimeout(()=>{if(rs)rs.textContent='';},5000);}
   }catch(e){
     showMsg('reg-msg',e.message);
-    btn.disabled=false;btn.textContent='📧 Send Verification Code';
+    _otpLastSend=0;
+  }finally{
+    _otpSendBusy=false;
+    if(btn){btn.disabled=false;btn.textContent='📧 Send Verification Code';}
+    if(rlink){rlink.textContent=rlink.dataset.label||'Resend';rlink.style.pointerEvents='';rlink.style.opacity='';}
   }
 }
 

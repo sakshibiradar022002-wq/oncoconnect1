@@ -43,6 +43,10 @@ const server = spawn('node', ['src/server.js'], {
     VELTRUVIA_DEMO: 'false',
     MLLP_ENABLED: undefined,                 // default off — the point of the test
     BACKUP_INTERVAL_MS: '8000',              // fire within test lifetime
+    // Hermetic mail: tests must never inherit real Gmail/SMTP credentials
+    // (e.g. from resources/app/.env) — recovery flows then try to email.
+    GMAIL_USER: '', GMAIL_APP_PASSWORD: '', RESEND_API_KEY: '',
+    SMTP_HOST: '', SMTP_USER: '', SMTP_PASS: '',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });

@@ -72,7 +72,7 @@
               <input id="rg-otp" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" style="flex:1;text-align:center;letter-spacing:4px;font-size:18px;font-weight:700;font-family:var(--mono);padding:10px;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;color:var(--text);outline:none">
               <button class="btn btn-primary" data-action="verifyRegOtp" style="padding:10px 16px">Verify</button>
             </div>
-            <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">Didn't receive it? <a href="javascript:void(0)" data-action="sendRegOtp" style="color:var(--blue)">Resend</a></div>
+            <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">Didn't receive it? <a href="javascript:void(0)" data-action="sendRegOtp" style="color:var(--blue)">Resend</a> <span id="rg-resend-status" style="color:var(--green);font-weight:700"></span></div>
           </div>
           <div id="rg-verify-done" style="display:none;text-align:center;padding:8px 0">
             <div style="font-size:20px;margin-bottom:4px">✅</div>
