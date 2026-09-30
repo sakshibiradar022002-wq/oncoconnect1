@@ -14,17 +14,27 @@
     const el = document.getElementById('ver-badge');
     if (!el) return;
     let text = '';
+    let serverVer = null;
     try {
       const h = await fetch('/health').then(r => r.json());
-      if (h.version) text = 'This server: v' + h.version;
+      if (h.version) { serverVer = h.version; text = 'This server: v' + h.version; }
     } catch (e) { /* not served by VELTRUVIA Server — skip local line */ }
     // GitHub release check: query THIS project's repo (origin), never a
-    // third-party archive. 404 (no releases yet) is expected and silent.
+    // third-party archive. Show it ONLY if it is NEWER than the running
+    // server — an old release tag (e.g. v1.0.0 left over from launch) must
+    // never overwrite the real current version on the badge.
+    const semver = (v) => String(v || '').replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+    const isNewer = (a, b) => {
+      const [a1, a2, a3] = semver(a), [b1, b2, b3] = semver(b);
+      return a1 > b1 || (a1 === b1 && (a2 > b2 || (a2 === b2 && a3 > b3)));
+    };
     try {
       const r = await fetch('https://api.github.com/repos/sakshibiradar022002-wq/oncoconnect1/releases/latest', { cache: 'no-store' });
       if (r.ok) {
         const j = await r.json();
-        if (j && j.tag_name) text = 'Latest release: ' + j.tag_name;
+        if (j && j.tag_name && (!serverVer || isNewer(j.tag_name, serverVer))) {
+          text = 'Latest release: ' + j.tag_name;
+        }
       }
     } catch (e) { /* offline / no release yet — server version stays */ }
     if (text) { el.textContent = text; el.hidden = false; }
