@@ -56,13 +56,28 @@ export function verifyRegistrationToken(email, token) {
   return true;
 }
 
-// ── Rate limiting: max 5 OTP sends per email per 10 min ────────────
-const otpLimiter = rateLimit({
+// ── Rate limiting ─────────────────────────────────────────────────
+// Per-EMAIL bucket: 5 codes per address per 10 min. Keyed by the submitted
+// email (not the IP!) — behind the clinic's shared IP, one tester resending
+// a few times must never block everyone else for 10 minutes.
+const otpEmailLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many OTP requests. Please wait a few minutes.' },
+  keyGenerator: (req) =>
+    (req.body && req.body.email ? String(req.body.email).toLowerCase().trim() : req.ip),
+  message: { error: 'Too many codes requested for this email. Check your Spam folder for earlier codes, or try again in 10 minutes.' },
+});
+
+// Per-IP safety net: generous (30/10 min) — stops scripted abuse of one
+// network without ever affecting normal clinic use.
+const otpIpLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests from this network. Please try again in a few minutes.' },
 });
 
 // ── Send OTP ───────────────────────────────────────────────────────
@@ -71,7 +86,7 @@ const sendOtpSchema = z.object({
   purpose: z.enum(['register', 'reset']).optional().default('register'),
 });
 
-emailOtpRouter.post('/send', otpLimiter, validate(sendOtpSchema), asyncHandler(async (req, res) => {
+emailOtpRouter.post('/send', otpIpLimiter, otpEmailLimiter, validate(sendOtpSchema), asyncHandler(async (req, res) => {
   const { email, purpose } = req.valid;
 
   // For registration: reject if email already registered
