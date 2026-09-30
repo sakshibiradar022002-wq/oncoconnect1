@@ -122,6 +122,24 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   // Desktop mode: enable Create Account button without OTP verification
   if(window.app?.isElectron){const b=document.getElementById('btn-create-account');if(b){b.disabled=false;b.style.opacity='1';}const h=document.getElementById('rg-create-hint');if(h)h.textContent='';const v=document.getElementById('rg-verify-send');if(v)v.style.display='none';const vi=document.getElementById('rg-verify-input');if(vi)vi.style.display='none';const badge=document.getElementById('rg-verify-badge');if(badge){badge.textContent='Desktop Mode';badge.style.background='rgba(16,185,129,.1)';badge.style.color='var(--green)';}const vd=document.getElementById('rg-verify-done');if(vd)vd.style.display='none';}});
+// ── Connection indicator: show WHICH server this app is talking to ──
+// Desktop apps proxy to either the local clinic Server or the cloud;
+// surfacing it answers "where is my data going?" without dev tools.
+(async()=>{
+  try{
+    const ind=document.getElementById('conn-indicator');
+    if(!ind)return;
+    let url=null;
+    if(window.app?.getServerUrl){url=await window.app.getServerUrl();}
+    else{const r=await fetch('/health',{method:'GET'});const h=await r.json();url='(browser) '+location.origin;}
+    if(!url)return;
+    let label,cls;
+    if(/duckdns\.org/i.test(url)){label='☁️ Connected to VELTRUVIA Cloud ('+url.replace(/^https?:\/\//,'')+')';cls='var(--green)';}
+    else if(/127\.0\.0\.1|localhost/i.test(url)){label='💻 Connected to local clinic Server ('+url.replace(/^https?:\/\//,'')+')';cls='var(--orange)';}
+    else{label='🏥 Connected to: '+url.replace(/^https?:\/\//,'');cls='var(--blue)';}
+    ind.textContent=label;ind.style.color=cls;ind.style.display='block';
+  }catch(e){/* indicator is best-effort */}
+})();
 function v(id){const el=document.getElementById(id);return el?(el.value||'').trim():'';}
 function flash(msg){const d=document.createElement('div');d.style.cssText='position:fixed;top:16px;right:16px;background:var(--green);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:var(--shadow-lg);';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
 
