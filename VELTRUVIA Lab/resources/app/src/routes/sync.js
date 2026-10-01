@@ -18,6 +18,7 @@ import { smsConfigured, sendSms } from '../sms.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { notifySubject } from '../push.js';
 import { validateLabSubmission } from '../validators/labResults.js';
+import { effectiveAvailabilityRows } from '../lib/availability.js';
 
 // Fire-and-forget doctor notifications for incoming alert / lab-result keys.
 function pushDoctorForChanges(ownerId, changes) {
@@ -289,7 +290,10 @@ function patientOwnsKey(k, mrn) {
   // date/suffix-scoped families: log_<mrn>_<date>, medlog_<mrn>_<date>,
   // factbr_<mrn>...
   return k.startsWith('log_' + mrn + '_') || k.startsWith('medlog_' + mrn + '_')
-    || k.startsWith('factbr_' + mrn);
+    || k.startsWith('factbr_' + mrn)
+    // Medicines the patient records themselves ("Add Prescription" tab)
+    // or their refill requests, keyed per patient.
+    || k === 'selfrx_' + mrn || k === 'selfrefill_' + mrn;
 }
 
 // MRN-scoped access control for the shared JSON-store endpoints.
@@ -900,12 +904,17 @@ const updateAppointmentSchema = z.object({
 const saveAvailabilitySchema = z.object({
   docId: z.string().min(1).max(64),
   slots: z.array(z.object({
-    dayOfWeek: z.number().int().min(0).max(6),
+    // Weekly rows carry dayOfWeek; one-off rows carry a specific date.
+    dayOfWeek: z.number().int().min(0).max(6).optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     startTime: z.string().regex(/^\d{2}:\d{2}$/),
     endTime: z.string().regex(/^\d{2}:\d{2}$/),
     slotDuration: z.number().int().min(5).max(120).optional(),
     active: z.boolean().optional(),
-  })).max(50),
+  })).max(50).refine(
+    slots => slots.every(s => s.date || Number.isInteger(s.dayOfWeek)),
+    { message: 'Each slot needs either a dayOfWeek (weekly) or a date (one-off)' }
+  ),
 });
 
 // Doctor: save patient to shared JSON store (doctor/admin only — writes credentials,
@@ -1222,7 +1231,8 @@ syncRouter.post('/save-availability', authenticate, requireRole('doctor', 'admin
   const { docId, slots } = req.valid;
   const store = readAvailStore();
   store[docId] = slots.map(s => ({
-    dayOfWeek: s.dayOfWeek, startTime: s.startTime, endTime: s.endTime,
+    ...(s.date ? { date: s.date } : { dayOfWeek: s.dayOfWeek }),
+    startTime: s.startTime, endTime: s.endTime,
     slotDuration: s.slotDuration || 30, active: s.active !== false,
     savedAt: new Date().toISOString()
   }));
@@ -1239,115 +1249,19 @@ syncRouter.get('/get-availability/:docId', asyncHandler(async (req, res) => {
   res.json({ ok: true, availability: slots });
 }));
 
-// Generate bookable slots for next N days (mirrors scheduling.js logic without auth)
-syncRouter.get('/get-slots/:docId', asyncHandler(async (req, res) => {
-  const { docId } = req.params;
-  const days = parseInt(req.query.days || '30', 10);
-  const store = readAvailStore();
-  let avail = (store[docId] || []).filter(s => s.active !== false);
-  // If no availability for this docId, try all doctors' availability as fallback
-  if (!avail.length) {
-    for (const [key, entries] of Object.entries(store)) {
-      if (key === docId) continue;
-      const active = (entries || []).filter(s => s.active !== false);
-      if (active.length) { avail = active; break; }
-    }
-  }
-  // If still empty, seed default Mon-Fri 9-12, 14-17 availability so the
-  // system works out-of-the-box before the doctor saves a schedule.
-  if (!avail.length) {
-    avail = [
-      { dayOfWeek: 1, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 1, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 2, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 2, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 3, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 4, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 4, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 5, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 5, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-    ];
-  }
-  if (!avail.length) return res.json({ ok: true, slots: {} });
-  // Also check existing appointments from appointment store
-  const apptStore = readApptStore();
-  const existingAppts = [];
-  Object.values(apptStore).forEach(appts => {
-    if (!Array.isArray(appts)) return;
-    appts.forEach(a => {
-      if (a.date && a.status !== 'Declined') existingAppts.push(a);
-    });
-  });
-  // Also exclude slots already booked through /api/schedule/book (the doctor
-  // calendar DB) — otherwise the picker offers times that can't be booked.
-  const dbTaken = new Set(
-    (await db.prepare("SELECT date, start_time FROM appointments WHERE status NOT IN ('cancelled')").all())
-      .map(r => r.date + '|' + r.start_time)
-  );
-  const today = new Date();
-  const slotsByDate = {};
-  for (let i = 0; i < days; i++) {
-    const d = new Date(today); d.setDate(today.getDate() + i);
-    const dateStr = d.toISOString().slice(0, 10);
-    const dayOfWeek = d.getDay();
-    const daySlots = [];
-    avail.filter(r => r.dayOfWeek === dayOfWeek).forEach(r => {
-      const [sh, sm] = (r.startTime || '09:00').split(':').map(Number);
-      const [eh, em] = (r.endTime || '17:00').split(':').map(Number);
-      const dur = r.slotDuration || 30;
-      let mins = sh * 60 + sm;
-      const endMins = eh * 60 + em;
-      while (mins + dur <= endMins) {
-        const h = String(Math.floor(mins / 60)).padStart(2, '0');
-        const m = String(mins % 60).padStart(2, '0');
-        const timeStr = h + ':' + m;
-        const endMins2 = mins + dur;
-        const eh2 = String(Math.floor(endMins2 / 60)).padStart(2, '0');
-        const em2 = String(endMins2 % 60).padStart(2, '0');
-        const endTimeStr = eh2 + ':' + em2;
-        // Check conflict
-        const taken = existingAppts.some(e => e.date === dateStr && e.time === timeStr) || dbTaken.has(dateStr + '|' + timeStr);
-        if (!taken) daySlots.push({ time: timeStr, endTime: endTimeStr });
-        mins += dur;
-      }
-    });
-    if (daySlots.length) slotsByDate[dateStr] = daySlots;
-  }
-  res.json({ ok: true, slots: slotsByDate });
-}));
-
-// Generate bookable slots from ANY doctor (used when patient _docId is null)
-syncRouter.get('/get-slots-all', asyncHandler(async (req, res) => {
-  const days = parseInt(req.query.days || '30', 10);
-  const store = readAvailStore();
-  // Collect all active availability entries from all doctors
-  let avail = [];
-  for (const entries of Object.values(store)) {
-    const active = (entries || []).filter(s => s.active !== false);
-    if (active.length) { avail = active; break; }
-  }
-  // Seed defaults if nothing configured at all
-  if (!avail.length) {
-    avail = [
-      { dayOfWeek: 1, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 1, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 2, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 2, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 3, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 4, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 4, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 5, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 5, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-    ];
-  }
+// Expand availability into concrete bookable slots for the next N days —
+// shared by /get-slots/:docId and /get-slots-all. Availability resolves per
+// DATE through lib/availability.js (DB → store → defaults; weekly + one-off
+// date rows). Already-booked times are excluded from BOTH the shared
+// appointment store and the doctor-calendar DB so the picker never offers a
+// slot the booker will refuse.
+async function buildSlotCalendar(ownerId, days) {
   const apptStore = readApptStore();
   const existingAppts = [];
   Object.values(apptStore).forEach(appts => {
     if (!Array.isArray(appts)) return;
     appts.forEach(a => { if (a.date && a.status !== 'Declined') existingAppts.push(a); });
   });
-  // Also exclude slots already booked through /api/schedule/book (the doctor
-  // calendar DB) — otherwise the picker offers times that can't be booked.
   const dbTaken = new Set(
     (await db.prepare("SELECT date, start_time FROM appointments WHERE status NOT IN ('cancelled')").all())
       .map(r => r.date + '|' + r.start_time)
@@ -1357,30 +1271,44 @@ syncRouter.get('/get-slots-all', asyncHandler(async (req, res) => {
   for (let i = 0; i < days; i++) {
     const d = new Date(today); d.setDate(today.getDate() + i);
     const dateStr = d.toISOString().slice(0, 10);
-    const dayOfWeek = d.getDay();
+    const avail = await effectiveAvailabilityRows(ownerId || 'any', dateStr);
     const daySlots = [];
-    avail.filter(r => r.dayOfWeek === dayOfWeek).forEach(r => {
-      const [sh, sm] = (r.startTime || '09:00').split(':').map(Number);
-      const [eh, em] = (r.endTime || '17:00').split(':').map(Number);
-      const dur = r.slotDuration || 30;
+    for (const r of avail) {
+      const [sh, sm] = (r.start_time || '09:00').split(':').map(Number);
+      const [eh, em] = (r.end_time || '17:00').split(':').map(Number);
+      const dur = r.slot_duration || 30;
       let mins = sh * 60 + sm;
       const endMins = eh * 60 + em;
       while (mins + dur <= endMins) {
-        const h = String(Math.floor(mins / 60)).padStart(2, '0');
-        const m = String(mins % 60).padStart(2, '0');
-        const timeStr = h + ':' + m;
+        const timeStr = String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
         const endMins2 = mins + dur;
-        const eh2 = String(Math.floor(endMins2 / 60)).padStart(2, '0');
-        const em2 = String(endMins2 % 60).padStart(2, '0');
-        const endTimeStr = eh2 + ':' + em2;
+        const endTimeStr = String(Math.floor(endMins2 / 60)).padStart(2, '0') + ':' + String(endMins2 % 60).padStart(2, '0');
         const taken = existingAppts.some(e => e.date === dateStr && e.time === timeStr) || dbTaken.has(dateStr + '|' + timeStr);
         if (!taken) daySlots.push({ time: timeStr, endTime: endTimeStr });
         mins += dur;
       }
-    });
-    if (daySlots.length) slotsByDate[dateStr] = daySlots;
+    }
+    if (daySlots.length) {
+      daySlots.sort((a, b) => a.time.localeCompare(b.time));
+      slotsByDate[dateStr] = daySlots;
+    }
   }
-  res.json({ ok: true, slots: slotsByDate });
+  return slotsByDate;
+}
+
+// Generate bookable slots for next N days (no auth — the picker is public)
+// Availability resolution + slot expansion live in src/lib/availability.js so
+// /schedule/book validates against EXACTLY what this endpoint offers.
+syncRouter.get('/get-slots/:docId', asyncHandler(async (req, res) => {
+  const { docId } = req.params;
+  const days = parseInt(req.query.days || '30', 10);
+  res.json({ ok: true, slots: await buildSlotCalendar(docId, days) });
+}));
+
+// Generate bookable slots from ANY doctor (used when patient _docId is null)
+syncRouter.get('/get-slots-all', asyncHandler(async (req, res) => {
+  const days = parseInt(req.query.days || '30', 10);
+  res.json({ ok: true, slots: await buildSlotCalendar(null, days) });
 }));
 
 // ═══ Shared Telehealth (Video Calls) ════════════════════════════════

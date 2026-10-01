@@ -29,6 +29,10 @@ window.addEventListener('DOMContentLoaded',async()=>{
   // Hide splash screen
   setTimeout(()=>{const sp=document.getElementById('splash');if(sp){sp.style.opacity='0';sp.style.visibility='hidden';setTimeout(()=>sp.remove(),500)}},1600);
   const b=document.getElementById('conn-banner');
+  // Stay-logged-in: try to reopen straight into the account BEFORE any
+  // early-return below — previously the local-data banner check returned
+  // first and the restore never ran in the native app.
+  tryRestoreSession();
   // First check local data
   const hasLocal=LS.keys('pat_').length>0||LS.keys('doc_').filter(k=>!k.startsWith('doc_email')).length>0;
   if(hasLocal){b.textContent='🔗 Connected to Doctor Software';b.className='conn-banner';return}
@@ -40,8 +44,6 @@ window.addEventListener('DOMContentLoaded',async()=>{
     const d=document.getElementById('appt-req-date');
     if(d){const today=new Date().toISOString().slice(0,10);d.min=today;d.max=new Date(Date.now()+365*86400000).toISOString().slice(0,10);}
   }catch(e){}
-  // Stay-logged-in: reopen → skip the login screen when previously chosen.
-  tryRestoreSession();
 });
 
 // Find which doctor owns a patient
@@ -120,8 +122,17 @@ function finishPatientLogin(pat, viaServer){
   if(b){b.textContent=viaServer?'🔗 Connected to Doctor Software':'🔗 Offline mode — data will sync when the server is reachable';b.className='conn-banner';}
   try{
     const cb=document.getElementById('stay-signed-in');
-    if(cb&&cb.checked&&window.VxSession){VxSession.remember({kind:'patient',mrn:pat.mrn,name:pat.name||''});}
-    else if(window.VxSession){VxSession.forget();}
+    if(cb&&cb.checked&&window.VxSession){
+      VxSession.remember({kind:'patient',mrn:pat.mrn,name:pat.name||''});
+      // Native WebView storage is sometimes cleared between visits — keep a
+      // plain (non-PHI) pointer in unencrypted localStorage as a fallback so
+      // the app can still reopen straight into the account.
+      try{localStorage.setItem('current_patient',JSON.stringify({mrn:pat.mrn,docId:pat.docId||_docId||'',at:Date.now()}));}catch(e){}
+    }
+    else if(window.VxSession){
+      VxSession.forget();
+      try{localStorage.removeItem('current_patient');}catch(e){}
+    }
   }catch(e){}
 }
 
@@ -131,9 +142,15 @@ function finishPatientLogin(pat, viaServer){
 async function tryRestoreSession(){
   try{
     if(!window.VxSession)return;
+    let mrn=null;
     const who=VxSession.restore();
-    if(!who||who.kind!=='patient'||!who.mrn)return;
-    const mrn=who.mrn;
+    if(who&&who.kind==='patient'&&who.mrn)mrn=who.mrn;
+    if(!mrn){
+      // Fallback pointer written at login (survives SecureStore hiccups in
+      // the native WebView). Contains only MRN/docId — no PHI, no password.
+      try{const cp=JSON.parse(localStorage.getItem('current_patient')||'null');if(cp&&cp.mrn)mrn=cp.mrn;}catch(e){}
+    }
+    if(!mrn)return;
     let pat=LS.get('pat_'+mrn);
     let viaServer=false;
     if(pat){
@@ -150,6 +167,8 @@ async function tryRestoreSession(){
     }
     if(!pat)return;
     currentPat=pat;_docId=findDoctorForPatient(pat);
+    // We already know who this is — skip the rest of the splash delay.
+    try{const sp=document.getElementById('splash');if(sp){sp.style.opacity='0';sp.style.visibility='hidden';setTimeout(()=>sp.remove(),400);}}catch(e){}
     finishPatientLogin(pat,viaServer);
   }catch(e){/* never block manual login over restore */}
 }
@@ -265,12 +284,12 @@ function doLogout(){
   document.getElementById('app-shell').style.display='none';
   document.getElementById('screen-lab').style.display='none';
 }
-// ── Session timeout: auto-logout after 30 minutes of inactivity ──
-let _idleTimer=null;
-function resetIdleTimer(){clearTimeout(_idleTimer);_idleTimer=setTimeout(()=>{AppDialog.alert('Session expired due to inactivity.');doLogout();},30*60*1000);}
-['mousemove','mousedown','keydown','scroll','touchstart'].forEach(evt=>document.addEventListener(evt,resetIdleTimer,{passive:true}));
-resetIdleTimer();
-// ── Session security: validate session on tab visibility change ──
+// ── Stay signed in ────────────────────────────────────────────────
+// No client-side idle logout: the “stay signed in on this device” promise
+// means the app reopens straight into the account. The server session is
+// long-lived (30 days, sliding) and the UI restores it below on boot.
+// Session security: revalidate on tab visibility change — this also lets the
+// server slide the session expiry forward for active users.
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&(currentPat||currentLab)){
     const endpoint=currentPat?'/api/sync/patient':'/api/sync/lab';
@@ -514,28 +533,170 @@ async function cancelPatAppt(id){
 // ═══════════════════════════════════════════════════════════════
 // PATIENT PRESCRIPTIONS
 // ═══════════════════════════════════════════════════════════════
+// ═══ PATIENT PRESCRIPTIONS (v2.4 — paper-Rx layout + Add Prescription tab) ═══
+let _rxTab='list';
+function rRxPatientTab(tab){_rxTab=tab;renderPatientRx();}
+// "0-0-1" (morning-afternoon-night) pattern → plain English
+function _rxPattern(rx){
+  const t=String(rx.timing||'').match(/^(\d)-(\d)-(\d)$/);
+  if(!t)return null;
+  const words=[];
+  if(+t[1])words.push(t[1]+' in the morning');
+  if(+t[2])words.push(t[2]+' in the afternoon');
+  if(+t[3])words.push(t[3]+' at night');
+  return words.length?words.join(' · '):null;
+}
+function _rxWhenText(rx){const parts=[];const p=_rxPattern(rx);if(rx.whenToTake)parts.push(rx.whenToTake);if(p)parts.push(p);return parts.join(' · ');}
+function rxAddFormHtml(){
+  return `
+  <div class="info-card">
+    <div class="info-card-title">➕ Add a medicine you take</div>
+    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;">Record a prescription from any doctor (paper slips count) or a supplement you take. Your doctor can see it too.</div>
+    <div class="fg"><label>Medicine name *</label><input id="sx-name" placeholder="e.g. DUVANTA 20" style="text-transform:uppercase"></div>
+    <div class="fg"><label>Composition (optional)</label><input id="sx-comp" placeholder="e.g. Duloxetine 20 mg"></div>
+    <div class="fg"><label>When to take — Morning - Afternoon - Night</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="sx-m" type="number" min="0" max="4" placeholder="0" style="width:54px;text-align:center">
+        <span style="color:var(--text-dim)">-</span>
+        <input id="sx-a" type="number" min="0" max="4" placeholder="0" style="width:54px;text-align:center">
+        <span style="color:var(--text-dim)">-</span>
+        <input id="sx-n" type="number" min="0" max="4" placeholder="0" style="width:54px;text-align:center">
+        <span style="font-size:10px;color:var(--text-muted)">M - A - N</span>
+      </div>
+    </div>
+    <div class="fg"><label>Take it</label><select id="sx-when"><option value="">—</option><option>Before food</option><option>After food</option><option>Empty stomach</option><option>With milk</option><option>At bedtime</option></select></div>
+    <div class="fg"><label>How long</label><input id="sx-dur" placeholder="e.g. 10 days"></div>
+    <div class="fg"><label>Notes (optional)</label><textarea id="sx-notes" rows="2" placeholder="Anything else about this medicine..."></textarea></div>
+    <button class="big-btn log-btn" data-action="saveSelfRx">💾 Save Medicine</button>
+  </div>`;
+}
+async function saveSelfRx(){
+  if(!currentPat)return;
+  const name=v('sx-name');
+  if(!name){AppDialog.alert('Enter the medicine name.');return}
+  const mRaw=v('sx-m'),aRaw=v('sx-a'),nRaw=v('sx-n');
+  const timing=(mRaw||aRaw||nRaw)?`${parseInt(mRaw||'0',10)}-${parseInt(aRaw||'0',10)}-${parseInt(nRaw||'0',10)}`:'';
+  const rx={id:'self-'+Date.now().toString(36),medication:name.toUpperCase(),composition:v('sx-comp'),timing,whenToTake:v('sx-when'),duration:v('sx-dur'),instructions:v('sx-notes'),dosage:timing||'—',frequency:v('sx-when')||'',status:'active',selfAdded:true,prescribedDate:new Date().toISOString().slice(0,10)};
+  const arr=LS.get('selfrx_'+currentPat.mrn)||[];arr.unshift(rx);LS.set('selfrx_'+currentPat.mrn,arr);
+  // Best-effort server sync so the doctor's software can see it too.
+  try{await api('/sync/patient',{method:'PUT',body:JSON.stringify({changes:{['selfrx_'+currentPat.mrn]:arr}})})}catch(e){console.warn('[selfrx] push failed:',e.message)}
+  _rxTab='list';renderPatientRx();
+  showToast('✅ '+rx.medication+' saved');
+}
+function selfRxDelete(id){
+  const arr=(LS.get('selfrx_'+currentPat.mrn)||[]).filter(x=>x.id!==id);
+  LS.set('selfrx_'+currentPat.mrn,arr);
+  api('/sync/patient',{method:'PUT',body:JSON.stringify({changes:{['selfrx_'+currentPat.mrn]:arr}})}).catch(()=>{});
+  renderPatientRx();
+}
+// Compact report stylesheet for the patient app's paper-Rx print (the full
+// _REPORT_CSS lives in the doctor app's index-3-reports.js, which the patient
+// app does not load).
+const _RX_PRINT_CSS=`
+@page{size:A4;margin:0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:11px;color:#111827;line-height:1.55;background:#dfe4ec;padding:18px 8px}
+.page{width:210mm;min-height:297mm;margin:0 auto 20px;padding:15mm 14mm 18mm;background:#fff;box-shadow:0 3px 24px rgba(15,30,60,.3);border-radius:3px;position:relative}
+@media screen and (max-width:860px){body{background:#fff;padding:0}.page{width:auto;min-height:auto;margin:0;padding:10mm 4mm;box-shadow:none}}
+@media print{body{background:#fff;padding:0}.page{width:210mm;min-height:296mm;margin:0;box-shadow:none;border-radius:0;page-break-after:always}}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2.5px solid #16345c;padding-bottom:9px;margin-bottom:12px}
+.hdr-left h1{font-size:18px;color:#16345c}
+.hdr-left .inst-name{font-size:11.5px;color:#1f2937;margin-top:2px}
+.hdr-left .sub{font-size:9px;color:#6b7280;letter-spacing:.3px;margin-top:1px}
+.hdr-right .report-id{font-size:9px;color:#5b6b82}
+.pat-banner{background:#eef3fb;border:1px solid #c9d6ea;border-radius:6px;padding:10px 14px;margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap}
+.pat-banner .field{display:flex;flex-direction:column}
+.pat-banner .lbl{font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5b6b82}
+.pat-banner .val{font-size:12.5px;font-weight:700}
+.pat-banner .val.big{font-size:14px}
+.rx-table{width:100%;border-collapse:collapse;margin:8px 0 10px;border:1.5px solid #16345c}
+.rx-table th{background:#16345c;color:#fff;font-size:9px;text-transform:uppercase;letter-spacing:.8px;padding:7px 9px;text-align:left;border:1px solid #10263f}
+.rx-table td{border:1px solid #d8e0ec;padding:8px 9px;font-size:10.5px;vertical-align:top;background:#fff}
+.rx-table tr:nth-child(even) td{background:#f6f9fd}
+.rx-name{font-size:12.5px;font-weight:800;color:#111827}
+.rx-comp{display:block;font-size:9px;color:#5b6b82;margin-top:2px}
+.rx-dose{font-size:12px;font-weight:700;color:#16345c;font-family:Consolas,monospace;letter-spacing:2px}
+.rx-when{font-size:9.5px;color:#334155}
+.rx-line{display:block;font-size:9px;color:#6b7280;margin-top:2px}
+`;
+function rxPrintPaper(){
+  // Print the whole prescription list as a paper-style Rx sheet (A4)
+  if(!currentPat)return;
+  const pat=currentPat;
+  LS.get('selfrx_'+pat.mrn);// warm SecureStore
+  (async()=>{
+    let serverRx=[];
+    try{const r=await api('/rx/my');if(r&&r.ok&&r.prescriptions)serverRx=r.prescriptions;}catch(e){}
+    const selfRx=LS.get('selfrx_'+pat.mrn)||[];
+    const all=[...serverRx,...selfRx].filter(x=>x.status!=='cancelled');
+    if(!all.length){AppDialog.alert('No prescriptions to print yet.');return}
+    const rows=all.map(rx=>{
+      const p=_rxPattern(rx);
+      const dose=p?`<span class="rx-dose">${esc(rx.timing)}</span><span class="rx-line">${esc(p)}</span>`:esc(rx.dosage||'—');
+      return `<tr><td><span class="rx-name">${esc(rx.medication)}</span>${(rx.composition||rx.genericName)?`<span class="rx-comp">${esc(rx.composition||rx.genericName)}</span>`:''}</td><td style="white-space:nowrap">${dose}</td><td><span class="rx-when">${esc(rx.whenToTake||'—')}</span><span class="rx-line">${esc([rx.frequency,rx.duration].filter(Boolean).join(' · '))}</span></td></tr>`;
+    }).join('');
+    const html=`
+    <div class="page">
+      <div class="hdr">
+        <div class="hdr-left"><h1>℞ Prescription</h1><div class="inst-name">VELTRUVIA Neuro-Oncology</div><div class="sub">Patient medication record</div></div>
+        <div class="hdr-right"><div class="report-id">${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div></div>
+      </div>
+      <div class="pat-banner">
+        <div class="field"><span class="lbl">Patient</span><span class="val big">${esc(pat.name||'')}</span></div>
+        <div class="field"><span class="lbl">MRN</span><span class="val" style="font-family:monospace">${esc(pat.mrn)}</span></div>
+        ${pat.diag?`<div class="field"><span class="lbl">Diagnosis</span><span class="val">${esc(pat.diag)}</span></div>`:''}
+      </div>
+      <table class="rx-table">
+        <thead><tr><th style="width:45%">Medicine</th><th style="width:20%">Dosage</th><th>When to take · How often · How long</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="font-size:9.5px;color:#5b6b82;line-height:1.6;border-top:1px solid #d8e0ec;padding-top:8px;">
+        <b>Dosage key:</b> numbers are doses in the Morning - Afternoon - Night pattern. Example: 0-0-1 = one dose at night.<br>
+        Generated from the VELTRUVIA record on ${new Date().toLocaleString()}. Please confirm with your doctor before changing any medicine.
+      </div>
+    </div>`;
+    if(window._vxReportOverlay){_vxReportOverlay('Prescription — '+(pat.name||pat.mrn),`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Prescription</title><style>${_RX_PRINT_CSS}</style></head><body>${html}</body></html>`,{});}
+  })();
+}
 async function renderPatientRx(){
   const el=document.getElementById('rx-list');
+  const tabs=`<div class="rx-tabs">
+    <button class="rx-tab ${_rxTab==='list'?'active':''}" data-action="rRxPatientTab:list">💊 My Prescriptions</button>
+    <button class="rx-tab ${_rxTab==='add'?'active':''}" data-action="rRxPatientTab:add">➕ Add Prescription</button>
+  </div>`;
+  if(_rxTab==='add'){el.innerHTML=tabs+rxAddFormHtml();return}
   try{
     const r=await api('/rx/my');
-    if(!r.ok||!r.prescriptions||!r.prescriptions.length){el.innerHTML='<div class="empty-card">No prescriptions on file.</div>';return}
-    const statusIcon={active:'✅',completed:'✔️',cancelled:'❌',expired:'⏰','pending-refill':'🔄'};
-    const statusColor={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--blue)'};
-    el.innerHTML=r.prescriptions.map(rx=>`
+    const serverRx=(r&&r.ok&&r.prescriptions)?r.prescriptions:[];
+    let selfRx=[];try{selfRx=LS.get('selfrx_'+currentPat.mrn)||[];}catch(e){}
+    const all=[...serverRx,...selfRx];
+    if(!all.length){el.innerHTML=tabs+'<div class="empty-card">No prescriptions on file.<br><span style="font-size:11px;color:var(--text-dim)">Tap “➕ Add Prescription” to record a medicine you take.</span></div>';return}
+    const statusIcon={active:'✅',completed:'✔️',cancelled:'❌',expired:'⏰','pending-refill':'🔄','self':'📝'};
+    const statusColor={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--blue)',self:'var(--blue)'};
+    const timingChips=(t)=>{const m=String(t||'').match(/^(\d)-(\d)-(\d)$/);if(!m)return '';const mk=(v,l)=>`<span class="rx-chip" style="background:${+v?'rgba(5,150,105,.12)':'rgba(100,116,139,.08)'};color:${+v?'var(--green)':'var(--text-dim)'}">${l} ${esc(v)}</span>`;return `<div style="display:flex;gap:4px;margin-top:6px">${mk(m[1],'M')}${mk(m[2],'A')}${mk(m[3],'N')}</div>`;};
+    el.innerHTML=tabs+`<button class="big-btn" data-action="rxPrintPaper" style="margin-bottom:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12.5px">🖨 Print as Paper Rx (A4)</button>`+all.map(rx=>`
       <div class="info-card" style="margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-          <div><div style="font-weight:700;font-size:15px">${esc(rx.medication)}${rx.genericName?' <span style="font-size:12px;color:var(--text-muted);font-weight:400">('+esc(rx.genericName)+')</span>':''}</div></div>
-          <span style="font-size:11px;color:${statusColor[rx.status]};font-weight:700">${statusIcon[rx.status]||''} ${rx.status}</span>
+          <div><div style="font-weight:700;font-size:15px">${esc(rx.medication)}</div>
+          ${(rx.composition||rx.genericName)?`<div style="font-size:11px;color:var(--text-muted)">${esc(rx.composition||rx.genericName)}</div>`:''}
+          ${rx.selfAdded?'<span class="badge" style="background:rgba(37,99,235,.12);color:var(--blue);font-size:9.5px;padding:2px 8px;border-radius:8px;margin-top:4px;display:inline-block">Added by you</span>':''}
+          </div>
+          <span style="font-size:11px;color:${statusColor[rx.status]||'var(--text-muted)'};font-weight:700">${statusIcon[rx.status]||''} ${rx.selfAdded?'active':esc(rx.status||'')}</span>
         </div>
-        <div class="irow"><div class="ikey">Dosage</div><div class="ival">${esc(rx.dosage)}</div></div>
-        <div class="irow"><div class="ikey">Frequency</div><div class="ival">${esc(rx.frequency)}</div></div>
-        ${rx.route?`<div class="irow"><div class="ikey">Route</div><div class="ival">${esc(rx.route)}</div></div>`:''}
-        ${rx.duration?`<div class="irow"><div class="ikey">Duration</div><div class="ival">${esc(rx.duration)}</div></div>`:''}
-        ${rx.refills?`<div class="irow"><div class="ikey">Refills</div><div class="ival">${rx.refills} remaining</div></div>`:''}
-        ${rx.pharmacy?`<div class="irow"><div class="ikey">Pharmacy</div><div class="ival">${esc(rx.pharmacy)}</div></div>`:''}
+        ${timingChips(rx.timing)}
+        ${_rxWhenText(rx)?`<div style="margin-top:6px;font-size:12px;color:var(--text)"><b>When to take:</b> ${esc(_rxWhenText(rx))}</div>`:''}
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:11.5px;color:var(--text-muted)">
+          ${rx.dosage&&!rx.timing?`<span><b>Dose:</b> ${esc(rx.dosage)}</span>`:''}
+          ${rx.duration?`<span><b>Duration:</b> ${esc(rx.duration)}</span>`:''}
+          ${rx.route?`<span><b>Route:</b> ${esc(rx.route)}</span>`:''}
+          ${rx.refills?`<span><b>Refills:</b> ${rx.refills} left</span>`:''}
+        </div>
         ${rx.instructions?`<div style="margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-muted)">📋 ${esc(rx.instructions)}</div>`:''}
-        ${rx.status==='active'?`<button data-action="requestRefill:${rx.id}" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px solid var(--green);background:rgba(5,150,105,.06);color:var(--green);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">🔄 Request Refill</button>`:''}
-        <div style="font-size:10px;color:var(--text-dim);margin-top:6px">Prescribed: ${rx.prescribedDate||'N/A'}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+          ${(!rx.selfAdded&&rx.status==='active')?`<button data-action="requestRefill:${rx.id}" style="padding:8px 14px;border-radius:8px;border:1px solid var(--green);background:rgba(5,150,105,.06);color:var(--green);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">🔄 Request Refill</button>`:''}
+          ${rx.selfAdded?`<button data-action="selfRxDelete:${rx.id}" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Remove</button>`:''}
+          <span style="font-size:10px;color:var(--text-dim);margin-left:auto">Prescribed: ${rx.prescribedDate||'—'}</span>
+        </div>
       </div>
     `).join('');
   }catch(e){el.innerHTML='<div class="empty-card">Error loading prescriptions.</div>'}

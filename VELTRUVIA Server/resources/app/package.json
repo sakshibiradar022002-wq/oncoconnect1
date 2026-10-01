@@ -1,6 +1,6 @@
 {
   "name": "veltruvia-server",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "VELTRUVIA neuro-oncology EMR — secure backend (Node + Express + SQLite)",
   "author": "VELTRUVIA <support@veltruvia.example>",
   "type": "module",

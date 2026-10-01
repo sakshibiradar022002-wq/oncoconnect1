@@ -181,7 +181,11 @@
       btn.id = 'veltruvia-mobile-settings';
       btn.setAttribute('aria-label', 'Server settings');
       btn.textContent = '⚙';
-      btn.style.cssText = 'position:fixed;bottom:14px;right:14px;z-index:99999;width:40px;height:40px;'
+      // Lifted above the bottom navigation bar (bottom nav is ~64px tall):
+      // at bottom:14px the gear landed squarely on top of the Profile
+      // nav button — the reported "profile and settings on one on each
+      // other" overlap in the patient app.
+      btn.style.cssText = 'position:fixed;bottom:86px;right:14px;z-index:99999;width:40px;height:40px;'
         + 'border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(15,23,41,.85);'
         + 'color:#e2e8f0;font-size:19px;line-height:1;opacity:.55;backdrop-filter:blur(4px);';
       btn.addEventListener('click', function () { Promise.resolve(showSettings()).catch(function () {}); });

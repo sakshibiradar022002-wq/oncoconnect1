@@ -23,8 +23,11 @@ const createRxSchema = z.object({
   patientMrn: z.string().min(1).max(40).transform(s => s.trim().toUpperCase()),
   medication: z.string().min(1).max(200),
   genericName: z.string().max(200).optional(),
+  composition: z.string().max(300).optional(),   // e.g. "Etoricoxib 60 mg + Thiocolchicoside 4 mg"
   dosage: z.string().min(1).max(100),
   frequency: z.string().min(1).max(100),
+  timing: z.string().max(20).optional(),          // morning-afternoon-night pattern, e.g. "0-0-1"
+  whenToTake: z.string().max(60).optional(),      // e.g. "After food"
   route: z.enum(['oral', 'iv', 'im', 'subcutaneous', 'topical', 'intrathecal', 'rectal', 'other']).optional().default('oral'),
   duration: z.string().max(100).optional(),
   quantity: z.number().positive().optional(),
@@ -101,14 +104,15 @@ prescriptionRouter.post('/', authenticate, requireRole('doctor', 'admin'),
     await db.prepare(`
       INSERT INTO prescriptions (id, doctor_id, patient_mrn, medication, generic_name,
         dosage, frequency, route, duration, quantity, refills, pharmacy,
-        status, instructions, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
+        status, instructions, composition, timing, when_to_take, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)
     `).run(
       id, req.auth.subjectId, rx.patientMrn,
       rx.medication, rx.genericName || null,
       rx.dosage, rx.frequency, rx.route,
       rx.duration || null, rx.quantity || null, rx.refills || 0,
       rx.pharmacy || null, rx.instructions || null,
+      rx.composition || null, rx.timing || null, rx.whenToTake || null,
       now, now
     );
 
@@ -119,6 +123,7 @@ prescriptionRouter.post('/', authenticate, requireRole('doctor', 'admin'),
     const rxs = existing ? (decryptPHI(existing.v_enc) || []) : [];
     rxs.push({
       id, medication: rx.medication, genericName: rx.genericName,
+      composition: rx.composition, timing: rx.timing, whenToTake: rx.whenToTake,
       dosage: rx.dosage, frequency: rx.frequency, route: rx.route,
       duration: rx.duration, refills: rx.refills, pharmacy: rx.pharmacy,
       instructions: rx.instructions, status: 'active',
@@ -299,6 +304,9 @@ prescriptionRouter.get('/my', authenticate, requireRole('kv-patient'), patientSc
         id: r.id,
         medication: r.medication,
         genericName: r.generic_name,
+        composition: r.composition,
+        timing: r.timing,
+        whenToTake: r.when_to_take,
         dosage: r.dosage,
         frequency: r.frequency,
         route: r.route,

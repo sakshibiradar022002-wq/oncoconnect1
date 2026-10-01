@@ -197,7 +197,7 @@ function _vxReportOverlay(title, docHtml, opts){
       '<button data-r="close" style="padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#cdd7ea;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;">✕ Close</button>' +
     '</div>' +
     '<div style="flex:1;overflow:hidden;display:flex;">' +
-      '<iframe class="vx-rpt-frame" style="flex:1;border:0;background:#fff;" title="' + _e(title) + '"></iframe>' +
+      '<iframe class="vx-rpt-frame" style="flex:1;border:0;background:#dfe4ec;" title="' + _e(title) + '"></iframe>' +
     '</div>';
   document.body.appendChild(ov);
   const frame = ov.querySelector('iframe');

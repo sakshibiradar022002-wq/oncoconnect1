@@ -308,8 +308,13 @@ function buildRecordTabs(p){
       </div>
       <div style="display:flex;gap:6px;">
         <button class="btn btn-ghost btn-sm" data-action="rRxLoadServerPrescriptions;;rRxLoadAllergySummary">🔄 Refresh</button>
-        <button class="btn btn-primary btn-sm" data-action="toggleDisplay:r-rx-create-form">+ New Prescription</button>
       </div>
+    </div>
+
+    <!-- Prescription tabs: list ⇄ add -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button class="btn btn-sm" id="r-rx-tab-list" data-action="rRxTab:list" style="background:var(--blue);color:#fff;">📋 Prescriptions</button>
+      <button class="btn btn-ghost btn-sm" id="r-rx-tab-add" data-action="rRxTab:add">➕ Add Prescription</button>
     </div>
 
     <!-- Drug Interaction Banner -->
@@ -329,10 +334,22 @@ function buildRecordTabs(p){
     <div id="r-rx-create-form" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px;">
       <div style="font-weight:700;font-size:13px;margin-bottom:12px;">✍️ New Prescription</div>
       <div class="g2">
-        <div class="fg" style="margin:0 0 10px;"><label>Medication *</label><input id="r-med-name" placeholder="e.g. Temozolomide" data-action-input="rRxLiveAllergyCheck:@value"></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Medicine (brand) *</label><input id="r-med-name" placeholder="e.g. DUVANTA 20" data-action-input="rRxLiveAllergyCheck:@value"></div>
         <div class="fg" style="margin:0 0 10px;"><label>Generic Name</label><input id="r-rx-generic" placeholder="Optional generic name"></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Composition</label><input id="r-med-comp" placeholder="e.g. Duloxetine 20 mg"></div>
         <div class="fg" style="margin:0 0 10px;"><label>Dosage *</label><input id="r-med-dose" placeholder="e.g. 150 mg/m²"></div>
         <div class="fg" style="margin:0 0 10px;"><label>Frequency *</label><select id="r-med-freq"><option>QD</option><option>BID</option><option>TID</option><option>QID</option><option>PRN</option><option>Monthly</option><option>Cycle Day 1-5</option></select></div>
+        <div class="fg" style="margin:0 0 10px;"><label>When to take (0-0-1 = morning-afternoon-night)</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input id="r-med-m" type="number" min="0" max="4" placeholder="0" style="width:52px;text-align:center" title="Morning">
+            <span style="color:var(--text-dim);">-</span>
+            <input id="r-med-a" type="number" min="0" max="4" placeholder="0" style="width:52px;text-align:center" title="Afternoon">
+            <span style="color:var(--text-dim);">-</span>
+            <input id="r-med-n" type="number" min="0" max="4" placeholder="0" style="width:52px;text-align:center" title="Night">
+            <span style="font-size:10px;color:var(--text-muted);">M - A - N</span>
+          </div>
+        </div>
+        <div class="fg" style="margin:0 0 10px;"><label>Take it</label><select id="r-med-when"><option value="">—</option><option>Before food</option><option>After food</option><option>Empty stomach</option><option>With milk</option><option>At bedtime</option></select></div>
         <div class="fg" style="margin:0 0 10px;"><label>Route</label><select id="r-med-route"><option value="oral">Oral</option><option value="iv">IV</option><option value="im">IM</option><option value="subcutaneous">Subcutaneous</option><option value="intrathecal">Intrathecal</option><option value="topical">Topical</option></select></div>
         <div class="fg" style="margin:0 0 10px;"><label>Duration</label><input id="r-med-dur" placeholder="e.g. 30 days"></div>
         <div class="fg" style="margin:0 0 10px;"><label>Indication</label><input id="r-med-indication" placeholder="e.g. Anti-epileptic"></div>
@@ -356,6 +373,8 @@ function buildRecordTabs(p){
       </div>
     </div>
 
+    <!-- Lists (shown on the Prescriptions tab) -->
+    <div id="r-rx-lists">
     <!-- Active E-Prescriptions (Server) -->
     <div class="g2" style="margin-bottom:18px;">
       <div class="info-card">
@@ -383,6 +402,7 @@ function buildRecordTabs(p){
       </div>
       <div id="r-cds-drug-info" style="margin-top:12px;"></div>
     </div>
+    </div><!-- /r-rx-lists -->
   </div>
 
   <!-- ══ TAB 6B: CLINICAL SUPPORT (per-patient) ══ -->
@@ -910,8 +930,21 @@ const LAB_TESTS=[
 
 // ── Prescriptions (merged E-Prescribing & Medication Management) ──
 
+// ── Prescription tabs: list ⇄ add ──
+function rRxTab(tab){
+  const list=document.getElementById('r-rx-lists'),form=document.getElementById('r-rx-create-form');
+  const tabList=document.getElementById('r-rx-tab-list'),tabAdd=document.getElementById('r-rx-tab-add');
+  if(!list||!form)return;
+  const showAdd=tab==='add';
+  list.style.display=showAdd?'none':'block';
+  form.style.display=showAdd?'block':'none';
+  if(tabList){tabList.style.background=showAdd?'var(--surface2)':'var(--blue)';tabList.style.color=showAdd?'var(--text)':'#fff';}
+  if(tabAdd){tabAdd.style.background=showAdd?'var(--blue)':'transparent';tabAdd.style.color=showAdd?'#fff':'var(--text)';}
+  if(showAdd&&selectedMRN)rRxLoadAllergySummary();
+}
+
 // ── Save local medication (legacy) ──
-function showMedForm(){document.getElementById('r-rx-create-form').style.display='block';}
+function showMedForm(){rRxTab('add');}
 function hideMedForm(){document.getElementById('r-rx-create-form').style.display='none';document.getElementById('r-med-allergy-check').style.display='none';document.getElementById('r-med-interaction-check').style.display='none';}
 function saveMed(){const med={name:v('r-med-name'),dose:v('r-med-dose'),route:v('r-med-route'),freq:v('r-med-freq'),indication:v('r-med-indication'),status:'Active',addedAt:Date.now()};if(!med.name){AppDialog.alert('Enter drug name.');return;}rMeds.push(med);hideMedForm();renderMedList();checkDrugAllergyWarning();renderDrugInteractionBanner(selectedMRN);}
 
@@ -955,6 +988,10 @@ async function rRxPrescribeWithCDS(){
   if(!selectedMRN)return;
   const med=v('r-med-name');const dose=v('r-med-dose');const freq=v('r-med-freq');
   if(!med||!dose){AppDialog.alert('Enter medication and dosage');return}
+  // When-to-take pattern (Indian Rx style): 0-0-1 = night only, 1-0-1 = morning + night
+  const mRaw=v('r-med-m'),aRaw=v('r-med-a'),nRaw=v('r-med-n');
+  const timing=(mRaw||aRaw||nRaw)?`${parseInt(mRaw||'0',10)}-${parseInt(aRaw||'0',10)}-${parseInt(nRaw||'0',10)}`:undefined;
+  const whenToTake=v('r-med-when')||undefined;
   // Run allergy check
   let allergyBlocked=false;
   try{
@@ -965,10 +1002,11 @@ async function rRxPrescribeWithCDS(){
     }
   }catch(e){}
   // Create server prescription
-  try{
-    const r=await api('/rx',{method:'POST',body:JSON.stringify({
+  try{      const r=await api('/rx',{method:'POST',body:JSON.stringify({
       patientMrn:selectedMRN,medication:med,
       genericName:v('r-rx-generic')||undefined,
+      composition:v('r-med-comp')||undefined,
+      timing,whenToTake,
       dosage:dose,frequency:freq,
       route:v('r-med-route'),duration:v('r-med-dur')||undefined,
       quantity:parseInt(v('r-med-qty'))||undefined,
@@ -989,9 +1027,11 @@ async function rRxPrescribeWithCDS(){
       document.getElementById('r-med-name').value='';
       document.getElementById('r-med-dose').value='';
       document.getElementById('r-med-instructions').value='';
+      ['r-med-comp','r-med-m','r-med-a','r-med-n','r-med-dur','r-med-qty'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+      const whenEl=document.getElementById('r-med-when');if(whenEl)whenEl.value='';
       document.getElementById('r-med-allergy-check').style.display='none';
       document.getElementById('r-med-interaction-check').style.display='none';
-      document.getElementById('r-rx-create-form').style.display='none';
+      rRxTab('list');
       // Refresh lists
       renderMedList();
       rRxLoadServerPrescriptions();
@@ -1028,12 +1068,15 @@ async function rRxLoadServerPrescriptions(){
   try{
     const r=await api('/rx/patient/'+selectedMRN);
     if(!r.ok||!r.prescriptions||!r.prescriptions.length){el.innerHTML='<div class="empty-card">No e-prescriptions on file.</div>';return;}
+    window._serverPrescriptions=r.prescriptions; // cached for the paper-Rx print
     const statusColors={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--orange)'};
     el.innerHTML=r.prescriptions.map(rx=>`
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
         <div style="flex:1;">
           <div style="font-weight:700;font-size:13px;">💊 ${rx.medication}</div>
+          ${rx.composition?`<div style="font-size:11px;color:var(--text-dim);">${rx.composition}</div>`:''}
           <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${rx.dosage} · ${rx.frequency} · ${rx.route||'oral'}${rx.duration?' · '+rx.duration:''}</div>
+          ${rx.timing?`<div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:2px;">🕐 ${rx.timing}${rx.when_to_take?' · '+rx.when_to_take:''}</div>`:''}
           ${rx.instructions?`<div style="font-size:11px;color:var(--text-dim);margin-top:2px;">📝 ${rx.instructions}</div>`:''}
           ${rx.pharmacy?`<div style="font-size:11px;color:var(--text-dim);">🏪 ${rx.pharmacy}</div>`:''}
         </div>

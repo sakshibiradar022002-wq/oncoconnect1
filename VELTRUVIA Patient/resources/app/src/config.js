@@ -60,8 +60,9 @@ export const config = {
     return gen;
   })(),
 
-  // Session lifetime.
-  sessionTtlMinutes: parseInt(process.env.SESSION_TTL_MIN || '120', 10),
+  // Session lifetime. 30 days: “stay logged in” is the product promise for
+  // the apps and desktop software (sliding refresh extends active sessions).
+  sessionTtlMinutes: parseInt(process.env.SESSION_TTL_MIN || '43200', 10),
 
   // Path to the SQLite database file.
   // If DB_EPHEMERAL=true, uses :memory: (for testing/preview, data lost on restart)

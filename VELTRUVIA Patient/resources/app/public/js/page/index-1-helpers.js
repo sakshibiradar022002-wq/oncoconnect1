@@ -5,6 +5,12 @@ function rNotesEditJson(json){let n;try{n=JSON.parse(json);}catch(e){return;}rNo
 function apptWeekNav(delta){_apptWeekOffset = delta===0?0:_apptWeekOffset+delta;renderApptCalendar();}
 function docCalNav(delta){calMonth+=delta;if(calMonth<0){calMonth=11;calYear--;}if(calMonth>11){calMonth=0;calYear++;}renderDocCal();}
 function addDefaultAvailRow(){_availRows.push({dayOfWeek:1,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true});renderAvailRows();}
+function addDateAvailRow(){
+  // One-off clinic day: defaults to tomorrow so the date picker starts close.
+  const t=new Date(Date.now()+86400000);const ds=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  _availRows.push({date:ds,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true});
+  renderAvailRows();
+}
 function selectICDVal(code){const item=ICD_DB.find(i=>i.code===code);if(item)selectICD(code,item.label);closeOverlay('icd-lookup-modal');}
 function calDayNav(hasLog,d,mrn){if(String(hasLog)==="1")showCalLogDetail(d);else openRecord(mrn);}
 function removeBatchRow(idx){if(typeof idx==="number"){_batchRows.splice(idx,1);renderBatchRows();}else{removeBatchRowImpl(idx);}}
@@ -399,6 +405,9 @@ async function doLogin(){
       currentDoc={docId:r.user.id,email:r.user.email,name:r.user.name,spec:r.user.meta?.specialty||'',institution:r.user.meta?.institution||'',role:r.user.role};
       // Pull all doctor data from server into localStorage
       try{const sync=await api('/sync');if(sync&&sync.keys){for(const[k,entry]of Object.entries(sync.keys)){if(entry&&entry.v!==undefined)LS.set(k,entry.v)}}}catch(e){/* sync pull failed, continue with local data */}
+      // Persist “stay signed in” for the desktop software too (was only
+      // saved on the offline fallback path, so restarts always asked again).
+      try{const cb=document.getElementById('stay-signed-in-doc');if(cb&&cb.checked&&window.VxSession)VxSession.remember({kind:'doctor',email:r.user.email,name:r.user.name||''});else if(window.VxSession)VxSession.forget();}catch(e){}
       document.getElementById('auth-screen').style.display='none';
       document.getElementById('app').style.display='flex';
       document.getElementById('doc-name').textContent=r.user.name;
@@ -447,11 +456,10 @@ function doLogout(){
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('app').style.display='none';
 }
-// ── Session timeout: auto-logout after 30 minutes of inactivity ──
-let _idleTimer=null;
-function resetIdleTimer(){clearTimeout(_idleTimer);_idleTimer=setTimeout(()=>{AppDialog.alert('Session expired due to inactivity.');doLogout();},30*60*1000);}
-['mousemove','mousedown','keydown','scroll','touchstart'].forEach(evt=>document.addEventListener(evt,resetIdleTimer,{passive:true}));
-resetIdleTimer();
+// ── Stay signed in ────────────────────────────────────────────────
+// No client-side idle logout for the doctor desktop either — sessions are
+// long-lived server-side (30 days, sliding refresh) and VxSession restores
+// the last login on boot.
 // ── Session security: validate session on tab visibility change ──
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&currentDoc){api('/auth/login',{method:'POST',body:JSON.stringify({email:currentDoc.email,password:''})}).catch(()=>{});}
@@ -608,42 +616,54 @@ function patientWelcomeCardHtml(mrn,pass,name){
   const base=(window.location&&window.location.origin&&window.location.origin.indexOf('http')===0)?window.location.origin:'https://veltruvia.duckdns.org';
   let qrSvg='';
   try{const qr=window.qrcode(0,'M');qr.addData(base+'/download.html');qr.make();qrSvg=qr.createSvgTag({cellSize:2,margin:4,scalable:true});}catch(e){qrSvg='';}
-  return `<div class="page" style="width:186mm;min-height:104mm;box-sizing:border-box;padding:14mm 16mm;background:#fff;color:#111;font-family:'Segoe UI',Arial,sans-serif;position:relative;">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px;">
-    <div>
-      <div style="display:flex;align-items:center;gap:10px;justify-content:center;"><img src="/icons/brand/veltruvia-patient.jpg" alt="" style="width:38px;height:38px;border-radius:9px;object-fit:cover"><span style="font-size:24px;font-weight:800;letter-spacing:.5px;">VELTRUVIA Patient</span></div>
-      <div style="font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;">Neuro-Oncology EMR — Patient Welcome</div>
-    </div>
-    <div style="text-align:right;font-size:10px;color:#666;">${new Date().toLocaleDateString()}<br>Your care team<br>Dr. ${esc(currentDoc?.name||'')}</div>
-  </div>
-  <div style="display:flex;gap:10mm;">
-    <div style="flex:1.4">
-      <p style="font-size:12px;line-height:1.55;margin:0 0 12px;">Hello${name?' <b>'+esc(name)+'</b>':''}, welcome. This card has everything you need to start using the VELTRUVIA patient app on your phone — it lets you log symptoms, message your care team, and share results securely.</p>
-      <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
-        <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Your login</div>
-        <table style="font-size:13px;border-collapse:collapse;width:100%">
-          <tr><td style="padding:4px 12px 4px 0;color:#475569;white-space:nowrap;">Patient ID (MRN)</td><td style="font-family:Consolas,monospace;font-weight:700;">${esc(mrn)}</td></tr>
-          <tr><td style="padding:4px 12px 4px 0;color:#475569;">Password</td><td style="font-family:Consolas,monospace;font-weight:700;word-break:break-all;">${esc(pass)}</td></tr>
-        </table>
+  // Rendered on a full A4 sheet (see _REPORT_CSS .page) with the hand-out
+  // drawn as a cut-out CARD centered on it — it prints as an actual card to
+  // cut along the dashed border, and looks like one on screen too.
+  return `<div class="page" style="display:flex;flex-direction:column;justify-content:center;">
+  <div class="vx-cut">✂ ─────  cut along the dashed border  ─────</div>
+  <div class="vx-card">
+    <div class="vx-card-head">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <img src="/icons/brand/veltruvia-patient.jpg" alt="" style="width:42px;height:42px;border-radius:11px;object-fit:cover;border:1.5px solid rgba(255,255,255,.5);">
+        <div>
+          <div class="vc-title">VELTRUVIA Patient</div>
+          <div class="vc-sub">Neuro-Oncology EMR · Patient Access Card</div>
+        </div>
       </div>
-      <div style="font-size:11px;line-height:1.6;color:#334155;">
-        <b>Getting started</b><br>
-        1. Scan the QR code with your phone camera<br>
-        2. Tap <b>Patient app</b> and install it (allow "install unknown apps" if asked)<br>
-        3. Open the app and sign in with the ID and password above<br>
-        4. iPhone? Skip the install — open the link in Safari and choose <b>Add to Home Screen</b><br>
-        <span style="color:#b91c1c;">Keep this card private. It gives access to your medical record.</span>
+      <div style="text-align:right;font-size:9.5px;line-height:1.6;opacity:.92;">
+        ${new Date().toLocaleDateString()}<br>Dr. ${esc(currentDoc?.name||'')}
       </div>
     </div>
-    <div style="flex:1;text-align:center;">
-      <div style="border:1px dashed #94a3b8;border-radius:12px;padding:12px;background:#fff;">
-        <div style="width:30mm;height:30mm;margin:0 auto;">${qrSvg}</div>
-        <div style="font-size:10px;color:#475569;margin-top:6px;">Scan → app downloads<br>${base.replace('https://','')}/download.html</div>
+    <div class="vx-card-body">
+      <div style="flex:1.35;">
+        <p style="font-size:11.5px;line-height:1.6;margin:0 0 5mm;color:#1f2937;">Hello${name?' <b>'+esc(name)+'</b>':''}, welcome. This card has everything you need to start using the VELTRUVIA patient app on your phone — log symptoms, message your care team, and share results securely.</p>
+        <div class="vx-cred">
+          <div style="display:flex;gap:8mm;flex-wrap:wrap;">
+            <div><div class="vc-lbl">Patient ID (MRN)</div><div class="vc-val">${esc(mrn)}</div></div>
+            <div><div class="vc-lbl">Password</div><div class="vc-val">${esc(pass)}</div></div>
+          </div>
+        </div>
+        <div class="vx-steps">
+          <b>Getting started</b><br>
+          1. Scan the QR code with your phone camera<br>
+          2. Tap <b>Patient app</b> and install it (allow "install unknown apps" if asked)<br>
+          3. Open the app and sign in with the ID and password above<br>
+          4. iPhone? Skip the install — open the link in Safari and choose <b>Add to Home Screen</b><br>
+          <span style="color:#b91c1c;font-weight:600;">Keep this card private. It gives access to your medical record.</span>
+        </div>
+      </div>
+      <div style="flex:1;text-align:center;display:flex;flex-direction:column;justify-content:center;">
+        <div style="border:1.4px dashed #8ea3c0;border-radius:12px;padding:5mm;background:#fff;">
+          <div style="width:34mm;height:34mm;margin:0 auto;">${qrSvg}</div>
+          <div style="font-size:9.5px;color:#334155;margin-top:4mm;font-weight:600;">Scan → app downloads</div>
+          <div style="font-size:8.5px;color:#7a8699;">${base.replace('https://','')}/download.html</div>
+        </div>
       </div>
     </div>
-  </div>
-  <div style="position:absolute;bottom:8mm;left:16mm;right:16mm;border-top:1px solid #cbd5e1;padding-top:6px;font-size:9px;color:#94a3b8;display:flex;justify-content:space-between;">
-    <span>VELTRUVIA · v2.3.1</span><span>This card contains protected health information — handle per clinic policy.</span>
+    <div class="vx-card-foot">
+      <span>VELTRUVIA · v2.4.0</span>
+      <span>Contains protected health information — handle per clinic policy.</span>
+    </div>
   </div>
 </div>`;
 }
@@ -771,6 +791,24 @@ async function sendDocMsg(){if(!selectedChatMRN||!currentDoc)return;const inp=do
 
 // ── Auto-check login ──
 window.addEventListener('DOMContentLoaded',()=>{
-  const docs=LS.keys('doc_').filter(k=>!k.startsWith('doc_email'));
-  // Don't auto-login, show auth screen
+  // Stay signed in: reopen straight into the doctor's account when they
+  // previously logged in with “Stay signed in” (VxSession restore — never a
+  // password retry, so lockout counters are untouched).
+  try{
+    if(!window.VxSession)return;
+    const who=VxSession.restore();
+    if(!who||who.kind!=='doctor'||!who.email)return;
+    const docId=LS.get('doc_email_'+who.email.replace(/[^a-z0-9]/g,'_'));
+    const doc=docId?LS.get('doc_'+docId):null;
+    if(doc){
+      currentDoc=doc;
+      document.getElementById('auth-screen').style.display='none';
+      document.getElementById('app').style.display='flex';
+      document.getElementById('doc-name').textContent=doc.name;
+      document.getElementById('doc-role').textContent=doc.spec||'';
+      document.getElementById('doc-av').textContent=doc.name.charAt(0);
+      document.getElementById('greet-text').textContent='Welcome back, '+doc.name.split(' ')[0];
+      refreshAll();
+    }
+  }catch(e){/* never block manual login over restore */}
 });

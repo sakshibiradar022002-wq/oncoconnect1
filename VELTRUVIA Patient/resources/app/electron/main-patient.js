@@ -15,6 +15,7 @@ app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('disable-gpu');
 
 import { createServer } from 'node:http';
+import https from 'node:https';
 import { createReadStream, existsSync, readFileSync, writeFileSync, statSync, mkdirSync } from 'node:fs';
 import net from 'node:net';
 import http from 'node:http';
@@ -91,23 +92,33 @@ function serveStatic(req, res) {
 }
 
 async function probeServer(url, timeout = 2000) {
-  return new Promise((resolve) => {
-    const req = http.get(`${url}/api/health`, { timeout }, (res) => {
-      let data = '';
-      res.on('data', (c) => data += c);
-      res.on('end', () => resolve(res.statusCode === 200 ? url : null));
-    });
-    req.on('error', () => resolve(null));
-    req.on('timeout', () => { req.destroy(); resolve(null); });
-  });
+  // fetch handles both http:// (clinic PC) and https:// (cloud VM) and
+  // follows redirects. http.get silently fails on https:// URLs, which used
+  // to drop cloud-configured apps into an empty local standalone database.
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeout);
+    const res = await fetch(`${url}/api/health`, { signal: ctrl.signal });
+    clearTimeout(timer);
+    return res.ok ? url : null;
+  } catch { return null; }
 }
 
 async function tryLoadExpress(port) {
-  // 1) Try shared config file first
-  let serverUrl = getServerUrl();
+  // 0) Explicit override wins (cloud deployments): VELTRUVIA_SERVER_URL env var
+  let serverUrl = (process.env.VELTRUVIA_SERVER_URL || '').replace(/\/+$/, '') || null;
   if (serverUrl) {
     const ok = await probeServer(serverUrl);
-    if (ok) { serverUrl = ok; } else { serverUrl = null; }
+    if (ok) { serverUrl = ok; console.log(`[patient] Using VELTRUVIA_SERVER_URL: ${ok}`); }
+    else { console.warn(`[patient] VELTRUVIA_SERVER_URL unreachable: ${serverUrl}`); serverUrl = null; }
+  }
+  // 1) Try shared config file next
+  if (!serverUrl) {
+    serverUrl = getServerUrl();
+    if (serverUrl) {
+      const ok = await probeServer(serverUrl);
+      if (ok) { serverUrl = ok; } else { serverUrl = null; }
+    }
   }
 
   // 2) If config didn't work, scan common ports for the Server
@@ -125,14 +136,15 @@ async function tryLoadExpress(port) {
     console.log(`[patient] ✅ Connected to central Server at ${serverUrl}`);
     expressApp = (req, res) => {
       const proxyUrl = new URL(req.url, serverUrl);
+      const transport = proxyUrl.protocol === 'https:' ? https : http;
       const options = {
         hostname: proxyUrl.hostname,
-        port: proxyUrl.port,
+        port: proxyUrl.port || (proxyUrl.protocol === 'https:' ? 443 : 80),
         path: proxyUrl.pathname + proxyUrl.search,
         method: req.method,
         headers: { ...req.headers, host: proxyUrl.host, origin: proxyUrl.origin },
       };
-      const proxyReq = http.request(options, (proxyRes) => {
+      const proxyReq = transport.request(options, (proxyRes) => {
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
         proxyRes.pipe(res);
       });

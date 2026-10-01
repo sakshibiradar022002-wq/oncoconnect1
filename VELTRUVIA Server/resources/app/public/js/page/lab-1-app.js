@@ -86,6 +86,19 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 
 // ═══ AUTH ═══
+// Persist the “stay signed in” choice on EVERY successful login path —
+// previously only the offline fallback remembered it, so the Lab app asked
+// for credentials again after every restart.
+function rememberLabSession(lab){
+  try{
+    const cb=document.getElementById('stay-signed-in-lab');
+    if(window.VxSession){
+      if(!cb||cb.checked)VxSession.remember({kind:'lab',username:lab.username,name:lab.name||''});
+      else VxSession.forget();
+    }
+  }catch(e){}
+}
+
 async function doLogin(){
   const btn=document.querySelector('#login-lab .log-btn, #login-lab button') || document.querySelector('[data-action="doLogin"]');
   if(window.Busy&&Busy.isBusy(btn))return;
@@ -100,6 +113,7 @@ async function doLogin(){
       currentLab=result.lab;_docId=result.lab.docId||'';
       if(result.keys)mergeServerKeys(result.keys); // pull assigned tasks + patient list issued with the session
       LS.set('current_lab',result.lab);LS.set('current_docId',_docId);
+      rememberLabSession(result.lab);
       document.getElementById('auth-screen').style.display='none';
       document.getElementById('app-shell').style.display='flex';
       initDashboard();
@@ -119,6 +133,7 @@ async function doLogin(){
       if(foundLab){
         currentLab=foundLab;_docId=foundDocId;
         LS.set('current_lab',foundLab);LS.set('current_docId',foundDocId);
+        rememberLabSession(foundLab);
         document.getElementById('auth-screen').style.display='none';
         document.getElementById('app-shell').style.display='flex';
         initDashboard();
@@ -139,7 +154,7 @@ async function doLogin(){
   if(!foundLab){showErr(errEl,'No matching lab account found.');return}
   currentLab=foundLab;_docId=foundDocId;
   LS.set('current_lab',foundLab);LS.set('current_docId',foundDocId);
-  try{const cb=document.getElementById('stay-signed-in-lab');if(cb&&cb.checked&&window.VxSession)VxSession.remember({kind:'lab',username:foundLab.username,name:foundLab.name||''});else if(window.VxSession)VxSession.forget();}catch(e){}
+  rememberLabSession(foundLab);
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app-shell').style.display='flex';
   initDashboard();
@@ -470,11 +485,10 @@ function toggleTheme(){
   document.documentElement.setAttribute('data-theme',saved);
 })();
 
-// ═══ IDLE TIMEOUT ═══
-let _idleTimer=null;
-function resetIdleTimer(){clearTimeout(_idleTimer);_idleTimer=setTimeout(()=>{AppDialog.alert('Session expired due to inactivity.');doLogout()},30*60*1000)}
-['mousemove','mousedown','keydown','scroll','touchstart'].forEach(evt=>document.addEventListener(evt,resetIdleTimer,{passive:true}));
-resetIdleTimer();
+// ═══ STAY SIGNED IN ═══
+// No client-side idle logout — the “stay signed in on this device” promise
+// means the Lab app reopens straight into the account (server session is
+// long-lived with sliding refresh; VxSession restores it on boot).
 
 // Standalone mode: LOCK to Lab portal only
 (function(){
