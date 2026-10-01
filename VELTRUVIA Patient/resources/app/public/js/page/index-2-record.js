@@ -1413,11 +1413,12 @@ function renderTrends(mrn){
 }
 
 // ── v2.1 PRINT / PDF — prescription, invoice, day-sheet ──
-// Opens a print-optimized popup (system Save-as-PDF works from any OS)
+// Renders the document in the in-app viewer (iframe overlay) and opens the
+// print / Save-as-PDF dialog from there. A window.open popup used to be
+// denied by the Electron shells and forwarded to the system browser.
 function _printDoc(title,innerCss,innerHtml){
-  const w=window.open('','_blank','width=800,height=900');
-  if(!w){AppDialog.alert('Allow popups for this app to print.');return;}
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+  if(!window._vxReportOverlay){return;}
+  _vxReportOverlay(title,`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>
     body{font-family:'Segoe UI',system-ui,sans-serif;color:#111;margin:32px;max-width:720px;}
     h1{font-size:20px;margin:0 0 2px;}h2{font-size:15px;margin:18px 0 6px;border-bottom:1.5px solid #222;padding-bottom:4px;}
     .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0f4c81;padding-bottom:10px;margin-bottom:16px;}
@@ -1428,8 +1429,7 @@ function _printDoc(title,innerCss,innerHtml){
     td{padding:6px 8px;border:1px solid #d8dee6;} .tot{font-weight:700;}
     .sig{margin-top:48px;display:flex;justify-content:space-between;} .sig div{border-top:1px solid #333;padding-top:4px;font-size:12px;width:200px;text-align:center;}
     @media print{.noprint{display:none}} ${innerCss||''}
-  </style></head><body>${innerHtml}</body></html>`);
-  w.document.close();setTimeout(()=>{try{w.focus();w.print();}catch(e){}},350);
+  </style></head><body>${innerHtml}</body></html>`,{autoPrint:true});
 }
 function printPrescription(rxId){
   api('/rx/'+rxId).then(rx=>{

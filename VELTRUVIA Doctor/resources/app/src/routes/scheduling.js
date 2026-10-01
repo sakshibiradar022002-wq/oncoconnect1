@@ -6,6 +6,8 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { db, writeAudit } from '../db/index.js';
 import { encryptPHI, decryptPHI, randomToken } from '../crypto.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
@@ -13,6 +15,80 @@ import { validate, asyncHandler } from '../middleware/validate.js';
 import { notifySubject } from '../push.js';
 
 export const scheduleRouter = Router();
+
+// ── Shared availability store (mirrors routes/sync.js) ─────────────
+// The patient slot picker reads /api/sync/get-slots*, which serves slots from
+// this JSON store (with a same default-seed fallback). /schedule/book used to
+// validate ONLY against the doctor_availability DB table — so if the doctor's
+// availability lived in the shared store (or was still the seeded default),
+// every booking was rejected with 400 “This time slot is not available” while
+// the parallel /api/sync/save-appointment happily saved it. Booking must
+// accept exactly what the picker offers, so it resolves availability through
+// the same chain: DB table → shared store (doctor, then any) → defaults.
+const AVAIL_STORE_PATH = join(dirname(process.env.DB_PATH || '.'), 'availability-store.json');
+const APPT_STORE_PATH = join(dirname(process.env.DB_PATH || '.'), 'appointments-store.json');
+try { mkdirSync(dirname(AVAIL_STORE_PATH), { recursive: true }); } catch {}
+
+function readJsonStore(path) {
+  try { if (existsSync(path)) return JSON.parse(readFileSync(path, 'utf-8')); } catch {}
+  return {};
+}
+
+// Default seed — MUST stay identical to the one in routes/sync.js get-slots.
+const DEFAULT_AVAILABILITY = [
+  { dayOfWeek: 1, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
+  { dayOfWeek: 1, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
+  { dayOfWeek: 2, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
+  { dayOfWeek: 2, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
+  { dayOfWeek: 3, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
+  { dayOfWeek: 4, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
+  { dayOfWeek: 4, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
+  { dayOfWeek: 5, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
+  { dayOfWeek: 5, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
+];
+
+// Availability rows for a doctor on a given weekday, in the DB-row shape
+// generateSlotsForDate understands. Order: DB table → shared store (this
+// doctor, then any doctor with active rows) → seeded defaults.
+async function effectiveAvailabilityRows(ownerId, dayOfWeek) {
+  const dbRows = await db.prepare(
+    'SELECT * FROM doctor_availability WHERE doctor_id = ? AND day_of_week = ? AND active = 1'
+  ).all(ownerId, dayOfWeek);
+  if (dbRows.length) return dbRows;
+
+  const store = readJsonStore(AVAIL_STORE_PATH);
+  const normalize = (r) => ({
+    day_of_week: r.dayOfWeek,
+    start_time: r.startTime || '09:00',
+    end_time: r.endTime || '17:00',
+    slot_duration: r.slotDuration || 30,
+    appointment_types: null,
+  });
+
+  const own = (store[ownerId] || []).filter(s => s.active !== false && s.dayOfWeek === dayOfWeek);
+  if (own.length) return own.map(normalize);
+
+  for (const entries of Object.values(store)) {
+    const active = (entries || []).filter(s => s.active !== false && s.dayOfWeek === dayOfWeek);
+    if (active.length) return active.map(normalize);
+  }
+
+  return DEFAULT_AVAILABILITY.filter(r => r.dayOfWeek === dayOfWeek).map(normalize);
+}
+
+// Bookings land in BOTH stores (patient app saves to the shared store, doctor
+// calendar uses the DB) — a slot taken in either must not be bookable again.
+function sharedStoreSlotTaken(dateStr, startTime) {
+  const store = readJsonStore(APPT_STORE_PATH);
+  for (const appts of Object.values(store)) {
+    if (!Array.isArray(appts)) continue;
+    for (const a of appts) {
+      if (a && a.date === dateStr && a.time === startTime &&
+          !/declined|cancel/i.test(String(a.status || ''))) return true;
+    }
+  }
+  return false;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────
 function dateRange(days = 30) {
@@ -358,11 +434,11 @@ scheduleRouter.post('/book', authenticate, requireRole('kv-patient'), patientSco
     const { date, startTime, type, notes } = req.valid;
     const now = new Date().toISOString();
 
-    // Find the matching availability to compute end_time
+    // Find the matching availability to compute end_time. Resolves through
+    // the same chain the patient slot picker uses (DB → shared store →
+    // defaults), so any slot the picker offered can actually be booked.
     const d = new Date(date + 'T00:00:00');
-    const avail = await db.prepare(
-      'SELECT * FROM doctor_availability WHERE doctor_id = ? AND day_of_week = ? AND active = 1'
-    ).all(ownerId, d.getDay());
+    const avail = await effectiveAvailabilityRows(ownerId, d.getDay());
 
     let matched = null;
     for (const a of avail) {
@@ -375,7 +451,7 @@ scheduleRouter.post('/book', authenticate, requireRole('kv-patient'), patientSco
       return res.status(400).json({ error: 'This time slot is not available' });
     }
 
-    // Check for conflicts
+    // Check for conflicts in the DB calendar…
     const conflict = await db.prepare(`
       SELECT id FROM appointments
       WHERE doctor_id = ? AND date = ? AND status NOT IN ('cancelled')
@@ -383,6 +459,10 @@ scheduleRouter.post('/book', authenticate, requireRole('kv-patient'), patientSco
     `).get(ownerId, date, startTime, matched.endTime);
 
     if (conflict) {
+      return res.status(409).json({ error: 'This slot was just taken. Please choose another.' });
+    }
+    // …and in the shared appointment store the patient app writes to.
+    if (sharedStoreSlotTaken(date, startTime)) {
       return res.status(409).json({ error: 'This slot was just taken. Please choose another.' });
     }
 

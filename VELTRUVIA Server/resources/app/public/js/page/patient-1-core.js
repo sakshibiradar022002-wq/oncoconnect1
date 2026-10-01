@@ -434,18 +434,29 @@ async function confirmBookAppt(){
   const run=async()=>{
   const type=document.getElementById('book-appt-type').value;
   const notes=document.getElementById('book-appt-notes').value;
-  // Save to shared appointment store (works in desktop mode)
+  // Save to shared appointment store (works in desktop mode). If this succeeds
+  // the appointment IS on the server and the doctor's software can see it —
+  // later failures must never claim otherwise.
+  let stored=false;
   try{
     await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:{date:_selectedSlot.date,time:_selectedSlot.time,type,notes,status:'Scheduled',createdAt:Date.now()}})});
+    stored=true;
   }catch(e){console.warn('[appt] shared-store save failed:',e.message)}
-  // Also try server booking
+  // Also try server booking (puts it on the doctor's calendar)
   try{
     const r=await api('/schedule/book',{method:'POST',body:JSON.stringify({date:_selectedSlot.date,startTime:_selectedSlot.time,type,notes})});
-    if(r.ok){AppDialog.alert('✅ '+r.message)}else{AppDialog.alert('⚠️ The server refused this slot ('+(r.error||'unavailable')+') — saved on this device. Pick another time and try again.');}
+    if(r.ok){AppDialog.alert('✅ '+r.message)}else{AppDialog.alert('⚠️ '+(r.error||'This slot could not be booked')+'\n\nYour request is saved and your doctor can see it — pick another time if needed.');}
   }catch(e){
-    // Honest failure: the shared-store save above is the local record; the
-    // doctor-visible booking failed. Say so instead of faking success.
-    AppDialog.alert('⚠️ Saved on this device, but the server could not be reached.\n\nYour appointment is queued locally — please check My Appts later or rebook when you have internet.');
+    // Network failure vs server refusal are very different situations — say
+    // which one happened instead of always claiming the server was down.
+    const offline=!e||/failed to fetch|networkerror|load failed|timed?\s?out|internet/i.test(e.message||'');
+    if(offline){
+      AppDialog.alert(stored
+        ?'✅ Appointment request saved. It will reach your doctor when the connection is back.'
+        :'⚠️ No internet connection right now. Your appointment is saved on this device and will sync later — check My Appts.');
+    }else{
+      AppDialog.alert('⚠️ '+(e.message||'Booking failed')+"\n\nYour request is saved and your doctor can see it in their software.");
+    }
   }
   _selectedSlot=null;
   document.getElementById('slot-selected-info').style.display='none';

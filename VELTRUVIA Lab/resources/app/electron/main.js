@@ -240,7 +240,9 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => { mainWindow.show(); });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    // Never send about:blank to the system browser — reports now render in
+    // an in-app overlay instead of a popup window.
+    if (!/^about:blank/i.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
 

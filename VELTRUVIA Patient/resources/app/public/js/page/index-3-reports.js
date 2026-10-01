@@ -193,32 +193,14 @@ function _renderLetterheadHTML(){
   </div>`;
 }
 
-function _openReport(title,bodyHtml){
-  let w;
-  try{w=window.open('about:blank','_blank','width=820,height=900');}catch(e){}
-  if(!w||w.closed||typeof w.document==='undefined'){
-    // Popup blocked — fall back to printing the current page
-    AppDialog.alert('Popup blocked. Please allow popups for this site, or use Ctrl+P to print.');
-    return null;
-  }
-  w.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>${_REPORT_CSS}</style></head><body>
-  <div id="__rpt-body">${bodyHtml}</div>
-  <script>
-  window.addEventListener('load',function(){
-    var pages=document.querySelectorAll('.page');
-    var total=pages.length;
-    pages.forEach(function(p,i){
-      var el=p.querySelector('.page-num');
-      if(!el){el=document.createElement('div');el.className='page-num';p.appendChild(el);}
-      el.textContent='Page '+(i+1)+' of '+total;
-    });
-    var s=document.createElement('style');
-    s.textContent='.page::after{content:none !important;}';
-    document.head.appendChild(s);
-  });
-  <\/script></body></html>`);
-  w.document.close();
-  return w;
+function _openReport(title,bodyHtml,opts){
+  // In-app viewer: renders the report inside the app (Electron, browser and
+  // phone app all behave the same). window.open used to be denied by the
+  // desktop shells and routed to the system browser — a blank page opened in
+  // a different app — so the document never appeared where the user was.
+  return window._vxReportOverlay
+    ? _vxReportOverlay(title, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>${_REPORT_CSS}</style></head><body><div id="__rpt-body">${bodyHtml}</div></body></html>`, opts)
+    : null;
 }
 function printPatientSummary(){
   if(!selectedMRN){AppDialog.alert('Open a patient record first.');return;}
@@ -601,8 +583,7 @@ function printPatientSummary(){
     <div class="conf-footer">THIS DOCUMENT CONTAINS PROTECTED HEALTH INFORMATION (PHI) — HIPAA COMPLIANT — DO NOT DISTRIBUTE WITHOUT AUTHORIZATION</div>
   </div>`;
   
-  const w=_openReport('Clinical Report — '+p.name,html);
-  if(w)setTimeout(()=>{try{w.print();}catch(e){}},500);
+  const w=_openReport('Clinical Report — '+p.name,html,{autoPrint:true});
 }
 
 function downloadPrescription(){
@@ -743,8 +724,7 @@ function downloadPrescription(){
     <div class="conf-footer">THIS PRESCRIPTION CONTAINS PROTECTED HEALTH INFORMATION — HIPAA COMPLIANT — DO NOT DISTRIBUTE WITHOUT AUTHORIZATION</div>
   </div>`;
   
-  const w=_openReport('Prescription — '+p.name,html);
-  if(w)setTimeout(()=>{try{w.print();}catch(e){}},500);
+  const w=_openReport('Prescription — '+p.name,html,{autoPrint:true});
 }
 
 function generatePDFDownload(){

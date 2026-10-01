@@ -643,7 +643,7 @@ function patientWelcomeCardHtml(mrn,pass,name){
     </div>
   </div>
   <div style="position:absolute;bottom:8mm;left:16mm;right:16mm;border-top:1px solid #cbd5e1;padding-top:6px;font-size:9px;color:#94a3b8;display:flex;justify-content:space-between;">
-    <span>VELTRUVIA · v2.3.0</span><span>This card contains protected health information — handle per clinic policy.</span>
+    <span>VELTRUVIA · v2.3.1</span><span>This card contains protected health information — handle per clinic policy.</span>
   </div>
 </div>`;
 }

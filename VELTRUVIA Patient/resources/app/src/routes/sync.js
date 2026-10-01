@@ -1278,6 +1278,12 @@ syncRouter.get('/get-slots/:docId', asyncHandler(async (req, res) => {
       if (a.date && a.status !== 'Declined') existingAppts.push(a);
     });
   });
+  // Also exclude slots already booked through /api/schedule/book (the doctor
+  // calendar DB) — otherwise the picker offers times that can't be booked.
+  const dbTaken = new Set(
+    (await db.prepare("SELECT date, start_time FROM appointments WHERE status NOT IN ('cancelled')").all())
+      .map(r => r.date + '|' + r.start_time)
+  );
   const today = new Date();
   const slotsByDate = {};
   for (let i = 0; i < days; i++) {
@@ -1300,7 +1306,7 @@ syncRouter.get('/get-slots/:docId', asyncHandler(async (req, res) => {
         const em2 = String(endMins2 % 60).padStart(2, '0');
         const endTimeStr = eh2 + ':' + em2;
         // Check conflict
-        const taken = existingAppts.some(e => e.date === dateStr && e.time === timeStr);
+        const taken = existingAppts.some(e => e.date === dateStr && e.time === timeStr) || dbTaken.has(dateStr + '|' + timeStr);
         if (!taken) daySlots.push({ time: timeStr, endTime: endTimeStr });
         mins += dur;
       }
@@ -1340,6 +1346,12 @@ syncRouter.get('/get-slots-all', asyncHandler(async (req, res) => {
     if (!Array.isArray(appts)) return;
     appts.forEach(a => { if (a.date && a.status !== 'Declined') existingAppts.push(a); });
   });
+  // Also exclude slots already booked through /api/schedule/book (the doctor
+  // calendar DB) — otherwise the picker offers times that can't be booked.
+  const dbTaken = new Set(
+    (await db.prepare("SELECT date, start_time FROM appointments WHERE status NOT IN ('cancelled')").all())
+      .map(r => r.date + '|' + r.start_time)
+  );
   const today = new Date();
   const slotsByDate = {};
   for (let i = 0; i < days; i++) {
@@ -1361,7 +1373,7 @@ syncRouter.get('/get-slots-all', asyncHandler(async (req, res) => {
         const eh2 = String(Math.floor(endMins2 / 60)).padStart(2, '0');
         const em2 = String(endMins2 % 60).padStart(2, '0');
         const endTimeStr = eh2 + ':' + em2;
-        const taken = existingAppts.some(e => e.date === dateStr && e.time === timeStr);
+        const taken = existingAppts.some(e => e.date === dateStr && e.time === timeStr) || dbTaken.has(dateStr + '|' + timeStr);
         if (!taken) daySlots.push({ time: timeStr, endTime: endTimeStr });
         mins += dur;
       }

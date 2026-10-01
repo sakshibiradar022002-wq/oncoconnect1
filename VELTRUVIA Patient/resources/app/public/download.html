@@ -403,14 +403,14 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
 </style>
 </head>
 <body>
-<script src="js/actions.js?v=20260930b"></script>
-<script src="js/ui.js?v=20260930b"></script>
+<script src="js/actions.js?v=20261001a"></script>
+<script src="js/ui.js?v=20261001a"></script>
 
 <div class="orbs" aria-hidden="true"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
 
 <header class="site-header">
   <div class="brand"><span class="brand-mark"><img src="/icons/brand/veltruvia-suite.jpg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></span> VELTRUVIA</div>
-  <span class="header-pill">Secure Cloud · v2.3.0</span>
+  <span class="header-pill">Secure Cloud · v2.3.1</span>
 </header>
 
 <div class="hero">
@@ -418,7 +418,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
     <div class="hero-copy">
       <div class="logo"><img src="/icons/brand/veltruvia-suite.jpg" alt="VELTRUVIA" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
       <h1 class="shimmer">VELTRUVIA</h1>
-      <div class="badge"><span>v2.3.0</span> · One Suite · Every App in One Place</div>
+      <div class="badge"><span>v2.3.1</span> · One Suite · Every App in One Place</div>
       <p class="subtitle">All of VELTRUVIA — Doctor, Patient, Lab and Server — in one place. Download the app for your role and sign in; everything connects to the clinic automatically.</p>
     </div>
     <div class="hero-visual">
@@ -495,24 +495,33 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
         <div class="card-icon"><img src="/icons/brand/veltruvia-lab.jpg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
         <div>
           <div class="card-title">VELTRUVIA Lab</div>
-          <div class="card-subtitle">Android · Test Management &amp; Results</div>
+          <div class="card-subtitle">Windows &amp; Android · Test Management &amp; Results</div>
         </div>
       </div>
       <div class="card-desc">
-        Manage lab test orders, upload results, and track sample status from any phone. Task lists arrive from the doctor in real time.
+        Manage lab test orders, upload results, and track sample status. Install the Windows software on the lab computer, or the Android app on any phone — task lists arrive from the doctor in real time.
       </div>
       <div class="btn-row">
-        <a class="download-btn" href="/downloads/VELTRUVIA-Lab.apk" download>
+        <a class="download-btn" href="/downloads/VELTRUVIA-Lab-Setup.exe" download>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-          Download for Android
+          Download for Windows
         </a>
-        <button class="download-btn btn-secondary" type="button" data-qr="qr-lab">📱 Scan QR</button>
+        <a class="download-btn btn-secondary" href="/downloads/VELTRUVIA-Lab-Portable.zip" download>
+          Portable ZIP
+        </a>
+      </div>
+      <div class="btn-row">
+        <a class="download-btn btn-secondary" href="/downloads/VELTRUVIA-Lab.apk" download>
+          📱 Download for Android
+        </a>
+        <button class="download-btn btn-secondary" type="button" data-qr="qr-lab">Scan QR</button>
       </div>
       <div class="qr-wrap" id="qr-lab" hidden>
         <img data-url="/downloads/VELTRUVIA-Lab.apk" alt="Lab APK QR code" width="260" height="260">
         <span>Scan with your phone camera to install</span>
       </div>
       <div class="download-meta">
+        <span>💻 Windows 10/11</span>
         <span>🤖 Android 8+</span>
         <span>🔑 login from the clinic</span>
       </div>
@@ -569,7 +578,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
     <div class="step-num">1</div>
     <div class="step-text">
       <h3>Get the App for Your Role</h3>
-      <p>Doctor: install the Windows software. Lab &amp; Patient: install the Android app (or scan its QR). The VELTRUVIA cloud is already running for your clinic — every app connects to it automatically, no addresses or setup needed.</p>
+      <p>Doctor and Lab: install the Windows software. Patient: install the Android app (or scan its QR). The VELTRUVIA cloud is already running for your clinic — every app connects to it automatically, no addresses or setup needed.</p>
     </div>
   </div>
   <div class="step">
@@ -653,5 +662,5 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
 </div>
 
 </body>
-<script src="/js/download-page.js?v=20260930c" defer></script>
+<script src="/js/download-page.js?v=20261001a" defer></script>
 </html>

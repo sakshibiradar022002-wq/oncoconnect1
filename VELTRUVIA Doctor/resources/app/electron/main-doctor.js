@@ -247,7 +247,13 @@ function createWindow() {
   mainWindow.loadURL(`http://127.0.0.1:${serverPort}/`);
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
+  // External links go to the real browser — but never about:blank (reports
+  // now render in an in-app overlay; opening a blank tab looked like the
+  // app “needs a different app”).
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (!/^about:blank/i.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
   mainWindow.on('closed', () => { mainWindow = null; });
 
   Menu.setApplicationMenu(Menu.buildFromTemplate([
