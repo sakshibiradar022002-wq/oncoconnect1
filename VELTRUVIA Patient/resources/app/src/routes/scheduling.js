@@ -17,22 +17,30 @@ import { effectiveAvailabilityRows } from '../lib/availability.js';
 
 export const scheduleRouter = Router();
 
-// ── Shared appointment store ────────────────────────────────────────
+// ── Shared appointment store (ENCRYPTED — v2.5) ─────────────────────
 // The patient slot picker reads /api/sync/get-slots*, which resolves
 // availability through src/lib/availability.js — the SAME chain used here.
 // (/schedule/book used to validate only against the doctor_availability DB
 // table, so store-seeded patients got 400s the picker never warned about.)
-const APPT_STORE_PATH = join(dirname(process.env.DB_PATH || '.'), 'appointments-store.json');
+// appointments-store.json previously held PHI in plaintext; the encrypted
+// store migrates the legacy file transparently on first read.
+import { createEncryptedStore } from '../lib/json-stores.js';
+const apptStoreEnc = createEncryptedStore('appointments-store.json', { label: 'appt-store' });
 
 function readJsonStore(path) {
+  // Legacy path kept for compatibility; the canonical store is encrypted.
   try { if (existsSync(path)) return JSON.parse(readFileSync(path, 'utf-8')); } catch {}
   return {};
+}
+
+function readApptStoreShared() {
+  return apptStoreEnc.read();
 }
 
 // Bookings land in BOTH stores (patient app saves to the shared store, doctor
 // calendar uses the DB) — a slot taken in either must not be bookable again.
 function sharedStoreSlotTaken(dateStr, startTime) {
-  const store = readJsonStore(APPT_STORE_PATH);
+  const store = readApptStoreShared();
   for (const appts of Object.values(store)) {
     if (!Array.isArray(appts)) continue;
     for (const a of appts) {

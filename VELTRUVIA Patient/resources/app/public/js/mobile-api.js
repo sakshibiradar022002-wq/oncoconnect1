@@ -83,6 +83,16 @@
     } catch (e) { /* fall through to original fetch */ }
     return origFetch(input, init).then(function (res) {
       try { captureLogin(res); } catch (e) {}
+      try { captureRefreshed(res); } catch (e) {}
+      // A 401 on a request that CARRIED a token means the session expired or
+      // was revoked (not a failed login — login 401s carry no token). Tell
+      // the portal UIs honestly instead of letting them blame "no accounts".
+      if (res.status === 401) {
+        try {
+          var hadTok = !!(init.headers && typeof init.headers.get === 'function' && init.headers.get('Authorization'));
+          if (hadTok) window.dispatchEvent(new CustomEvent('veltruvia:session-expired'));
+        } catch (e) {}
+      }
       return res;
     });
   };
@@ -108,6 +118,24 @@
     state.token = '';
     try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
   });
+  window.addEventListener('veltruvia:session-expired', function () {
+    state.token = '';
+    try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+  });
+
+  // The server sliding-refresh re-mints the token past day 20 and returns it
+  // in this header (CORS-exposed). Swap it in so the APK never hard-expires.
+  function captureRefreshed(res) {
+    if (!IS_NATIVE) return;
+    try {
+      var fresh = res && res.headers && res.headers.get('X-Veltruvia-Refreshed-Token');
+      if (fresh && fresh !== state.token) {
+        state.token = fresh;
+        lsSet(TOKEN_KEY, fresh);
+        console.log('[mobile] session token renewed (sliding refresh)');
+      }
+    } catch (e) {}
+  }
 
   // ── WebSocket wrapper (telehealth signaling) ─────────────────────
   var OrigWS = window.WebSocket;

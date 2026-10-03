@@ -3,8 +3,9 @@
   "productName": "VELTRUVIA Doctor",
   "publish": {
     "provider": "github",
-    "owner": "videju",
-    "repo": "veltruvia"
+    "owner": "sakshibiradar022002-wq",
+    "repo": "oncoconnect1",
+    "channel": "latest-doctor"
   },
   "directories": {
     "output": "dist-desktop"

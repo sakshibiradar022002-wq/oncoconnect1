@@ -26,8 +26,28 @@ import { db, writeAudit } from '../db/index.js';
 import { encryptPHI, decryptPHI, randomToken } from '../crypto.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
+import { createEncryptedStore } from '../lib/json-stores.js';
 
 export const enhanceRouter = Router();
+
+// ── MRN access guard (mirrors requireMrnAccess in routes/sync.js) ──
+// kv-patient sessions carry subjectId "<doctorId>::<MRN>"; the previous
+// check (owner_id === 'pat_' + mrn) could NEVER match a patient session,
+// so patients were locked out of their own attachments and trends.
+async function canAccessMrn(req, mrn) {
+  if (!req.auth) return false;
+  if (req.auth.role === 'kv-patient') {
+    return String(req.auth.subjectId).split('::')[1] === mrn;
+  }
+  if (req.auth.role === 'admin') return true;
+  if (!['doctor', 'lab'].includes(req.auth.role)) return false;
+  // Doctors/labs: owns the chart (pat_<mrn> under their id)?
+  try {
+    const row = await db.prepare('SELECT k FROM kv_store WHERE owner_id = ? AND k = ?')
+      .get(req.auth.subjectId, 'pat_' + mrn);
+    return !!row;
+  } catch { return false; }
+}
 
 const DATA_DIR = _dirname(process.env.DB_PATH || './data/veltruvia.db');
 const ATTACH_DIR = _join(DATA_DIR, 'attachments');
@@ -142,7 +162,7 @@ export async function computeDeltaCheck({ patientMrn, biomarker, numericValue, r
     try {
       const patRow = await db.prepare("SELECT v_enc FROM kv_store WHERE k = ?").get('pat_' + patientMrn);
       if (patRow?.v_enc) {
-        const pat = JSON.parse(decryptPHI(patRow.v_enc));
+        const pat = decryptPHI(patRow.v_enc); // decryptPHI already JSON.parses
         dob = pat.dob || pat.dateOfBirth || null;
         sex = String(pat.sex || pat.gender || 'any').toLowerCase().startsWith('f') ? 'female'
             : String(pat.sex || pat.gender || 'any').toLowerCase().startsWith('m') ? 'male' : 'any';
@@ -198,7 +218,7 @@ enhanceRouter.post('/lab/ranges', authenticate, requireRole('admin'), validate(r
   await db.prepare(`INSERT INTO reference_ranges (id, biomarker, unit, sex, min, max, age_min, age_max, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`).run(
     randomToken(12), canonName(biomarker), unit || null, sex, min, max, ageMin, ageMax);
-  writeAudit({ userId: req.auth.subjectId, action: 'range_upserted', category: 'clinical', details: { biomarker } });
+  writeAudit({ actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'range.upserted', targetId: canonName(biomarker), detail: { biomarker, sex, min, max }, ip: req.ip });
   res.json({ ok: true });
 }));
 
@@ -206,7 +226,7 @@ enhanceRouter.delete('/lab/ranges/:id', authenticate, requireRole('admin'), asyn
   const row = await db.prepare('SELECT biomarker FROM reference_ranges WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'Range not found' });
   await db.prepare('DELETE FROM reference_ranges WHERE id = ?').run(req.params.id);
-  writeAudit({ userId: req.auth.subjectId, action: 'range_deleted', category: 'clinical', details: { id: req.params.id, biomarker: row.biomarker } });
+  writeAudit({ actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'range.deleted', targetId: req.params.id, detail: { biomarker: row.biomarker }, ip: req.ip });
   res.json({ ok: true });
 }));
 
@@ -214,22 +234,18 @@ enhanceRouter.delete('/lab/ranges/:id', authenticate, requireRole('admin'), asyn
 // ═══════════════════════════════════════════════════════════════════
 // Vitals & lab trends — reads existing stores, no duplication
 // ═══════════════════════════════════════════════════════════════════
-function readLogsStore() {
-  const p = _join(DATA_DIR, 'logs-store.json');
-  try { if (_existsSync(p)) return JSON.parse(_readFileSync(p, 'utf-8')); } catch {}
-  return {};
-}
+const _logsEnc = createEncryptedStore('logs-store.json', { label: 'logs-store' });
+function readLogsStore() { return _logsEnc.read(); }
 
 enhanceRouter.get('/trends/vitals/:mrn', authenticate, requireRole('doctor', 'admin', 'kv-patient'), asyncHandler(async (req, res) => {
   const mrn = String(req.params.mrn || '').toUpperCase();
-  // Patients may only read their own chart
-  if (req.auth.role === 'kv-patient' && req.auth.subjectId !== 'pat_' + mrn) {
-    // fall through to ownership check via kv_store owner
-    const row = await db.prepare('SELECT owner_id FROM kv_store WHERE k = ?').get('pat_' + mrn);
-    if (!row || row.owner_id !== req.auth.subjectId) return res.status(403).json({ error: 'Forbidden' });
-  }
-  const logs = readLogsStore()[mrn] || [];
-  const points = logs
+  // Patients read their own chart; doctors only charts they own.
+  if (!(await canAccessMrn(req, mrn))) return res.status(403).json({ error: 'Forbidden' });
+  // The logs store is keyed [mrn][date] — an OBJECT of day-objects, not an
+  // array. Object.values() it or .map() throws and the endpoint 500s.
+  const days = readLogsStore()[mrn] || {};
+  const logs = Object.values(days);
+  const points = (Array.isArray(days) ? days : logs)
     .map(l => ({
       date: l.date || (l.savedAt || '').slice(0, 10),
       bp: l.bp || null,             // "120/80"
@@ -251,10 +267,7 @@ enhanceRouter.get('/trends/vitals/:mrn', authenticate, requireRole('doctor', 'ad
 
 enhanceRouter.get('/trends/labs/:mrn', authenticate, requireRole('doctor', 'admin', 'kv-patient'), asyncHandler(async (req, res) => {
   const mrn = String(req.params.mrn || '').toUpperCase();
-  if (req.auth.role === 'kv-patient' && req.auth.subjectId !== 'pat_' + mrn) {
-    const row = await db.prepare('SELECT owner_id FROM kv_store WHERE kv_store.k = ?').get('pat_' + mrn);
-    if (!row || row.owner_id !== req.auth.subjectId) return res.status(403).json({ error: 'Forbidden' });
-  }
+  if (!(await canAccessMrn(req, mrn))) return res.status(403).json({ error: 'Forbidden' });
   const rows = await db.prepare(`
     SELECT biomarker, result, numeric_value, report_date, created_at FROM biomarker_results
     WHERE patient_mrn = ? AND numeric_value IS NOT NULL
@@ -301,11 +314,8 @@ enhanceRouter.post('/attachments/:mrn', authenticate, requireRole('doctor', 'adm
   const mrn = String(req.params.mrn || '').toUpperCase();
   const kind = (req.headers['x-kind'] || 'document');
   const note = req.headers['x-note'] || '';
-  // Patients can upload only to their own chart
-  if (req.auth.role === 'kv-patient') {
-    const row = await db.prepare('SELECT owner_id FROM kv_store WHERE k = ?').get('pat_' + mrn);
-    if (!row || row.owner_id !== req.auth.subjectId) return res.status(403).json({ error: 'Forbidden' });
-  }
+  // Patients upload only to their own chart; doctors only to charts they own.
+  if (!(await canAccessMrn(req, mrn))) return res.status(403).json({ error: 'Forbidden' });
   // Body arrives via express.raw (Buffer) when mounted; fall back to
   // streaming for direct node boots without the raw parser.
   let buf;
@@ -344,24 +354,18 @@ enhanceRouter.post('/attachments/:mrn', authenticate, requireRole('doctor', 'adm
   await db.prepare(`INSERT INTO kv_store (owner_id, k, v_enc, updated_at) VALUES (?, ?, ?, datetime('now'))`)
     .run(req.auth.subjectId, 'att_' + id, encryptPHI(JSON.stringify(meta)));
 
-  writeAudit({ userId: req.auth.subjectId, action: 'attachment_uploaded', category: 'clinical', details: { mrn, filename, bytes: buf.length }, patientMrn: mrn });
+  writeAudit({ actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'attachment.uploaded', targetId: mrn, detail: { filename, bytes: buf.length }, ip: req.ip });
   res.json({ ok: true, id, filename, bytes: buf.length, sha256: sha });
 }));
 
 enhanceRouter.get('/attachments/:mrn', authenticate, requireRole('doctor', 'admin', 'kv-patient'), asyncHandler(async (req, res) => {
   const mrn = String(req.params.mrn || '').toUpperCase();
-  // Cross-tenant guard: patients may only see their own chart; doctors only
-  // attachments under their own owner_id (their own patients). MRNs are
-  // guessable, so without this any doctor could enumerate another doctor's
-  // patient files. Admin sees all (operator console).
-  if (req.auth.role === 'kv-patient') {
-    const prow = await db.prepare('SELECT owner_id FROM kv_store WHERE k = ?').get('pat_' + mrn);
-    if (!prow || prow.owner_id !== req.auth.subjectId) return res.status(403).json({ error: 'Forbidden' });
-  }
+  // Cross-tenant guard: patients see only their own chart; doctors only
+  // charts they own; admins see all (operator console).
+  if (!(await canAccessMrn(req, mrn))) return res.status(403).json({ error: 'Forbidden' });
   const rows = await db.prepare("SELECT owner_id, k, v_enc FROM kv_store WHERE k LIKE 'att_%'").all();
   const list = [];
   for (const r of rows) {
-    if (req.auth.role !== 'admin' && r.owner_id !== req.auth.subjectId) continue;
     try {
       const m = JSON.parse(decryptPHI(r.v_enc));
       if (m.mrn === mrn) list.push(m);
@@ -377,14 +381,8 @@ enhanceRouter.get('/attachments/:mrn/:id', authenticate, requireRole('doctor', '
   const row = await db.prepare("SELECT owner_id, v_enc FROM kv_store WHERE k = ?").get('att_' + id);
   if (!row) return res.status(404).json({ error: 'Not found' });
   const m = JSON.parse(decryptPHI(row.v_enc));
-  // Cross-tenant guard (same rule as the list route): doctors/admins must own
-  // the attachment record; patients must own the chart it belongs to.
-  if (req.auth.role === 'kv-patient') {
-    const prow = await db.prepare('SELECT owner_id FROM kv_store WHERE k = ?').get('pat_' + mrn);
-    if (!prow || prow.owner_id !== req.auth.subjectId) return res.status(403).json({ error: 'Forbidden' });
-  } else if (req.auth.role !== 'admin' && row.owner_id !== req.auth.subjectId) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
+  // Cross-tenant guard (same rule as the list route).
+  if (!(await canAccessMrn(req, mrn))) return res.status(403).json({ error: 'Forbidden' });
   if (m.mrn !== mrn) return res.status(404).json({ error: 'Not found' });
   const p = _join(ATTACH_DIR, m.id + m.ext);
   if (!_existsSync(p)) return res.status(404).json({ error: 'File missing' });
@@ -418,6 +416,6 @@ enhanceRouter.delete('/attachments/:mrn/:id', authenticate, requireRole('doctor'
   const m = JSON.parse(decryptPHI(row.v_enc));
   await db.prepare("DELETE FROM kv_store WHERE k = ?").run('att_' + id);
   try { _unlinkSync(_join(ATTACH_DIR, m.id + m.ext)); } catch {}
-  writeAudit({ userId: req.auth.subjectId, action: 'attachment_deleted', category: 'clinical', details: { id }, patientMrn: m.mrn });
+  writeAudit({ actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'attachment.deleted', targetId: id, detail: { mrn: m.mrn }, ip: req.ip });
   res.json({ ok: true });
 }));

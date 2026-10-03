@@ -2446,6 +2446,9 @@ async function saveAvailability(){
   // Tell the truth about whether patients will actually see this schedule.
   if(stored||dbOk)showAvailMsg('✅ Schedule saved! Patients can book during these times.','success');
   else showAvailMsg('⚠️ Could not reach the server — schedule kept on this computer only. Check the connection, then press Save Schedule again.','warn');
+  // v2.5: re-read what the server actually holds (incl. one-off date rows)
+  // so the editor never shows stale or "vanished" rows after a save.
+  try{await renderAvailabilityPanel();}catch(e){}
   renderAvailSlotPreview();
 }
 

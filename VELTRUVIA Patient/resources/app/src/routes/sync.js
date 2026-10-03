@@ -836,34 +836,24 @@ syncRouter.post('/patient/password-change-approve', authenticate, requireRole('k
   res.json({ ok: true, message: 'Password change approved. Your doctor has been notified and can retrieve the new credentials.' });
 }));
 
-// ── Shared Patient Store (JSON file fallback for cross-app data sharing) ──
+// ── Shared stores (ENCRYPTED at rest — v2.5) ──────────────────────────
 // sql.js is in-memory per process — Doctor and Patient can't share the same
-// in-memory DB. This JSON-file store lets the Doctor write patient data to
-// disk and the Patient/Lab read it directly, bypassing sql.js entirely.
-import { readFileSync as _readFileSync, writeFileSync as _writeFileSync, existsSync as _existsSync, mkdirSync as _mkdirSync } from 'node:fs';
-import { join as _join, dirname as _dirname } from 'node:path';
+// in-memory DB. These JSON-file stores let the apps share data on disk, and
+// as of v2.5 every one of them is AES-256-GCM encrypted (they previously
+// held PHI as plaintext JSON). Legacy plaintext files are migrated on first
+// read and deleted; new files are <name>.enc.json.
+import { createEncryptedStore } from '../lib/json-stores.js';
 
-const PATIENT_STORE_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'patient-store.json');
-try { _mkdirSync(_dirname(PATIENT_STORE_PATH), { recursive: true }); } catch {}
+const patientStore = createEncryptedStore('patient-store.json', { label: 'patient-store' });
+const logStore = createEncryptedStore('logs-store.json', { label: 'log-store' });
+const msgStore = createEncryptedStore('messages-store.json', { label: 'msg-store' });
+const apptStore = createEncryptedStore('appointments-store.json', { label: 'appt-store' });
+const availStore = createEncryptedStore('availability-store.json', { label: 'avail-store' });
+const thRoomsStore = createEncryptedStore('telehealth-rooms.json', { label: 'th-rooms' });
+const thSignalsStore = createEncryptedStore('telehealth-signals.json', { label: 'th-signals' });
 
-function readPatientStore() {
-  try {
-    if (_existsSync(PATIENT_STORE_PATH)) {
-      return JSON.parse(_readFileSync(PATIENT_STORE_PATH, 'utf-8'));
-    }
-  } catch {}
-  return {};
-}
-
-function writePatientStore(data) {
-  try {
-    _writeFileSync(PATIENT_STORE_PATH, JSON.stringify(data, null, 2), 'utf-8');
-    return true;
-  } catch (e) {
-    console.error('[patient-store] write failed:', e.message);
-    return false;
-  }
-}
+function readPatientStore() { return patientStore.read(); }
+function writePatientStore(data) { return patientStore.write(data); }
 
 // ── Zod schemas for shared store endpoints ──
 const savePatientSchema = z.object({
@@ -889,7 +879,9 @@ const saveLogSchema = z.object({
 const sendMessageSchema = z.object({
   mrn: z.string().min(1).max(40).transform(s => s.trim().toUpperCase()),
   docId: z.string().min(1).max(64),
-  role: z.enum(['doctor', 'patient']),
+  // NOTE: role is no longer accepted from the client — it is derived from
+  // the authenticated session in the route handler (a client-supplied role
+  // let any caller spoof 'doctor' messages into a patient's chat).
   text: z.string().min(1).max(5000),
 });
 const saveAppointmentSchema = z.object({
@@ -899,7 +891,9 @@ const saveAppointmentSchema = z.object({
 const updateAppointmentSchema = z.object({
   mrn: z.string().min(1).max(40).transform(s => s.trim().toUpperCase()),
   index: z.number().int().min(0),
-  status: z.string().min(1).max(50),
+  // Enum guard: arbitrary strings (max 50) used to flow straight into the
+  // shared store and the patient app's status-color map.
+  status: z.enum(['Scheduled', 'Requested', 'Confirmed', 'Declined', 'Cancelled', 'cancelled', 'Completed', 'completed', 'Confirmed ', 'pending', 'confirmed']),
 });
 const saveAvailabilitySchema = z.object({
   docId: z.string().min(1).max(64),
@@ -1016,18 +1010,9 @@ syncRouter.post('/lab-store-login', loginLimiter, validate(labStoreLoginSchema),
   res.status(401).json({ error: 'Invalid lab credentials' });
 }));
 
-// ═══ Shared Log Store ════════════════════════════════════════════════
-const LOG_STORE_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'logs-store.json');
-try { _mkdirSync(_dirname(LOG_STORE_PATH), { recursive: true }); } catch {}
-
-function readLogStore() {
-  try { if (_existsSync(LOG_STORE_PATH)) return JSON.parse(_readFileSync(LOG_STORE_PATH, 'utf-8')); } catch {}
-  return {};
-}
-function writeLogStore(data) {
-  try { _writeFileSync(LOG_STORE_PATH, JSON.stringify(data, null, 2), 'utf-8'); return true; }
-  catch (e) { console.error('[log-store] write failed:', e.message); return false; }
-}
+// ═══ Shared Log Store (encrypted — see createEncryptedStore above) ═══
+function readLogStore() { return logStore.read(); }
+function writeLogStore(data) { return logStore.write(data); }
 
 // Patient: save daily log to shared store
 syncRouter.post('/save-log', authenticate, validate(saveLogSchema), asyncHandler(async (req, res) => {
@@ -1050,23 +1035,18 @@ syncRouter.get('/get-logs/:mrn', authenticate, asyncHandler(async (req, res) => 
   res.json({ ok: true, logs });
 }));
 
-// ═══ Shared Message Store ═════════════════════════════════════════════
-const MSG_STORE_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'messages-store.json');
-try { _mkdirSync(_dirname(MSG_STORE_PATH), { recursive: true }); } catch {}
-
-function readMsgStore() {
-  try { if (_existsSync(MSG_STORE_PATH)) return JSON.parse(_readFileSync(MSG_STORE_PATH, 'utf-8')); } catch {}
-  return {};
-}
-function writeMsgStore(data) {
-  try { _writeFileSync(MSG_STORE_PATH, JSON.stringify(data, null, 2), 'utf-8'); return true; }
-  catch (e) { console.error('[msg-store] write failed:', e.message); return false; }
-}
+// ═══ Shared Message Store (encrypted) ═════════════════════════════════
+function readMsgStore() { return msgStore.read(); }
+function writeMsgStore(data) { return msgStore.write(data); }
 
 // Send a message (doctor or patient)
 syncRouter.post('/send-message', authenticate, validate(sendMessageSchema), asyncHandler(async (req, res) => {
-  const { mrn, docId, role, text } = req.valid;
+  const { mrn, docId, text } = req.valid;
   if (!(await requireMrnAccess(req, res, mrn))) return;
+  // Derive the sender role from the SESSION, never from the request body —
+  // the previous client-supplied role let any caller impersonate the other
+  // side of the conversation.
+  const role = req.auth.role === 'kv-patient' ? 'patient' : 'doctor';
   const store = readMsgStore();
   const key = docId + '_' + mrn;
   if (!store[key]) store[key] = [];
@@ -1166,23 +1146,26 @@ syncRouter.get('/get-messages/:docId/:mrn', authenticate, asyncHandler(async (re
   res.json({ ok: true, msgs });
 }));
 
-// ═══ Shared Appointments Store ═══════════════════════════════════════
-const APPT_STORE_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'appointments-store.json');
-try { _mkdirSync(_dirname(APPT_STORE_PATH), { recursive: true }); } catch {}
-
-function readApptStore() {
-  try { if (_existsSync(APPT_STORE_PATH)) return JSON.parse(_readFileSync(APPT_STORE_PATH, 'utf-8')); } catch {}
-  return {};
-}
-function writeApptStore(data) {
-  try { _writeFileSync(APPT_STORE_PATH, JSON.stringify(data, null, 2), 'utf-8'); return true; }
-  catch (e) { console.error('[appt-store] write failed:', e.message); return false; }
-}
+// ═══ Shared Appointments Store (encrypted) ═══════════════════════════
+function readApptStore() { return apptStore.read(); }
+function writeApptStore(data) { return apptStore.write(data); }
 
 // Save appointment (doctor or patient)
 syncRouter.post('/save-appointment', authenticate, validate(saveAppointmentSchema), asyncHandler(async (req, res) => {
   const { mrn, appointment } = req.valid;
   if (!(await requireMrnAccess(req, res, mrn))) return;
+  // Double-booking guard (v2.5): the store previously accepted ANY slot,
+  // bypassing the check /api/schedule/book enforces — two patients booking
+  // the same time both saw "saved ✓". Declined/cancelled entries free the
+  // slot again.
+  const a = appointment || {};
+  if (a.date && a.time) {
+    const store0 = readApptStore();
+    const clash = Object.values(store0).some(appts => Array.isArray(appts) && appts.some(x =>
+      x && x.date === a.date && x.time === a.time &&
+      !/declined|cancel/i.test(String(x.status || ''))));
+    if (clash) return res.status(409).json({ ok: false, error: 'That time was just taken — please pick another slot.' });
+  }
   const store = readApptStore();
   if (!store[mrn]) store[mrn] = [];
   store[mrn].push({ ...appointment, savedAt: new Date().toISOString() });
@@ -1213,18 +1196,9 @@ syncRouter.get('/get-appointments/:mrn', authenticate, asyncHandler(async (req, 
   res.json({ ok: true, appointments: appts });
 }));
 
-// ═══ Shared Availability Store ═══════════════════════════════════════
-const AVAIL_STORE_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'availability-store.json');
-try { _mkdirSync(_dirname(AVAIL_STORE_PATH), { recursive: true }); } catch {}
-
-function readAvailStore() {
-  try { if (_existsSync(AVAIL_STORE_PATH)) return JSON.parse(_readFileSync(AVAIL_STORE_PATH, 'utf-8')); } catch {}
-  return {};
-}
-function writeAvailStore(data) {
-  try { _writeFileSync(AVAIL_STORE_PATH, JSON.stringify(data, null, 2), 'utf-8'); return true; }
-  catch (e) { console.error('[avail-store] write failed:', e.message); return false; }
-}
+// ═══ Shared Availability Store (encrypted) ═══════════════════════════
+function readAvailStore() { return availStore.read(); }
+function writeAvailStore(data) { return availStore.write(data); }
 
 // Save doctor availability (doctor/admin only)
 syncRouter.post('/save-availability', authenticate, requireRole('doctor', 'admin'), validate(saveAvailabilitySchema), asyncHandler(async (req, res) => {
@@ -1296,30 +1270,27 @@ async function buildSlotCalendar(ownerId, days) {
   return slotsByDate;
 }
 
-// Generate bookable slots for next N days (no auth — the picker is public)
-// Availability resolution + slot expansion live in src/lib/availability.js so
-// /schedule/book validates against EXACTLY what this endpoint offers.
-syncRouter.get('/get-slots/:docId', asyncHandler(async (req, res) => {
+// Generate bookable slots for next N days (no auth — the picker is public,
+// but rate-limited: unauthenticated schedule enumeration previously had no
+// throttle at all).
+const slotsLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many schedule requests' } });
+syncRouter.get('/get-slots/:docId', slotsLimiter, asyncHandler(async (req, res) => {
   const { docId } = req.params;
-  const days = parseInt(req.query.days || '30', 10);
+  const days = Math.min(parseInt(req.query.days || '30', 10) || 30, 60);
   res.json({ ok: true, slots: await buildSlotCalendar(docId, days) });
 }));
 
 // Generate bookable slots from ANY doctor (used when patient _docId is null)
-syncRouter.get('/get-slots-all', asyncHandler(async (req, res) => {
-  const days = parseInt(req.query.days || '30', 10);
+syncRouter.get('/get-slots-all', slotsLimiter, asyncHandler(async (req, res) => {
+  const days = Math.min(parseInt(req.query.days || '30', 10) || 30, 60);
   res.json({ ok: true, slots: await buildSlotCalendar(null, days) });
 }));
 
-// ═══ Shared Telehealth (Video Calls) ════════════════════════════════
-// File-based stores (shared across all desktop apps on same machine)
-const TH_ROOM_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'telehealth-rooms.json');
-const TH_SIGNAL_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'telehealth-signals.json');
-try { _mkdirSync(_dirname(TH_ROOM_PATH), { recursive: true }); } catch {}
-function readThRooms() { try { if (_existsSync(TH_ROOM_PATH)) return JSON.parse(_readFileSync(TH_ROOM_PATH, 'utf-8')); } catch {} return {}; }
-function writeThRooms(d) { try { _writeFileSync(TH_ROOM_PATH, JSON.stringify(d, null, 2), 'utf-8'); } catch {} }
-function readThSignals() { try { if (_existsSync(TH_SIGNAL_PATH)) return JSON.parse(_readFileSync(TH_SIGNAL_PATH, 'utf-8')); } catch {} return {}; }
-function writeThSignals(d) { try { _writeFileSync(TH_SIGNAL_PATH, JSON.stringify(d, null, 2), 'utf-8'); } catch {} }
+// ═══ Shared Telehealth (Video Calls) — encrypted stores ═════════════
+function readThRooms() { return thRoomsStore.read(); }
+function writeThRooms(d) { thRoomsStore.write(d); }
+function readThSignals() { return thSignalsStore.read(); }
+function writeThSignals(d) { thSignalsStore.write(d); }
 
 function genRoomCode() {
   // Crypto-random: 6 chars from a 32-char unambiguous alphabet (uniform — 256 % 32 == 0).

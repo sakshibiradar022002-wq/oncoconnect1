@@ -789,23 +789,26 @@ clinicalFeaturesRouter.delete('/data/:mrn', requireRole('doctor', 'admin'), asyn
     deleted['kv_store'] = kvDeleted;
   } catch {}
 
-  // Delete from shared JSON stores
+  // Delete from shared JSON stores (v2.5: encrypted via lib/json-stores.js;
+  // read() transparently migrates any legacy plaintext file first). Message
+  // conversations are keyed '<docId>_<mrn>', so key match must handle both
+  // the plain-mrn stores and the conversation suffix.
   try {
-    const { readFileSync, writeFileSync, existsSync } = await import('node:fs');
-    const { join, dirname } = await import('node:path');
-    const storeFiles = ['patient-store.json', 'logs-store.json', 'messages-store.json', 'appointments-store.json'];
-    for (const sf of storeFiles) {
-      const storePath = join(dirname(process.env.DB_PATH || '.'), sf);
-      if (existsSync(storePath)) {
-        try {
-          const data = JSON.parse(readFileSync(storePath, 'utf-8'));
-          if (data[mrn]) {
-            delete data[mrn];
-            writeFileSync(storePath, JSON.stringify(data, null, 2));
-            deleted[sf] = 1;
-          }
-        } catch {}
+    const { createEncryptedStore } = await import('../lib/json-stores.js');
+    for (const sf of ['patient-store.json', 'logs-store.json', 'appointments-store.json']) {
+      const st = createEncryptedStore(sf, { label: 'erasure' });
+      const data = st.read();
+      if (data && data[mrn]) {
+        delete data[mrn];
+        if (st.write(data)) deleted[sf] = 1;
       }
+    }
+    const msgStore = createEncryptedStore('messages-store.json', { label: 'erasure-msgs' });
+    const msgs = msgStore.read();
+    const convKeys = Object.keys(msgs || {}).filter(k => k === mrn || k.endsWith('_' + mrn));
+    if (convKeys.length) {
+      convKeys.forEach(k => { delete msgs[k]; });
+      if (msgStore.write(msgs)) deleted['messages-store.json'] = convKeys.length;
     }
   } catch {}
 

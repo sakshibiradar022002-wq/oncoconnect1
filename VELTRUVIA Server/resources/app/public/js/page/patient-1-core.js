@@ -68,6 +68,11 @@ async function doLogin(){
   const mrn=v('li-mrn'),pass=v('li-pass');
   const errEl=document.getElementById('pat-login-err');
   if(!mrn||!pass){showErr(errEl,'Enter MRN and password.');return}
+  // v2.5: track WHY login failed so the messages below are honest instead
+  // of the old blanket "No patient accounts exist yet" (which fired for
+  // wrong passwords AND offline phones alike).
+  let sawServer=false,wrongCreds=false;
+  const netDown=e=>/failed to fetch|networkerror|load failed|timed?\s?out/i.test(String(e&&e.message||e));
   // ── 1. Try shared JSON store login (most reliable cross-app method) ──
   try{
     const result=await api('/sync/store-login',{method:'POST',body:JSON.stringify({mrn, password:pass})});
@@ -78,7 +83,8 @@ async function doLogin(){
       finishPatientLogin(pat,true);
       return;
     }
-  }catch(e){/* store login failed, trying server */}
+    sawServer=true;
+  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
   // ── 2. Try server login (sql.js DB) ──
   try{
     const result=await api('/sync/patient-login',{method:'POST',body:JSON.stringify({mrn, password:pass})});
@@ -91,12 +97,18 @@ async function doLogin(){
         return;
       }
     }
-  }catch(e){/* Server unreachable or invalid credentials — try local fallback */}
+    sawServer=true;
+  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
   // ── 3. Local fallback (offline mode) ──
   let pat=null;
   if(LS.get('pat_'+mrn))pat=LS.get('pat_'+mrn);
   else{const keys=LS.keys('pat_');for(const k of keys){const p=LS.get(k);if(p&&p.mrn&&p.mrn.toLowerCase()===mrn.toLowerCase()){pat=p;break}}}
-  if(!pat){showErr(errEl,'No patient accounts exist yet. Ask your doctor to create one.');return}
+  if(!pat){
+    if(wrongCreds)showErr(errEl,'Wrong MRN or password. Check the slip your doctor gave you and try again.');
+    else if(sawServer)showErr(errEl,'No account found for that MRN on the clinic server. Ask your doctor to register you.');
+    else showErr(errEl,"Can't reach the clinic server, and this device has no saved copy of this account. Connect to the internet once (Wi-Fi or mobile data) to log in for the first time.");
+    return;
+  }
   if(pat.pass&&pat.pass.startsWith('pbkdf2v2:')){
     if(!await verifyPBKDF2v2(pass,pat.pass)){showErr(errEl,'Wrong password.');return}
   }else if(pat.pass&&pat.pass.startsWith('pbkdf2:')){
@@ -118,6 +130,7 @@ function finishPatientLogin(pat, viaServer){
   document.getElementById('cal-today-badge').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   renderCalendar();
   checkPendingPCR();
+  try{setupMedReminders();}catch(e){}   // v2.5: (re)build reminders + device alarms on every login
   const b=document.getElementById('conn-banner');
   if(b){b.textContent=viaServer?'🔗 Connected to Doctor Software':'🔗 Offline mode — data will sync when the server is reachable';b.className='conn-banner';}
   try{
@@ -135,6 +148,17 @@ function finishPatientLogin(pat, viaServer){
     }
   }catch(e){}
 }
+
+// v2.5: honest expired-session handling — a 401 on a request that carried a
+// token means the 30-day session finally ended (or was revoked). Return to
+// the login screen with a clear message instead of the old confusion.
+window.addEventListener('veltruvia:session-expired',function(){
+  if(!currentPat)return;
+  currentPat=null;
+  try{document.getElementById('app-shell').style.display='none';}catch(e){}
+  try{document.getElementById('screen-login').style.display='block';}catch(e){}
+  try{const errEl=document.getElementById('pat-login-err');if(errEl)showErr(errEl,'Your session has expired — please log in again.');}catch(e){}
+});
 
 // Reopen → skip login when the user chose Stay signed-in. Uses the existing
 // session (cookie in web/Electron, Bearer token in native apps) — never a
@@ -635,10 +659,11 @@ function rxPrintPaper(){
       const dose=p?`<span class="rx-dose">${esc(rx.timing)}</span><span class="rx-line">${esc(p)}</span>`:esc(rx.dosage||'—');
       return `<tr><td><span class="rx-name">${esc(rx.medication)}</span>${(rx.composition||rx.genericName)?`<span class="rx-comp">${esc(rx.composition||rx.genericName)}</span>`:''}</td><td style="white-space:nowrap">${dose}</td><td><span class="rx-when">${esc(rx.whenToTake||'—')}</span><span class="rx-line">${esc([rx.frequency,rx.duration].filter(Boolean).join(' · '))}</span></td></tr>`;
     }).join('');
+    const docName=(all.find(x=>x.doctorName)||{}).doctorName||'';
     const html=`
     <div class="page">
       <div class="hdr">
-        <div class="hdr-left"><h1>℞ Prescription</h1><div class="inst-name">VELTRUVIA Neuro-Oncology</div><div class="sub">Patient medication record</div></div>
+        <div class="hdr-left"><h1>℞ Prescription</h1><div class="inst-name">VELTRUVIA Neuro-Oncology</div><div class="sub">Patient medication record${docName?' · Prescribed by '+esc(docName):''}</div></div>
         <div class="hdr-right"><div class="report-id">${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div></div>
       </div>
       <div class="pat-banner">
@@ -652,7 +677,7 @@ function rxPrintPaper(){
       </table>
       <div style="font-size:9.5px;color:#5b6b82;line-height:1.6;border-top:1px solid #d8e0ec;padding-top:8px;">
         <b>Dosage key:</b> numbers are doses in the Morning - Afternoon - Night pattern. Example: 0-0-1 = one dose at night.<br>
-        Generated from the VELTRUVIA record on ${new Date().toLocaleString()}. Please confirm with your doctor before changing any medicine.
+        ${docName?`Prescribed by ${esc(docName)}. `:''}Generated from the VELTRUVIA record on ${new Date().toLocaleString()}. Please confirm with your doctor before changing any medicine.
       </div>
     </div>`;
     if(window._vxReportOverlay){_vxReportOverlay('Prescription — '+(pat.name||pat.mrn),`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Prescription</title><style>${_RX_PRINT_CSS}</style></head><body>${html}</body></html>`,{});}
@@ -1053,9 +1078,37 @@ async function exportMyData(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='MyData_'+currentPat.mrn+'.json';a.click();
 }
 
-// ═══ PUSH NOTIFICATIONS (no service worker) ═══
+// ═══ PUSH NOTIFICATIONS (wired to push-client.js + sw.js in v2.5 —
+// the server always supported Web Push; the button used to show a
+// "removed" alert, which eroded trust). ═══
+function _vxUrlB64ToU8(base64String){
+  const padding='='.repeat((4-(base64String.length%4))%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);
+  return Uint8Array.from(raw,(c)=>c.charCodeAt(0));
+}
 async function subscribeToPush(){
-  AppDialog.alert('Push notifications require a service worker which has been removed.');
+  try{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)){
+      AppDialog.alert('Push reminders work in the VELTRUVIA web app (open veltruvia.duckdns.org in Chrome). On this device, medicine reminders fire while the app is open.');
+      return;
+    }
+    const reg=await navigator.serviceWorker.register('./sw.js');
+    await navigator.serviceWorker.ready;
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){AppDialog.alert('Notifications are blocked for this app. Enable them in your browser/device settings to get reminders.');return}
+    const keyRes=await fetch('/api/push/vapid-public-key');
+    if(!keyRes.ok){AppDialog.alert('Reminders could not be enabled — push is not configured on the clinic server yet.');return}
+    const {key}=await keyRes.json();
+    if(!key){AppDialog.alert('Reminders could not be enabled — push is not configured on the clinic server yet.');return}
+    const existing=await reg.pushManager.getSubscription();
+    const sub=existing||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_vxUrlB64ToU8(key)});
+    const r=await fetch('/api/push/subscribe',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON()})});
+    if(r.ok)AppDialog.alert('✅ Reminders are ON for this device. You\'ll get a notification when appointments change.');
+    else AppDialog.alert('Could not save the reminder subscription (server said '+r.status+'). Please try again later.');
+  }catch(e){
+    AppDialog.alert('Could not enable reminders: '+((e&&e.message)||'permission denied')+'. Check that notifications are allowed for this site.');
+  }
 }
 
 // ═══ LAB PORTAL ═══
@@ -1180,6 +1233,7 @@ function setupMedReminders(){
     for(const id of Object.keys(all)){if(!active.some(p=>String(p.id)===String(id))){delete all[id];}}
     _remindSave(all);
     if(added)showToast('⏰ '+added+' medication reminder'+(added===1?'':'s')+' scheduled');
+    try{scheduleNativeMedReminders();}catch(e){}
   }).catch(()=>{});
 }
 function checkMedReminders(){
@@ -1201,6 +1255,46 @@ function checkMedReminders(){
 }
 setInterval(checkMedReminders,30000);
 setTimeout(setupMedReminders,4000);
+
+// v2.5: REAL device alarms on Android — the 30-second in-app timer above only
+// fires while the app is open, which is useless for a 0-0-1 dose at night.
+// With Capacitor LocalNotifications (installed in the APK build) the same
+// reminder table becomes daily OS-level alarms that fire even when VELTRUVIA
+// is closed. Silent no-op in browsers and desktop shells.
+async function scheduleNativeMedReminders(){
+  try{
+    const LN=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.LocalNotifications;
+    if(!LN)return;
+    const all=_remindAll();
+    const slots={};
+    for(const r of Object.values(all)){
+      if(!r||!r.enabled)continue;
+      for(const t of (r.times||[])){
+        (slots[t]=slots[t]||[]).push(r.med);
+      }
+    }
+    const notifications=[];
+    for(const [t,meds] of Object.entries(slots)){
+      const parts=String(t).split(':').map(Number);
+      const h=parts[0]||8,m=parts[1]||0;
+      notifications.push({
+        id:1000+(h*60+m),
+        title:'💊 VELTRUVIA medicine reminder',
+        body:'Time to take: '+meds.join(', ')+(meds.length>1?'':' (as prescribed)'),
+        schedule:{on:{hour:h,minute:m},allowWhileIdle:true},
+      });
+    }
+    if(!notifications.length)return;
+    try{const p=await LN.requestPermissions();if(p&&p.display==='denied')return;}catch(e){}
+    let pending=[];
+    try{pending=((await LN.getPending())||{notifications:[]}).notifications||[];}catch(e){}
+    const wanted=notifications.map(n=>n.id);
+    const stale=pending.map(n=>n.id).filter(id=>!wanted.includes(id));
+    if(stale.length){try{await LN.cancel({notifications:stale.map(id=>({id}))});}catch(e){}}
+    await LN.schedule({notifications});
+    console.log('[med-reminders] native daily alarms scheduled:',notifications.length);
+  }catch(e){console.debug('[med-reminders] native alarms unavailable:',e&&e.message)}
+}
 
 // ═══════════════════════════════════════════════════════════════
 // 🪑 PATIENT WAITING ROOM (v2.3) — join puts you in a queue; the

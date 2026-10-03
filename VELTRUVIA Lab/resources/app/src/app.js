@@ -165,6 +165,9 @@ if (config.isProd) {
       res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Veltruvia-Native');
+      // Let native WebViews read the sliding-renewal header (mobile-api.js
+      // swaps it into localStorage so APK sessions never hard-expire).
+      res.setHeader('Access-Control-Expose-Headers', 'X-Veltruvia-Refreshed-Token');
     }
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
@@ -209,11 +212,12 @@ app.get('/health', async (req, res) => {
       health.auditEntries = entries ? Number(entries.n) : 0;
     } catch (e) { /* non-fatal */ }
     try {
-      const { readFileSync: _rf, existsSync: _ex } = await import('node:fs');
-      const pStore = join(process.env.DB_PATH || '.', 'patient-store.json');
-      if (_ex(pStore)) {
-        const store = JSON.parse(_rf(pStore, 'utf-8'));
-        health.patients = Object.keys(store || {}).filter(function (k) { return !/^lab_/.test(k); }).length;
+      // v2.5: the patient store is now encrypted (patient-store.enc.json) via
+      // lib/json-stores.js — read() transparently migrates legacy plaintext.
+      const { createEncryptedStore } = await import('./lib/json-stores.js');
+      const store = createEncryptedStore('patient-store.json', { label: 'health-count' }).read();
+      if (store && typeof store === 'object') {
+        health.patients = Object.keys(store).filter(k => !/^lab_/.test(k)).length;
       }
     } catch (e) { /* non-fatal */ }
     try {

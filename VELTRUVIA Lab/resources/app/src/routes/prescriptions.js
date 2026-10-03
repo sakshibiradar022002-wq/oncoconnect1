@@ -14,6 +14,21 @@ import { notifySubject } from '../push.js';
 
 export const prescriptionRouter = Router();
 
+// v2.5: prescriber display-name cache (patients' paper Rx needs "Prescribed
+// by Dr. X" to be pharmacy-valid). users.name_enc is AES-GCM encrypted —
+// decrypt once per doctor per boot.
+const _docNameCache = new Map();
+async function doctorDisplayName(doctorId) {
+  if (_docNameCache.has(doctorId)) return _docNameCache.get(doctorId);
+  let name = '';
+  try {
+    const u = await db.prepare('SELECT name_enc FROM users WHERE id = ?').get(doctorId);
+    if (u && u.name_enc) name = String(decryptPHI(u.name_enc) || '');
+  } catch { /* name is optional decoration */ }
+  _docNameCache.set(doctorId, name);
+  return name;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // DOCTOR ROUTES
 // ═══════════════════════════════════════════════════════════════════
@@ -297,7 +312,9 @@ prescriptionRouter.get('/my', authenticate, requireRole('kv-patient'), patientSc
       ORDER BY created_at DESC
     `).all(ownerId, mrn);
 
-    // Strip sensitive doctor info
+    // Prescriber name for the patient's paper Rx (name only — all other
+    // doctor fields stay stripped).
+    const docName = await doctorDisplayName(ownerId);
     res.json({
       ok: true,
       prescriptions: rows.map(r => ({
@@ -316,6 +333,7 @@ prescriptionRouter.get('/my', authenticate, requireRole('kv-patient'), patientSc
         instructions: r.instructions,
         status: r.status,
         prescribedDate: r.created_at?.split('T')[0],
+        doctorName: docName || undefined,
       })),
     });
   })

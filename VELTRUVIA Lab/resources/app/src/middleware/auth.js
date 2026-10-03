@@ -107,8 +107,14 @@ export async function authenticate(req, res, next) {
       .run(expires.toISOString(), now.toISOString(), payload.jti).catch(() => {});
     recentRefresh.set(payload.jti, Date.now());
     if (recentRefresh.size > 4096) recentRefresh.clear();
-    // Cookie clients pick the new value up automatically; native apps keep
-    // working on their existing token (same jti) until it expires.
+    // Cookie clients pick the new value up automatically; native apps can't
+    // take cookies — hand the fresh token back in a response header so
+    // mobile-api.js swaps it in (same jti, extended expiry). Without this,
+    // mobile users hit a hard 401 after 30 days no matter how often they
+    // used the app.
+    if (String(req.headers['x-veltruvia-native'] || '') === '1') {
+      res.setHeader('X-Veltruvia-Refreshed-Token', fresh);
+    }
     res.cookie(COOKIE_NAME, fresh, {
       httpOnly: true,
       secure: config.isProd,

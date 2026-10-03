@@ -258,7 +258,8 @@ function createWindow() {
         { label: '🔬  Lab Portal', accelerator: 'CmdOrCtrl+3', click: () => mainWindow?.loadURL(`http://127.0.0.1:${serverPort}/lab.html`) },
         { type: 'separator' },
         { label: '🔄  Reload', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.webContents.reload() },
-        { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
+        // DevTools only in dev builds — packaged apps expose PHI via the console.
+        ...(app.isPackaged ? [] : [{ role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' }]),
       ]
     },
     {

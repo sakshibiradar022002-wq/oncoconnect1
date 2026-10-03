@@ -22,6 +22,7 @@ import net from 'node:net';
 import http from 'node:http';
 import blockchain from './blockchain.js';
 import { getServerUrl } from './shared-config.js';
+import { installDownloadPolicy } from './download-policy.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -225,12 +226,10 @@ function createWindow() {
     show: false,
   });
 
-  // Robust download prevention — cancel any download that sneaks through
-  mainWindow.webContents.session.on('will-download', (event, item) => {
-    item.cancel();
-    event.preventDefault();
-    console.log('[doctor] Download blocked');
-  });
+  // Download policy: allow the app's own in-app exports (blob:/data:),
+  // block web-initiated downloads (previously EVERY download was cancelled,
+  // which broke the patient Export My Data and ICS buttons).
+  installDownloadPolicy(mainWindow.webContents, 'doctor');
 
   // Strip Content-Disposition headers from all local responses
   mainWindow.webContents.session.webRequest.onHeadersReceived(
@@ -256,11 +255,16 @@ function createWindow() {
   });
   mainWindow.on('closed', () => { mainWindow = null; });
 
+  // DevTools only in dev builds — in packaged apps the console can read PHI
+  // from localStorage and the no-sandbox renderer has broad capability.
+  const devMenu = app.isPackaged ? [] : [
+    { type: 'separator' },
+    { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
+  ];
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'VELTRUVIA Doctor', submenu: [
       { label: '🔄 Refresh', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
-      { type: 'separator' },
-      { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
+      ...devMenu,
     ]},
     { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'close' }] },
   ]));

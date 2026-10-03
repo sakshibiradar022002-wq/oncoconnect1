@@ -661,7 +661,7 @@ function patientWelcomeCardHtml(mrn,pass,name){
       </div>
     </div>
     <div class="vx-card-foot">
-      <span>VELTRUVIA · v2.4.0</span>
+      <span>VELTRUVIA · v2.5.0</span>
       <span>Contains protected health information — handle per clinic policy.</span>
     </div>
   </div>

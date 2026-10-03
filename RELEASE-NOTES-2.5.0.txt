@@ -1,0 +1,56 @@
+VELTRUVIA 2.5.0 — Release Notes
+===============================
+
+This release is the direct result of the full-suite audit (server, all four
+apps, admin panel, APKs). Everything below is live in 2.5.0.
+
+FIXED — things that were broken
+-------------------------------
+• Patient "Export My Data" works again (desktop shells used to cancel every
+  download; downloads are now allowed, DevTools is dev-mode only).
+• Patient "Symptom Trends" loads (server trend endpoint no longer crashes).
+• Patient photo/file attachments no longer always-403 (ownership check now
+  understands patient sessions).
+• Lab batch CSV upload no longer corrupts results that contain commas
+  (quote-aware CSV parsing).
+• One-off availability dates ("Add Specific Date") no longer vanish from the
+  doctor's editor — the panel re-reads what the server holds after every save.
+• The "Enable Appointment Reminders" button actually enables Web Push now.
+• Duplicate script tags in patient.html removed (ui.js / secure-store.js ran
+  twice, racing the secure store).
+
+NEW — reliability & trust
+-------------------------
+• APK sessions renew themselves (sliding refresh returns a fresh token in a
+  header; mobile apps swap it in) — no more hard logout every 30 days for
+  active users, and expired sessions now land on login with the message
+  "Your session has expired — please log in again."
+• Android medicine reminders are now real OS-level alarms (Capacitor
+  LocalNotifications): doses fire even when the app is closed.
+• Honest login errors: wrong password, unknown account, and "no internet"
+  are three different messages in the Patient and Lab apps.
+• Prescriptions printed from the patient app now show "Prescribed by
+  Dr. <name>" (pharmacy-valid paper Rx).
+
+SECURITY
+--------
+• All shared JSON stores (patients, logs, messages, appointments,
+  availability, telehealth) are now AES-256-GCM encrypted on disk —
+  previously plaintext while the SQL side was encrypted.
+• Message sender role is derived from the session, not the request body
+  (no more impersonating the other side of a chat).
+• save-appointment now refuses double-booked slots (409) like /schedule/book.
+• update-appointment status is a validated enum — no arbitrary strings.
+• Slot-calendar endpoints are rate-limited (60 req/min).
+• Deactivating a user immediately revokes their sessions.
+• update-appointment / erasure flows handle encrypted stores; right-to-
+  erasure also deletes chat conversations (keyed docId_mrn).
+• Auto-update feed repointed to the real GitHub repo (sakshibiradar022002-wq/
+  oncoconnect1) so packaged apps actually receive updates.
+
+Upgrade notes
+-------------
+• On first boot the server migrates each legacy plaintext store into its
+  encrypted <name>.enc.json replacement and deletes the plaintext file.
+  Backups of plaintext files, if any, remain in existing DB backups.
+• Doctor/Server/Lab desktop apps and both APKs should be updated together.

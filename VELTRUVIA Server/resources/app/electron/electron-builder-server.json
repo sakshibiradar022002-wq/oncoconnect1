@@ -3,8 +3,9 @@
   "productName": "VELTRUVIA Server",
   "publish": {
     "provider": "github",
-    "owner": "videju",
-    "repo": "veltruvia"
+    "owner": "sakshibiradar022002-wq",
+    "repo": "oncoconnect1",
+    "channel": "latest-server"
   },
   "directories": {
     "output": "dist-desktop"

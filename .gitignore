@@ -23,6 +23,7 @@ dbg*.log
 # but the verifier or a misconfigured relative DB_PATH can drop them in bundle roots)
 VELTRUVIA*/resources/app/patient-store.json
 VELTRUVIA*/resources/app/*-store.json
+VELTRUVIA*/resources/app/*-store.enc.json
 VELTRUVIA*/resources/app/telehealth-*.json
 VELTRUVIA*/resources/app/chain.json
 

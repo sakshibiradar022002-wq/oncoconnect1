@@ -22,6 +22,11 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { db } from '../db/index.js';
+import { createEncryptedStore } from './json-stores.js';
+
+// availability-store.json previously held doctor schedules in plaintext;
+// the encrypted store migrates the legacy file transparently on first read.
+const availStoreEnc = createEncryptedStore('availability-store.json', { label: 'avail-store' });
 
 export const AVAIL_STORE_PATH = join(dirname(process.env.DB_PATH || '.'), 'availability-store.json');
 try { mkdirSync(dirname(AVAIL_STORE_PATH), { recursive: true }); } catch {}
@@ -42,8 +47,7 @@ export const DEFAULT_AVAILABILITY = [
 ];
 
 export function readAvailStore() {
-  try { if (existsSync(AVAIL_STORE_PATH)) return JSON.parse(readFileSync(AVAIL_STORE_PATH, 'utf-8')); } catch {}
-  return {};
+  return availStoreEnc.read();
 }
 
 // Normalize any accepted row shape into the DB-row shape that

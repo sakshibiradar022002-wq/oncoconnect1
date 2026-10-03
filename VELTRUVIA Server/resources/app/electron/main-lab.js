@@ -21,6 +21,8 @@ import net from 'node:net';
 import http from 'node:http';
 import blockchain from './blockchain.js';
 import { getServerUrl } from './shared-config.js';
+import { installDownloadPolicy } from './download-policy.js';
+import { setupAutoUpdate } from './updater.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -208,12 +210,9 @@ function createWindow() {
     show: false,
   });
 
-  // Nuclear download prevention: cancel any download AND strip Content-Disposition headers
-  mainWindow.webContents.session.on('will-download', (event, item) => {
-    item.cancel();
-    event.preventDefault();
-    console.log('[lab] Download blocked');
-  });
+  // Download policy: allow in-app generated exports, block web downloads
+  // (previously every download was cancelled).
+  installDownloadPolicy(mainWindow.webContents, 'lab');
 
   // Strip Content-Disposition headers from ALL responses to prevent download dialogs
   mainWindow.webContents.session.webRequest.onHeadersReceived(
@@ -239,11 +238,15 @@ function createWindow() {
   });
   mainWindow.on('closed', () => { mainWindow = null; });
 
+  // DevTools only in dev builds (packaged apps expose PHI via the console).
+  const devMenu = app.isPackaged ? [] : [
+    { type: 'separator' },
+    { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
+  ];
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'VELTRUVIA Lab', submenu: [
       { label: '🔄 Refresh', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
-      { type: 'separator' },
-      { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
+      ...devMenu,
     ]},
     { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'close' }] },
   ]));
@@ -270,6 +273,11 @@ app.whenReady().then(async () => {
     httpServer = createServer(serveStatic);
     await new Promise((resolve, reject) => { httpServer.listen(serverPort, '127.0.0.1', resolve); httpServer.on('error', reject); });
     console.log(`[lab] Local server on port ${serverPort}`);
+
+    // v2.5: the Lab app never had auto-update — clinics stayed on old
+    // versions forever. Own channel so it never downloads another app's
+    // installer (no-op in dev / before first GitHub release).
+    try { setupAutoUpdate({ channel: 'latest-lab' }); } catch {}
 
     // Forward WebSocket upgrades (telehealth signaling) to the central Server.
     // Registered unconditionally: centralServerUrl is resolved by tryLoadExpress

@@ -1,7 +1,7 @@
 {
   "name": "veltruvia-patient-mobile",
   "private": true,
-  "version": "2.3.0",
+  "version": "2.5.0",
   "description": "VELTRUVIA Patient — Android app (Capacitor shell around the existing patient portal)",
   "scripts": {
     "cap:add": "cap add android",
@@ -10,7 +10,8 @@
     "apk:release": "cd android && gradlew.bat assembleRelease"
   },
   "dependencies": {
-    "@capacitor/core": "^7.0.0"
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/local-notifications": "^7.0.0"
   },
   "devDependencies": {
     "@capacitor/android": "^7.0.0",

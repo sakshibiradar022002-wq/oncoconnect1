@@ -106,6 +106,9 @@ async function doLogin(){
   const user=v('li-user'),pass=v('li-pass');
   const errEl=document.getElementById('login-err');
   if(!user||!pass){showErr(errEl,'Enter username and password.');return}
+  // v2.5: track WHY login failed for honest errors (offline ≠ wrong password).
+  let sawServer=false,wrongCreds=false;
+  const netDown=e=>/failed to fetch|networkerror|load failed|timed?\s?out/i.test(String(e&&e.message||e));
   // 1. Try shared JSON store login first
   try{
     const result=await api('/sync/lab-store-login',{method:'POST',body:JSON.stringify({username:user,password:pass})});
@@ -119,7 +122,8 @@ async function doLogin(){
       initDashboard();
       return;
     }
-  }catch(e){/* store login failed, trying server */}
+    sawServer=true;
+  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
   // 2. Try server login (sql.js DB)
   try{
     const result=await api('/sync/lab-login',{method:'POST',body:JSON.stringify({username:user,password:pass})});
@@ -140,7 +144,7 @@ async function doLogin(){
         return;
       }
     }
-  }catch(e){/* Server unreachable — try local */}
+  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
   // 3. Local fallback
   let foundLab=null,foundDocId=null;
   for(const name of SecureStore.names('lab_')){
@@ -151,7 +155,14 @@ async function doLogin(){
       }
     }
   }
-  if(!foundLab){showErr(errEl,'No matching lab account found.');return}
+  if(!foundLab){
+    // v2.5: honest messages — the old "No matching lab account found" fired
+    // for wrong passwords and offline servers alike.
+    if(wrongCreds)showErr(errEl,'Wrong username or password. Check with your doctor and try again.');
+    else if(sawServer)showErr(errEl,'No lab account with that username on the clinic server. Ask your doctor to create it.');
+    else showErr(errEl,"Can't reach the clinic server, and this device has no saved lab account. Connect to the internet once to log in for the first time.");
+    return;
+  }
   currentLab=foundLab;_docId=foundDocId;
   LS.set('current_lab',foundLab);LS.set('current_docId',foundDocId);
   rememberLabSession(foundLab);
@@ -181,6 +192,16 @@ function doLogout(){
   document.getElementById('app-shell').style.display='none';
   document.getElementById('auth-screen').style.display='flex';
 }
+
+// v2.5: a 401 on a token-carrying request means the 30-day session ended —
+// land on the login screen with an honest message instead of silent failures.
+window.addEventListener('veltruvia:session-expired',function(){
+  if(!currentLab)return;
+  currentLab=null;_docId=null;
+  try{document.getElementById('app-shell').style.display='none';}catch(e){}
+  try{document.getElementById('auth-screen').style.display='flex';}catch(e){}
+  try{const errEl=document.getElementById('login-err');if(errEl)showErr(errEl,'Your session has expired — please log in again.');}catch(e){}
+});
 
 // ═══ NAVIGATION ═══
 function goScreen(name){
@@ -361,6 +382,24 @@ async function submitUpload(){
 
 // ═══ BATCH CSV ═══
 let _batchData=[];
+// v2.5: quote-aware CSV split — a naive split(',') silently shifted columns
+// for any result containing a comma (e.g. "WBC: 5.2, diff normal").
+function _csvSplit(line){
+  const out=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(inQ){
+      if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++}else inQ=false;}
+      else cur+=ch;
+    }else{
+      if(ch==='"')inQ=true;
+      else if(ch===','){out.push(cur);cur='';}
+      else cur+=ch;
+    }
+  }
+  out.push(cur);
+  return out.map(p=>p.trim());
+}
 function previewBatchCSV(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
@@ -368,7 +407,7 @@ function previewBatchCSV(input){
     const lines=e.target.result.split('\n').filter(l=>l.trim());
     _batchData=[];
     for(let i=1;i<lines.length;i++){// skip header
-      const parts=lines[i].split(',').map(p=>p.trim().replace(/^"|"$/g,''));
+      const parts=_csvSplit(lines[i]);
       if(parts.length>=4)_batchData.push({mrn:parts[0],test:parts[1],date:parts[2],results:parts[3],notes:parts[4]||''});
     }
     if(!_batchData.length){showToast('⚠️ No valid rows found in CSV');return}
