@@ -15,41 +15,58 @@ import { randomToken } from '../crypto.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { notifySubject } from '../push.js';
+import { mintTurnCredentials } from '../lib/turn.js';
 
 export const telehealthRouter = Router();
 
 // ── ICE server configuration for WebRTC ─────────────────────────────
 // STUN alone fails behind carrier-grade NAT; a TURN relay fixes mobile calls.
-// Configure via env: TURN_URL / TURN_USERNAME / TURN_CREDENTIAL
-//   e.g. TURN_URL=turn:turn.myclinic.com:3478 (see DEPLOY.md → coturn)
+// Self-hosted coturn on the VM (preferred): TURN_HOST + TURN_SECRET env —
+// credentials are minted per request with the coturn REST scheme (use-auth-secret)
+// and expire hourly. Legacy static mode: TURN_URL / TURN_USERNAME / TURN_CREDENTIAL.
+// The free Open Relay fallback stays LAST so calls still connect while the
+// self-hosted relay is cold or its firewall ports are not opened yet.
 // Authenticated endpoint — TURN credentials must not be served to anonymous
 // callers. Browsers fetch it same-origin, so httpOnly session cookies ride along.
 telehealthRouter.get('/ice-servers', authenticate, (req, res) => {
   const ice = [];
   ice.push({ urls: 'stun:stun.l.google.com:19302' });
-  const { TURN_URL, TURN_USERNAME, TURN_CREDENTIAL } = process.env;
-  if (TURN_URL) {
+  let ttl = 0;
+  const { TURN_SECRET, TURN_HOST, TURN_URL, TURN_USERNAME, TURN_CREDENTIAL } = process.env;
+  if (TURN_SECRET && TURN_HOST) {
+    const creds = mintTurnCredentials(TURN_SECRET, 3600);
+    ttl = 3600;
+    ice.push({
+      urls: [
+        `turn:${TURN_HOST}:3478?transport=udp`,
+        `turn:${TURN_HOST}:3478?transport=tcp`,
+      ],
+      username: creds.username,
+      credential: creds.credential,
+    });
+  } else if (TURN_URL) {
     ice.push({
       urls: TURN_URL,
       username: TURN_USERNAME || undefined,
       credential: TURN_CREDENTIAL || undefined,
     });
-  } else {
-    // Free default relay (Open Relay Project, metered.ca): no signup, kept
-    // as a fallback so calls connect behind strict NAT out of the box.
-    // WebRTC media is DTLS-SRTP end-to-end encrypted — a shared relay only
-    // ever forwards ciphertext. Override with TURN_URL for self-hosted coturn.
-    ice.push({
-      urls: [
-        'turn:openrelay.metered.ca:80',
-        'turn:openrelay.metered.ca:443',
-        'turn:openrelay.metered.ca:443?transport=tcp',
-      ],
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    });
   }
-  res.json({ iceServers: ice, turnConfigured: !!TURN_URL });
+  ice.push({
+    // WebRTC media is DTLS-SRTP end-to-end encrypted — a shared relay only
+    // ever forwards ciphertext.
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:443?transport=tcp',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  });
+  res.json({
+    iceServers: ice,
+    turnConfigured: !!((TURN_SECRET && TURN_HOST) || TURN_URL),
+    ttl,
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════
