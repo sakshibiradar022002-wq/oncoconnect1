@@ -83,6 +83,16 @@
     } catch (e) { /* fall through to original fetch */ }
     return origFetch(input, init).then(function (res) {
       try { captureLogin(res); } catch (e) {}
+      try { captureRefreshed(res); } catch (e) {}
+      // A 401 on a request that CARRIED a token means the session expired or
+      // was revoked (not a failed login — login 401s carry no token). Tell
+      // the portal UIs honestly instead of letting them blame "no accounts".
+      if (res.status === 401) {
+        try {
+          var hadTok = !!(init.headers && typeof init.headers.get === 'function' && init.headers.get('Authorization'));
+          if (hadTok) window.dispatchEvent(new CustomEvent('veltruvia:session-expired'));
+        } catch (e) {}
+      }
       return res;
     });
   };
@@ -108,6 +118,24 @@
     state.token = '';
     try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
   });
+  window.addEventListener('veltruvia:session-expired', function () {
+    state.token = '';
+    try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+  });
+
+  // The server sliding-refresh re-mints the token past day 20 and returns it
+  // in this header (CORS-exposed). Swap it in so the APK never hard-expires.
+  function captureRefreshed(res) {
+    if (!IS_NATIVE) return;
+    try {
+      var fresh = res && res.headers && res.headers.get('X-Veltruvia-Refreshed-Token');
+      if (fresh && fresh !== state.token) {
+        state.token = fresh;
+        lsSet(TOKEN_KEY, fresh);
+        console.log('[mobile] session token renewed (sliding refresh)');
+      }
+    } catch (e) {}
+  }
 
   // ── WebSocket wrapper (telehealth signaling) ─────────────────────
   var OrigWS = window.WebSocket;
@@ -132,6 +160,8 @@
 
   // ── Settings screen (native builds only) ─────────────────────────
   if (IS_NATIVE) {
+    function dlg() { return window.AppDialog || null; }
+
     function applyServerUrl(next) {
       if (next !== state.base) {
         state.base = next;
@@ -139,35 +169,39 @@
         window.location.reload();
         return;
       }
-      window.alert('Server address unchanged: ' + (state.base || 'same-origin (none set)'));
+      // Same address re-entered: confirm quietly and move on (was a noisy alert).
+      if (dlg()) dlg().toast('Server address unchanged: ' + (state.base || 'same-origin (none set)'));
     }
 
-    function showSettings() {
+    async function showSettings() {
+      var D = dlg();
       // Native builds: offer camera QR pairing when the scanner is present —
       // scan the “Connect a phone” QR on the server's download page and the
       // address fills itself in. No typing, no transcription errors.
       if (window.QRPairing && window.QRPairing.scanInto) {
-        var useScan = window.confirm(
-          'VELTRUVIA Server address\n\n' +
-          'OK    = Scan the QR code on the server\'s download page\n' +
-          'Cancel = Type the address manually');
+        var useScan = D
+          ? await D.confirm('VELTRUVIA Server address\n\nScan the QR code on the server\'s download page, or type the address manually.', { okLabel: '📷 Scan QR', cancelLabel: '⌨ Type it' })
+          : window.confirm('Scan QR (OK) or type address (Cancel)?');
         if (useScan) {
-          window.QRPairing.scanInto().then(function (text) {
+          try {
+            var text = await window.QRPairing.scanInto();
             if (!text) return; // cancelled
             var next = normalizeBase(text);
             if (!next) {
-              window.alert('That QR is not a VELTRUVIA server address.\nUse the QR shown on the server\'s download page.');
+              if (D) D.alert('That QR is not a VELTRUVIA server address.\nUse the QR shown on the server\'s download page.');
+              else window.alert('That QR is not a VELTRUVIA server address.');
               return;
             }
             applyServerUrl(next);
-          });
+          } catch (e) { /* scanner unavailable */ }
           return;
         }
       }
-      var typed = normalizeBase(window.prompt(
-        'VELTRUVIA Server address\n(e.g. https://emr.yourclinic.com)', state.base || ''));
+      var typed = null;
+      if (D) typed = await D.prompt('VELTRUVIA Server address\n(e.g. https://emr.yourclinic.com)', state.base || '');
+      else typed = window.prompt('VELTRUVIA Server address', state.base || '');
       if (typed === null) return;
-      applyServerUrl(typed);
+      applyServerUrl(normalizeBase(typed));
     }
 
     function injectUI() {
@@ -175,10 +209,14 @@
       btn.id = 'veltruvia-mobile-settings';
       btn.setAttribute('aria-label', 'Server settings');
       btn.textContent = '⚙';
-      btn.style.cssText = 'position:fixed;bottom:14px;right:14px;z-index:99999;width:40px;height:40px;'
+      // Lifted above the bottom navigation bar (bottom nav is ~64px tall):
+      // at bottom:14px the gear landed squarely on top of the Profile
+      // nav button — the reported "profile and settings on one on each
+      // other" overlap in the patient app.
+      btn.style.cssText = 'position:fixed;bottom:86px;right:14px;z-index:99999;width:40px;height:40px;'
         + 'border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(15,23,41,.85);'
         + 'color:#e2e8f0;font-size:19px;line-height:1;opacity:.55;backdrop-filter:blur(4px);';
-      btn.addEventListener('click', showSettings);
+      btn.addEventListener('click', function () { Promise.resolve(showSettings()).catch(function () {}); });
       (document.body || document.documentElement).appendChild(btn);
     }
     if (document.readyState === 'loading') {

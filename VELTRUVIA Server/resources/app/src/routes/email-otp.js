@@ -2,8 +2,8 @@
 // EMAIL OTP — Registration Verification
 // ═══════════════════════════════════════════════════════════════════════
 // Sends a 6-digit OTP to the registrant's email. The OTP must be
-// verified before the account is created. In dev mode (no email
-// configured), the OTP is returned in the response so it shows on screen.
+// verified before the account is created. The code is only ever sent by
+// email — it is never echoed to the client, in any environment.
 
 import { Router } from 'express';
 import { z } from 'zod';
@@ -56,13 +56,28 @@ export function verifyRegistrationToken(email, token) {
   return true;
 }
 
-// ── Rate limiting: max 5 OTP sends per email per 10 min ────────────
-const otpLimiter = rateLimit({
+// ── Rate limiting ─────────────────────────────────────────────────
+// Per-EMAIL bucket: 5 codes per address per 10 min. Keyed by the submitted
+// email (not the IP!) — behind the clinic's shared IP, one tester resending
+// a few times must never block everyone else for 10 minutes.
+const otpEmailLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many OTP requests. Please wait a few minutes.' },
+  keyGenerator: (req) =>
+    (req.body && req.body.email ? String(req.body.email).toLowerCase().trim() : req.ip),
+  message: { error: 'Too many codes requested for this email. Check your Spam folder for earlier codes, or try again in 10 minutes.' },
+});
+
+// Per-IP safety net: generous (30/10 min) — stops scripted abuse of one
+// network without ever affecting normal clinic use.
+const otpIpLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests from this network. Please try again in a few minutes.' },
 });
 
 // ── Send OTP ───────────────────────────────────────────────────────
@@ -71,7 +86,7 @@ const sendOtpSchema = z.object({
   purpose: z.enum(['register', 'reset']).optional().default('register'),
 });
 
-emailOtpRouter.post('/send', otpLimiter, validate(sendOtpSchema), asyncHandler(async (req, res) => {
+emailOtpRouter.post('/send', otpIpLimiter, otpEmailLimiter, validate(sendOtpSchema), asyncHandler(async (req, res) => {
   const { email, purpose } = req.valid;
 
   // For registration: reject if email already registered
@@ -93,8 +108,7 @@ emailOtpRouter.post('/send', otpLimiter, validate(sendOtpSchema), asyncHandler(a
   });
 
   let delivered = false;
-  let deliveryMethod = 'dev';
-  let devOtp = null;
+  let deliveryMethod = 'none';
 
   // Try to send via email
   if (mailConfigured()) {
@@ -114,14 +128,11 @@ emailOtpRouter.post('/send', otpLimiter, validate(sendOtpSchema), asyncHandler(a
     }
   }
 
-  // Screen fallback ONLY outside production: in production an undeliverable
-  // OTP must NEVER be echoed to the client (anyone reaching the API could
-  // otherwise register or verify any email without owning it).
-  // Fix: configure SMTP — see SETUP-EMAIL.md at the repo root.
-  if (!delivered && process.env.NODE_ENV !== 'production') {
-    devOtp = otp;
-    deliveryMethod = 'dev';
-  }
+  // No screen fallback: an undeliverable OTP must NEVER be echoed to the
+  // client — anyone reaching the API could otherwise register or verify
+  // any email without owning it. Email sending must be configured (see
+  // SETUP-EMAIL.md); if delivery fails, the client is told to contact
+  // the administrator.
 
   await writeAudit({
     actorId: email, actorRole: 'anonymous',
@@ -133,12 +144,8 @@ emailOtpRouter.post('/send', otpLimiter, validate(sendOtpSchema), asyncHandler(a
     ok: true,
     message: delivered
       ? `Verification code sent to ${email}`
-      : (process.env.NODE_ENV === 'production'
-        ? 'Email delivery is not configured on this server — contact your administrator.'
-        : 'Email delivery is not configured on this server — contact your administrator.'),
+      : 'Email delivery is not configured on this server — contact your administrator.',
     delivery: deliveryMethod,
-    // Only include OTP in dev mode (when email didn't send)
-    ...(devOtp ? { otp: devOtp, expiresIn: '10 minutes' } : {}),
   });
 }));
 

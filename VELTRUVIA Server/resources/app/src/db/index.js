@@ -30,6 +30,10 @@ export async function initSchema() {
   try { await db.exec('ALTER TABLE users ADD COLUMN totp_enc TEXT'); } catch { /* already there */ }
   try { await db.exec('ALTER TABLE sessions ADD COLUMN last_activity TEXT'); } catch { /* already there */ }
   try { await db.exec('ALTER TABLE password_change_requests ADD COLUMN new_pass_plain TEXT'); } catch { /* already there */ }
+  // Indian-style prescription fields (0-0-1 dosage pattern, meal timing).
+  try { await db.exec('ALTER TABLE prescriptions ADD COLUMN composition TEXT'); } catch { /* already there */ }
+  try { await db.exec('ALTER TABLE prescriptions ADD COLUMN timing TEXT'); } catch { /* already there */ }
+  try { await db.exec('ALTER TABLE prescriptions ADD COLUMN when_to_take TEXT'); } catch { /* already there */ }
   // Apply feature migrations (scheduling, CDS, e-prescribing, telehealth)
   try {
     const migrations = readFileSync(join(__dirname, 'migrations.sql'), 'utf8');
@@ -155,11 +159,13 @@ export async function initTestData() {
 
     // 4) Also write demo patient/lab to shared JSON store so Patient/Lab apps can login
     //    SECURITY: hash only — never a plaintext password field.
+    //    v2.5: store is AES-256-GCM encrypted (lib/json-stores.js); read()
+    //    transparently migrates any legacy plaintext file, and write() never
+    //    recreates one — so the demo seed no longer resurrects plaintext PHI.
     try {
-      const dataDir = config.dbPath ? dirname(config.dbPath) : dirname('veltruvia.db');
-      const storePath = join(dataDir, 'patient-store.json');
-      let store = {};
-      try { store = JSON.parse(readFileSync(storePath, 'utf-8')); } catch {}
+      const { createEncryptedStore } = await import('../lib/json-stores.js');
+      const pstore = createEncryptedStore('patient-store.json', { label: 'demo-seed-store' });
+      const store = pstore.read();
       if (!store['12345']) {
         store['12345'] = {
           mrn: '12345', name: 'Test Patient', dob: '1985-06-15',
@@ -175,10 +181,10 @@ export async function initTestData() {
           docId, _ownerId: docId, _savedAt: new Date().toISOString(),
         };
       }
-      writeFileSync(storePath, JSON.stringify(store, null, 2), 'utf-8');
-      console.log('[demo-seed] Patient/Lab entries written to patient-store.json');
+      pstore.write(store);
+      console.log('[demo-seed] Patient/Lab entries written to encrypted patient store');
     } catch (e) {
-      console.warn('[demo-seed] patient-store.json write skipped:', e.message);
+      console.warn('[demo-seed] patient store write skipped:', e.message);
     }
 
     console.log('[demo-seed] Demo data ready.');

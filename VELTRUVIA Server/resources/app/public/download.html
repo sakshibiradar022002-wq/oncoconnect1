@@ -3,245 +3,480 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Download VELTRUVIA Pro — Neuro-oncology EMR</title>
+<title>Download VELTRUVIA — Neuro-oncology EMR Suite</title>
+<meta name="description" content="Download VELTRUVIA: the doctor software (Windows), patient and lab Android apps, and the clinic server — one connected, encrypted neuro-oncology EMR suite.">
+<meta property="og:title" content="VELTRUVIA — Neuro-Oncology EMR Suite">
+<meta property="og:description" content="Doctor, Patient, Lab and Server apps in one place. Encrypted, offline-first, always-on cloud.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/icons/brand/veltruvia-suite.jpg">
+<meta name="twitter:card" content="summary">
 <link href="/fonts/fonts.css" rel="stylesheet">
 <link rel="icon" type="image/png" href="/icons/doctor-192.png">
+<link rel="apple-touch-icon" href="/icons/brand/veltruvia-suite.jpg">
 <style>
 :root {
   --bg: #080d1a;
-  --surface: #0f1729;
-  --surface2: #141d33;
-  --border: #1e2d4a;
+  --surface: rgba(255,255,255,0.03);
+  --surface2: rgba(255,255,255,0.055);
+  --border: rgba(148,163,184,0.14);
+  --border-strong: rgba(148,163,184,0.28);
   --text: #e2e8f0;
   --text-muted: #8494b2;
-  --blue: #4a90e2;
-  --blue2: #2563eb;
-  --green: #059669;
-  --green2: #34d399;
-  --purple: #7c3aed;
-  --red: #dc2626;
+  --blue: #6ba3ef;
+  --blue2: #4a90e2;
+  --green: #48c774;
+  --green2: #48c774;
+  --purple: #4ecdc4;
+  --red: #ff6b6b;
+  --ink: #0b1220;
+  --shadow-ambient: 0 24px 48px -24px rgba(2,6,23,0.8);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(900px 500px at 15% -10%, rgba(74,144,226,0.16), transparent 60%),
+    radial-gradient(800px 500px at 85% -5%, rgba(37,99,235,0.12), transparent 60%),
+    radial-gradient(1000px 600px at 50% 110%, rgba(72,199,116,0.07), transparent 60%);
+}
+::selection { background: rgba(74,144,226,0.4); color: #fff; }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.22); border-radius: 999px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.4); }
+
+/* ── Slim glass header ── */
+.site-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 22px;
+  background: rgba(4,6,12,0.6);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -0.02em; font-size: 15px; }
+.brand-mark {
+  width: 27px; height: 27px; border-radius: 9px; font-size: 14px;
+  background: linear-gradient(135deg, #4a90e2, #2563eb);
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 6px 16px -6px rgba(74,144,226,0.7);
+}
+.header-pill {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--green2); background: rgba(72,199,116,0.08);
+  border: 1px solid rgba(72,199,116,0.25); border-radius: 999px; padding: 4px 12px;
+}
+
+/* ── Reveal motion ── */
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+
 .hero {
   text-align: center;
-  padding: 70px 20px 50px;
+  padding: 132px 20px 56px;
   position: relative;
   overflow: hidden;
 }
 .hero::before {
   content: '';
   position: absolute;
-  top: -50%; left: -50%; width: 200%; height: 200%;
-  background: radial-gradient(circle at 50% 80%, rgba(37,99,235,0.08) 0%, transparent 50%),
-              radial-gradient(circle at 30% 20%, rgba(124,58,234,0.05) 0%, transparent 40%);
+  top: -40%; left: 50%; transform: translateX(-50%); width: 140%; height: 180%;
+  background: radial-gradient(closest-side, rgba(74,144,226,0.16), transparent 70%);
   z-index: 0;
 }
 .hero > * { position: relative; z-index: 1; }
 .logo {
-  width: 90px; height: 90px; border-radius: 24px;
-  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  width: 92px; height: 92px; border-radius: 26px;
+  background: linear-gradient(135deg, #4a90e2 0%, #2563eb 65%, #4ecdc4 130%);
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 44px; box-shadow: 0 14px 56px rgba(37,99,235,0.35);
-  margin-bottom: 24px;
+  font-size: 44px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -8px 24px rgba(2,6,23,0.35),
+              0 24px 64px -16px rgba(74,144,226,0.55);
+  border: 1px solid rgba(255,255,255,0.16);
+  margin-bottom: 28px;
+  animation: rise 0.7s 0.05s cubic-bezier(0.2,0.8,0.2,1) both;
 }
-h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; }
+h1 {
+  font-size: clamp(2.4rem, 6vw, 3.4rem);
+  font-weight: 800; letter-spacing: -0.035em; line-height: 1.05; margin-bottom: 14px;
+  background: linear-gradient(180deg, #ffffff 30%, #b9c7e8);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: rise 0.7s 0.12s cubic-bezier(0.2,0.8,0.2,1) both;
+}
 .badge {
-  display: inline-block; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 20px; padding: 6px 16px; font-size: 13px; color: var(--text-muted); margin-bottom: 18px;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 999px; padding: 7px 16px; font-size: 12.5px; color: var(--text-muted);
+  margin-bottom: 20px;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  animation: rise 0.7s 0.2s cubic-bezier(0.2,0.8,0.2,1) both;
 }
-.badge span { color: var(--green2); font-weight: 600; }
+.badge::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green2); box-shadow: 0 0 10px var(--green2);
+}
+.badge span { color: var(--green2); font-weight: 700; }
 .subtitle {
-  font-size: 17px; color: var(--text-muted); max-width: 620px;
-  margin: 0 auto 40px; line-height: 1.6;
+  font-size: 17px; color: var(--text-muted); max-width: 640px;
+  margin: 0 auto 44px; line-height: 1.65;
+  animation: rise 0.7s 0.28s cubic-bezier(0.2,0.8,0.2,1) both;
 }
 
 /* ── Section headers ── */
 .section-header {
-  text-align: center; margin-bottom: 32px;
+  text-align: center; margin-bottom: 40px;
 }
 .section-header h2 {
-  font-size: 1.6rem; font-weight: 700; margin-bottom: 8px;
+  font-size: clamp(1.5rem, 3vw, 1.9rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 10px;
 }
 .section-header p {
-  font-size: 14px; color: var(--text-muted);
+  font-size: 14.5px; color: var(--text-muted);
 }
 
 /* ── Download grid ── */
 .download-section {
-  max-width: 1100px; margin: 0 auto 60px; padding: 0 20px;
+  max-width: 1140px; margin: 0 auto 72px; padding: 0 20px;
 }
 .download-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: start;
 }
-@media (max-width: 800px) { .download-grid { grid-template-columns: 1fr; } }
+@media (max-width: 980px) { .download-grid { grid-template-columns: 1fr; } }
+
 .download-card {
-  background: var(--surface); border: 1.5px solid var(--border); border-radius: 22px;
-  padding: 30px; transition: all 0.3s; position: relative; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+  border: 1px solid var(--border); border-radius: 24px;
+  padding: 30px 28px; position: relative; overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), var(--shadow-ambient);
+  transition: transform 0.3s cubic-bezier(0.2,0.8,0.2,1), border-color 0.3s, box-shadow 0.3s;
+  animation: fadeIn 0.7s both;
 }
+.download-card:nth-child(1) { animation-delay: 0.15s; }
+.download-card:nth-child(2) { animation-delay: 0.25s; }
+.download-card:nth-child(3) { animation-delay: 0.35s; }
+.download-card:nth-child(4) { animation-delay: 0.45s; }
 .download-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  content: ''; position: absolute; top: 0; left: 12%; right: 12%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.55;
+}
+.download-card::after {
+  content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+  width: 70%; height: 120px; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--accent-glow), transparent);
+  opacity: 0; transition: opacity 0.4s; pointer-events: none;
 }
 .download-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  border-color: var(--border-strong);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 32px 64px -24px rgba(2,6,23,0.9);
 }
-.download-card.doctor { --accent: #2563eb; --accent2: #1d4ed8; }
-.download-card.patient { --accent: #059669; --accent2: #047857; }
-.download-card.lab { --accent: #7c3aed; --accent2: #6d28d9; }
-.download-card.server { --accent: #ea580c; --accent2: #c2410c; }
-.download-card::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
-.download-card:hover { border-color: var(--accent); box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px var(--accent); }
+.download-card:hover::after { opacity: 1; }
+.download-card.doctor { --accent: #4a90e2; --accent-glow: rgba(74,144,226,0.16); }
+.download-card.patient { --accent: #48c774; --accent-glow: rgba(72,199,116,0.14); }
+.download-card.lab { --accent: #4ecdc4; --accent-glow: rgba(78,205,196,0.16); }
+.download-card.server { --accent: #f59e0b; --accent-glow: rgba(245,158,11,0.12); }
 
 .card-header {
-  display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 16px; margin-bottom: 18px;
 }
 .card-icon {
-  width: 52px; height: 52px; border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  width: 54px; height: 54px; border-radius: 16px; flex: 0 0 auto;
+  background: linear-gradient(135deg, var(--accent), rgba(2,6,23,0.9));
+  border: 1px solid rgba(255,255,255,0.14);
   display: flex; align-items: center; justify-content: center;
-  font-size: 26px; box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  font-size: 26px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 10px 24px -10px rgba(2,6,23,0.8);
 }
-.card-title { font-size: 18px; font-weight: 700; }
-.card-subtitle { font-size: 12px; color: var(--text-muted); }
+.card-title { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 .card-desc {
-  font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;
+  font-size: 13.5px; color: var(--text-muted); line-height: 1.65; margin-bottom: 22px;
 }
 .download-btn {
   display: inline-flex; align-items: center; gap: 10px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff; text-decoration: none; padding: 14px 28px;
-  border-radius: 12px; font-size: 15px; font-weight: 700;
-  transition: all 0.3s; box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+  background: #f2f5fa;
+  color: var(--ink); text-decoration: none; padding: 14px 26px;
+  border: none; border-radius: 14px; font-size: 15px; font-weight: 700; letter-spacing: -0.01em;
+  transition: transform 0.25s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.25s, background 0.25s;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 10px 28px -10px rgba(2,6,23,0.9);
   width: 100%; justify-content: center;
 }
 .download-btn:hover {
-  transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0,0,0,0.3);
+  transform: translateY(-1px); background: #ffffff;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 16px 36px -12px rgba(2,6,23,1), 0 0 0 5px rgba(255,255,255,0.05);
 }
+.download-btn:active { transform: translateY(0); }
+.download-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
 .download-btn svg { width: 20px; height: 20px; }
 .download-meta {
-  display: flex; justify-content: space-between; margin-top: 12px;
+  display: flex; justify-content: space-between; gap: 10px; margin-top: 14px;
   font-size: 12px; color: var(--text-muted);
+  border-top: 1px solid var(--border); padding-top: 14px;
 }
 .card-badge {
-  position: absolute; top: 16px; right: 16px; font-size: 10px; font-weight: 700;
-  padding: 4px 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: .5px;
+  position: absolute; top: 18px; right: 18px; font-size: 10px; font-weight: 700;
+  padding: 5px 12px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.12em;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-muted);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
-.card-badge.required { background: rgba(239,68,68,.1); color: #f87171; }
-.card-badge.optional { background: rgba(5,150,105,.1); color: var(--green2); }
+.card-badge.required { color: #ff6b6b; border-color: rgba(255,107,107,0.3); background: rgba(255,107,107,0.08); }
+.card-badge.optional { color: var(--green2); border-color: rgba(72,199,116,0.3); background: rgba(72,199,116,0.07); }
 
 /* ── How it works ── */
 .how-it-works {
-  max-width: 700px; margin: 0 auto 70px; padding: 0 20px;
+  max-width: 720px; margin: 0 auto 84px; padding: 0 20px;
 }
 .how-it-works h2 {
-  text-align: center; font-size: 1.6rem; font-weight: 700; margin-bottom: 36px;
+  text-align: center; font-size: clamp(1.5rem, 3vw, 1.9rem); font-weight: 800;
+  letter-spacing: -0.02em; margin-bottom: 40px;
 }
-.step { display: flex; gap: 18px; margin-bottom: 24px; align-items: flex-start; }
+.step { display: flex; gap: 18px; margin-bottom: 26px; align-items: flex-start; }
 .step-num {
-  flex-shrink: 0; width: 38px; height: 38px; border-radius: 12px;
-  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  flex-shrink: 0; width: 40px; height: 40px; border-radius: 999px;
+  border: 1px solid rgba(74,144,226,0.35);
+  background: rgba(74,144,226,0.08);
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 15px;
+  color: #b9c7ff;
+  box-shadow: 0 0 0 4px rgba(74,144,226,0.06);
 }
-.step-text h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
-.step-text p { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+.step-text h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 4px; }
+.step-text p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
 
 /* ── Features ── */
 .features {
-  max-width: 900px; margin: 0 auto 70px; padding: 0 20px;
+  max-width: 980px; margin: 0 auto 84px; padding: 0 20px;
 }
 .features h2 {
-  text-align: center; font-size: 1.6rem; font-weight: 700; margin-bottom: 36px;
+  text-align: center; font-size: clamp(1.5rem, 3vw, 1.9rem); font-weight: 800;
+  letter-spacing: -0.02em; margin-bottom: 40px;
 }
 .feature-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
 }
-@media (max-width: 700px) { .feature-grid { grid-template-columns: 1fr; } h1 { font-size: 2rem; } }
+@media (max-width: 900px) { .feature-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 620px) { .feature-grid { grid-template-columns: 1fr; } }
 .feature {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
-  padding: 26px 22px; text-align: center; transition: all 0.3s;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
+  border: 1px solid var(--border); border-radius: 20px;
+  padding: 28px 22px; text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: transform 0.3s cubic-bezier(0.2,0.8,0.2,1), border-color 0.3s;
 }
-.feature:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.2); }
-.feature-icon { font-size: 34px; margin-bottom: 12px; }
-.feature h3 { font-size: 14px; font-weight: 700; margin-bottom: 5px; }
-.feature p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.feature:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+.feature-icon {
+  width: 52px; height: 52px; margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 16px;
+}
+.feature h3 { font-size: 14.5px; font-weight: 700; margin-bottom: 6px; }
+.feature p { font-size: 13px; color: var(--text-muted); line-height: 1.55; }
 
 /* ── System requirements ── */
 .requirements {
-  max-width: 600px; margin: 0 auto 70px; padding: 0 20px;
+  max-width: 640px; margin: 0 auto 84px; padding: 0 20px;
 }
 .requirements h2 {
-  text-align: center; font-size: 1.6rem; font-weight: 700; margin-bottom: 28px;
+  text-align: center; font-size: clamp(1.5rem, 3vw, 1.9rem); font-weight: 800;
+  letter-spacing: -0.02em; margin-bottom: 30px;
 }
 .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 480px) { .req-grid { grid-template-columns: 1fr; } }
 .req-item {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px;
 }
 .req-item .label {
-  font-size: 11px; color: var(--text-muted); text-transform: uppercase;
-  letter-spacing: 1px; margin-bottom: 5px;
+  font-size: 10.5px; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.14em; margin-bottom: 6px;
 }
 .req-item .value { font-size: 14px; font-weight: 600; }
 
 /* ── Footer ── */
 .footer {
-  text-align: center; padding: 36px 20px; font-size: 13px;
-  color: #4a5f82; border-top: 1px solid var(--border);
+  text-align: center; padding: 44px 20px 52px; font-size: 12.5px;
+  color: #5b6b87; border-top: 1px solid var(--border);
+  letter-spacing: 0.02em;
 }
 .footer a { color: var(--blue); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
 /* ── v2: button rows, QR, PWA banner, checksums ── */
-.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 10px;}
+.btn-row{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0 12px;}
 .btn-row .download-btn{flex:1 1 auto;justify-content:center;}
-.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text-muted);}
-.btn-secondary:hover{border-color:var(--blue);color:var(--text);}
-button.download-btn{cursor:pointer;font-family:inherit;font-size:1rem;}
-.qr-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px;margin:6px 0 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;}
-.qr-wrap img{background:#fff;border-radius:8px;padding:6px;}
-.qr-wrap span{font-size:.85rem;color:var(--text-muted);}
-.ver-badge{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--green2);font-size:.85rem;letter-spacing:.5px;}
-/* ── Connect-a-phone pairing card ─────────────────────────── */
-.connect-card{display:flex;gap:22px;align-items:center;margin:26px auto 6px;max-width:960px;padding:22px 26px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);}
-.connect-qr{flex:0 0 auto;background:#fff;padding:8px;border-radius:10px;}
-.connect-qr img{display:block;width:170px;height:170px;}
-.connect-info{flex:1;min-width:0;}
-.connect-info h3{margin:0 0 6px;font-size:17px;}
-.connect-info p{margin:4px 0;color:var(--text-muted);font-size:13.5px;}
-.connect-steps{margin:10px 0 6px;padding-left:20px;color:var(--text-muted);font-size:13.5px;line-height:1.75;}
-.connect-steps code{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2px 7px;color:var(--blue);font-size:12.5px;word-break:break-all;}
-.copy-btn{margin-left:8px;padding:3px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--blue);font-size:12px;cursor:pointer;}
-.copy-btn:hover{border-color:var(--blue);}
-.connect-note{margin-top:8px;font-size:12.5px;}
+.btn-secondary{background:transparent;border:1px solid var(--border-strong);color:var(--text);box-shadow:none;}
+.btn-secondary:hover{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.05);transform:translateY(-1px);box-shadow:none;}
+button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
+.qr-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px;margin:6px 0 12px;background:#fff;border-radius:16px;}
+.qr-wrap[hidden]{display:none;}
+.qr-wrap img{border-radius:10px;padding:8px;background:#fff;max-width:100%;height:auto;}
+.qr-wrap span{font-size:.85rem;color:#43506b;font-weight:600;}
+.ver-badge{display:inline-flex;align-items:center;gap:7px;margin-top:10px;padding:6px 14px;border-radius:999px;background:rgba(72,199,116,0.08);border:1px solid rgba(72,199,116,0.28);color:var(--green2);font-size:.85rem;font-weight:600;letter-spacing:.03em;}
+.ver-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green2);box-shadow:0 0 8px var(--green2);}
+/* ── Highlight offer card (get-everything) ── */
+.connect-card{
+  display:block;margin:30px auto 34px;max-width:980px;padding:28px 30px;
+  border:1px solid transparent;border-radius:24px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.02)) padding-box,
+    linear-gradient(100deg, rgba(74,144,226,0.55), rgba(78,205,196,0.4) 45%, rgba(107,163,239,0.55)) border-box;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 28px 56px -24px rgba(2,6,23,0.9);
+}
+.connect-card h3{margin:0 0 8px;font-size:18px;font-weight:800;letter-spacing:-0.01em;}
+.connect-card p{margin:6px 0;color:var(--text-muted);font-size:13.5px;line-height:1.6;}
+.connect-card .download-btn{max-width:460px;margin-top:12px;}
+.connect-note{margin-top:12px;font-size:12.5px;}
 .connect-note a{color:var(--blue);}
-@media(max-width:640px){.connect-card{flex-direction:column;text-align:center;}.connect-steps{text-align:left;}}
-.pwa-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:1000px;margin:26px auto 0;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:14px;flex-wrap:wrap;}
+@media(max-width:640px){.connect-card{padding:22px;}.card-badge{position:static;display:inline-block;margin-bottom:12px;}.card-header{margin-top:-6px;}}
+.pwa-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:1040px;margin:30px auto 0;padding:18px 22px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:18px;flex-wrap:wrap;box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);}
 .pwa-banner div{display:flex;flex-direction:column;gap:4px;color:var(--text-muted);font-size:.92rem;}
-.checksums{max-width:1000px;margin:44px auto;padding:0 20px;}
-.checksums h2{text-align:center;margin-bottom:8px;}
-.sha-hint{text-align:center;color:var(--text-muted);font-size:.9rem;margin-bottom:14px;}
-.sha-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-.sha-table td{padding:10px 14px;border-top:1px solid var(--border);font-size:.85rem;}
+.checksums{max-width:1040px;margin:56px auto;padding:0 20px;}
+.checksums h2{text-align:center;font-size:clamp(1.4rem,3vw,1.8rem);font-weight:800;letter-spacing:-0.02em;margin-bottom:10px;}
+.sha-hint{text-align:center;color:var(--text-muted);font-size:.9rem;margin-bottom:16px;}
+.sha-table{width:100%;border-collapse:collapse;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.sha-table td{padding:12px 16px;border-top:1px solid var(--border);font-size:.85rem;}
 .sha-table tr:first-child td{border-top:none;}
 .sha-table td.sha{font-family:ui-monospace,Consolas,monospace;color:var(--blue);}
+/* v3: eye-catching layer */
+.orbs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;}
+.orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;will-change:transform;}
+.orb.o1{width:520px;height:520px;background:radial-gradient(circle,#2563eb,transparent 65%);top:-140px;left:-120px;animation:drift1 22s ease-in-out infinite alternate;}
+.orb.o2{width:460px;height:460px;background:radial-gradient(circle,#2563eb,transparent 65%);top:-80px;right:-140px;animation:drift2 26s ease-in-out infinite alternate;}
+.orb.o3{width:560px;height:560px;background:radial-gradient(circle,#4ecdc4,transparent 65%);bottom:-220px;left:32%;animation:drift3 30s ease-in-out infinite alternate;}
+@keyframes drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(90px,70px) scale(1.15)}}
+@keyframes drift2{from{transform:translate(0,0) scale(1.1)}to{transform:translate(-70px,90px) scale(.95)}}
+@keyframes drift3{from{transform:translate(0,0) scale(.95)}to{transform:translate(-90px,-60px) scale(1.1)}}
+.shimmer{background:linear-gradient(100deg,#fff 20%,#6ba3ef 38%,#4ecdc4 50%,#fff 65%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 5.5s linear infinite;}
+@keyframes shimmer{to{background-position:-200% 0}}
+.hero-wrap{display:flex;gap:48px;align-items:center;justify-content:center;max-width:1120px;margin:0 auto;padding:0 20px;}
+.hero-wrap .hero-copy{flex:1 1 460px;text-align:left;}
+.hero-wrap .hero-copy .subtitle{margin-left:0;margin-right:0;}
+.hero-visual{flex:0 1 430px;perspective:1200px;animation:rise .8s .35s cubic-bezier(.2,.8,.2,1) both;}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.app-mock{border-radius:22px;background:linear-gradient(160deg,#101a30,#0a1120);border:1px solid rgba(148,163,184,.2);box-shadow:0 40px 90px -30px rgba(2,6,23,.95),inset 0 1px 0 rgba(255,255,255,.08);overflow:hidden;transform:rotateY(-8deg) rotateX(4deg);transition:transform .5s cubic-bezier(.2,.8,.2,1);animation:floaty 7s ease-in-out infinite;}
+.app-mock:hover{transform:rotateY(0) rotateX(0) translateY(-4px);}
+.mock-bar{display:flex;align-items:center;gap:6px;padding:11px 14px;background:rgba(255,255,255,.045);border-bottom:1px solid rgba(148,163,184,.14);}
+.mock-dot{width:10px;height:10px;border-radius:50%;}
+.mock-dot.r{background:#ff6b6b}.mock-dot.y{background:#feca57}.mock-dot.g{background:#48c774}
+.mock-title{margin-left:8px;font-size:11px;color:var(--text-muted);letter-spacing:.06em;}
+.mock-body{display:grid;grid-template-columns:110px 1fr;gap:14px;padding:16px;}
+.mock-side{display:flex;flex-direction:column;gap:8px;}
+.mock-side span{height:9px;border-radius:6px;background:rgba(148,163,184,.16);}
+.mock-side span.on{background:linear-gradient(90deg,#4a90e2,#2563eb);}
+.mock-main{display:flex;flex-direction:column;gap:12px;min-width:0;}
+.mock-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.mock-kpi{background:rgba(255,255,255,.04);border:1px solid rgba(148,163,184,.14);border-radius:10px;padding:9px 10px;}
+.mock-kpi b{display:block;font-size:14px;letter-spacing:-.02em;}
+.mock-kpi i{font-style:normal;font-size:9.5px;color:var(--text-muted);letter-spacing:.04em;}
+.mock-chart{display:flex;align-items:flex-end;gap:7px;height:110px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(148,163,184,.14);border-radius:12px;}
+.mock-chart i{flex:1;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,#4a90e2,#1a4fd0);animation:grow 1.1s cubic-bezier(.2,.8,.2,1) both;}
+.mock-chart i.g{background:linear-gradient(180deg,#48c774,#166534);animation-delay:.15s;}
+.mock-chart i.p{background:linear-gradient(180deg,#6ba3ef,#1e3a8a);animation-delay:.25s;}
+@keyframes grow{from{height:0!important}}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 6px #48c774}50%{opacity:.55;box-shadow:0 0 1px #48c774}}
+.mock-row{display:flex;gap:8px;align-items:center;}
+.mock-row span{height:8px;border-radius:6px;background:rgba(148,163,184,.14);flex:1;}
+.mock-row span.w1{flex:.5}.mock-row span.w2{flex:.75}
+.mock-pill{width:52px;height:16px;border-radius:999px;background:rgba(72,199,116,.18);border:1px solid rgba(72,199,116,.4);}
+.mock-pill.a{background:rgba(74,144,226,.18);border-color:rgba(74,144,226,.4);}
+.mock-pill.w{background:rgba(251,191,36,.16);border-color:rgba(251,191,36,.4);}
+@media(max-width:940px){.hero-wrap{flex-direction:column;gap:36px;}.hero-wrap .hero-copy{text-align:center;}.hero-wrap .hero-copy .subtitle{margin:0 auto 44px;}.hero-visual{flex-basis:auto;width:min(430px,92%);}}
+/* Narrow screens: flatten the 3D tilt, slim the decorative sidebar and let
+   KPI labels wrap so PATIENTS / DOCTORS / RECORDS SECURED never clip. */
+@media(max-width:520px){
+  .app-mock{transform:none;animation:none;}
+  .mock-bar{padding:10px 12px;}
+  .mock-title{font-size:10px;letter-spacing:.03em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mock-body{grid-template-columns:52px 1fr;gap:10px;padding:12px;}
+  .mock-side{gap:7px;}
+  .mock-side span{height:7px;}
+  .mock-kpis{gap:7px;}
+  .mock-kpi{padding:8px 6px;text-align:center;}
+  .mock-kpi b{font-size:13.5px;}
+  .mock-kpi i{display:block;font-size:8.5px;letter-spacing:.02em;line-height:1.3;}
+  .mock-chart{height:90px;gap:5px;padding:10px;}
+  .stats{gap:10px;margin-bottom:56px;}
+  .stat{flex:1 1 140px;padding:16px 12px;}
+  .stat b{font-size:22px;}
+}
+/* Very small phones (≤360px): the mock's grid would otherwise overflow its
+   card — drop the decorative sidebar entirely and let the KPI labels keep
+   whole words. */
+@media(max-width:360px){
+  .mock-body{grid-template-columns:1fr;gap:8px;padding:10px;}
+  .mock-side{display:none;}
+  .mock-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+  .mock-kpi{padding:8px 4px;}
+  .mock-kpi b{font-size:12.5px;}
+  .mock-kpi i{font-size:8px;letter-spacing:.01em;}
+  .mock-chart{height:78px;gap:4px;padding:8px;}
+}
+.stats{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;max-width:980px;margin:0 auto 74px;padding:0 20px;}
+.stat{flex:1 1 190px;max-width:250px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));border:1px solid var(--border);border-radius:18px;padding:20px 18px;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);animation:fadeIn .8s .5s both;}
+.stat b{display:block;font-size:26px;font-weight:800;letter-spacing:-.03em;background:linear-gradient(180deg,#fff,#b9c7e8);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.stat span{font-size:12px;color:var(--text-muted);letter-spacing:.02em;}
+@media (prefers-reduced-motion: reduce){.orb,.shimmer,.app-mock,.mock-chart i{animation:none!important;}}
 </style>
 </head>
 <body>
-<script src="js/actions.js"></script>
-<script src="js/ui.js"></script>
+<script src="js/actions.js?v=20261001a"></script>
+<script src="js/ui.js?v=20261001a"></script>
+
+<div class="orbs" aria-hidden="true"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
+
+<header class="site-header">
+  <div class="brand"><span class="brand-mark"><img src="/icons/brand/veltruvia-suite.jpg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></span> VELTRUVIA</div>
+  <span class="header-pill">Secure Cloud · v2.5.0</span>
+</header>
 
 <div class="hero">
-  <div class="logo">🧬</div>
-  <h1>VELTRUVIA Pro</h1>
-  <div class="badge"><span>v2.0</span> · Phone Apps + Doctor PC · Shared Server</div>
-  <p class="subtitle">
-    Patient &amp; Lab install on <strong>Android phones</strong>. Doctor runs on Windows. One always-on server links them all — every record is saved on the server and shared instantly.
-  </p>
+  <div class="hero-wrap">
+    <div class="hero-copy">
+      <div class="logo"><img src="/icons/brand/veltruvia-suite.jpg" alt="VELTRUVIA" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
+      <h1 class="shimmer">VELTRUVIA</h1>
+      <div class="badge"><span>v2.5.0</span> · One Suite · Every App in One Place</div>
+      <p class="subtitle">All of VELTRUVIA — Doctor, Patient, Lab and Server — in one place. Download the app for your role and sign in; everything connects to the clinic automatically.</p>
+    </div>
+    <div class="hero-visual">
+      <div class="app-mock">
+        <div class="mock-bar"><span class="mock-dot g" style="animation:pulse 2s ease-in-out infinite"></span><span class="mock-dot y"></span><span class="mock-dot r"></span><span class="mock-title">VELTRUVIA DOC · CONNECTING…</span></div>
+        <div class="mock-body">
+          <div class="mock-side"><span class="on"></span><span style="width:78%"></span><span style="width:88%"></span><span style="width:70%"></span><span style="width:82%"></span></div>
+          <div class="mock-main">
+            <div class="mock-kpis">
+              <div class="mock-kpi"><b data-live="patients">—</b><i>PATIENTS</i></div>
+              <div class="mock-kpi"><b data-live="doctors">—</b><i>DOCTORS</i></div>
+              <div class="mock-kpi"><b data-live="audit">—</b><i>RECORDS SECURED</i></div>
+            </div>
+            <div class="mock-chart"><i style="height:45%"></i><i style="height:62%"></i><i class="g" style="height:38%"></i><i style="height:74%"></i><i class="p" style="height:55%"></i><i style="height:86%"></i><i class="g" style="height:64%"></i><i style="height:92%"></i><i class="p" style="height:70%"></i><i style="height:58%"></i><i class="g" style="height:80%"></i><i style="height:66%"></i></div>
+            <div class="mock-row"><span class="w1"></span><span class="mock-pill"></span><span class="w2"></span><span class="mock-pill a"></span><span class="w1"></span><span class="mock-pill w"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats strip -->
+<div class="stats">
+  <div class="stat"><b>AES-256</b><span>Encrypted medical records</span></div>
+  <div class="stat"><b>4 Apps</b><span>One connected clinic</span></div>
+  <div class="stat"><b>Offline-first</b><span>Works without internet</span></div>
+  <div class="stat"><b>24/7</b><span>Always-on cloud</span></div>
 </div>
 
 <!-- ── Download Section ── -->
@@ -249,143 +484,107 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:1rem;}
   <div class="section-header">
     <h2>Choose Your App</h2>
     <div class="ver-badge" id="ver-badge" hidden></div>
-    <p>All apps connect to one VELTRUVIA Server — install it first (cloud or clinic PC). Phones and the Doctor PC share everything through it.</p>
-  </div>
-
-  <div class="connect-card" id="connect-card" hidden>
-    <div class="connect-qr"><img id="connect-qr-img" alt="QR code — open this page on your phone"></div>
-    <div class="connect-info">
-      <h3>📱 Connect a phone — one scan</h3>
-      <p>This QR opens <strong>this exact page</strong> on any phone using the same Wi-Fi — no typing the address.</p>
-      <p id="connect-tls-hint" hidden style="color:#34d399;font-weight:600">🔒 This server also offers encrypted HTTPS on port 3001 — apps can use <code>https://&lt;address-host&gt;:3001</code> for encrypted Wi-Fi traffic.</p>
-      <ol class="connect-steps">
-        <li>Scan with the phone's camera → this page opens on the phone</li>
-        <li>Tap <strong>Patient</strong> or <strong>Lab</strong> below to install the app</li>
-        <li>Open the app → ⚙ → paste this address: <code id="connect-address"></code><button class="copy-btn" id="copy-address" type="button">Copy</button></li>
-      </ol>
-      <p class="connect-note">Phone is in a <strong>different building or city?</strong> See <a href="https://github.com/videju/veltruvia/blob/main/CONNECT-ANYWHERE.md" target="_blank" rel="noopener">CONNECT-ANYWHERE.md</a> — Tailscale (free &amp; private) or a cloud server (works worldwide).</p>
-    </div>
+    <p>Pick your card below — apps connect to the VELTRUVIA cloud automatically. No setup needed.</p>
   </div>
 
   <div class="download-grid">
 
-    <!-- Server -->
-    <div class="download-card server">
-      <div class="card-badge required">Required First</div>
-      <div class="card-header">
-        <div class="card-icon">🖥️</div>
-        <div>
-          <div class="card-title">Server</div>
-          <div class="card-subtitle">The Linking Software — runs in background</div>
-        </div>
-      </div>
-      <div class="card-desc">
-        Links every app and stores all data. On Windows it sits quietly in the system tray and starts automatically with your PC. For phones to connect from anywhere, deploy it to a cloud VM instead — see <strong>DEPLOY.md</strong>.
-      </div>
-      <div class="btn-row">
-        <a class="download-btn" href="https://github.com/videju/veltruvia/releases/latest/download/VELTRUVIA-Server-Setup.exe" download>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-          Download Installer
-        </a>
-        <a class="download-btn btn-secondary" href="https://github.com/videju/veltruvia/releases/latest/download/VELTRUVIA-Server-Portable.zip" download>
-          Portable ZIP
-        </a>
-      </div>
-      <div class="download-meta">
-        <span>📦 Windows installer + portable ZIP</span>
-        <span>💻 Windows 10/11 · ☁️ Cloud</span>
-        <span>⚙️ runs in system tray</span>
-      </div>
-    </div>
-
     <!-- Doctor -->
     <div class="download-card doctor">
-      <div class="card-badge optional">Doctor</div>
+      <div class="card-badge optional">For Doctors</div>
       <div class="card-header">
-        <div class="card-icon">👨‍⚕️</div>
+        <div class="card-icon"><img src="/icons/brand/veltruvia-doc.jpg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
         <div>
-          <div class="card-title">Doctor Software</div>
-          <div class="card-subtitle">Windows · EMR & Patient Management</div>
+          <div class="card-title">VELTRUVIA Doc</div>
+          <div class="card-subtitle">Windows · EMR &amp; Patient Management</div>
         </div>
       </div>
       <div class="card-desc">
-        Full EMR dashboard with patient records, appointment scheduling, clinical notes, lab management, billing, and video calls. Connects to the shared server automatically.
+        Full EMR dashboard with patient records, appointment scheduling, clinical notes, lab management, billing, and video calls. Connects to the clinic automatically — register with your email and a 6-digit verification code.
       </div>
       <div class="btn-row">
-        <a class="download-btn" href="https://github.com/videju/veltruvia/releases/latest/download/VELTRUVIA-Doctor-Setup.exe" download>
+        <a class="download-btn" href="/downloads/VELTRUVIA-Doctor-Setup.exe" download>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-          Download Installer
+          Download for Windows
         </a>
-        <a class="download-btn btn-secondary" href="https://github.com/videju/veltruvia/releases/latest/download/VELTRUVIA-Doctor-Portable.zip" download>
+        <a class="download-btn btn-secondary" href="/downloads/VELTRUVIA-Doctor-Portable.zip" download>
           Portable ZIP
         </a>
       </div>
       <div class="download-meta">
-        <span>📦 Windows installer + portable ZIP</span>
         <span>💻 Windows 10/11</span>
         <span>🩺 full EMR dashboard</span>
-      </div>
-    </div>
-
-    <!-- Patient -->
-    <div class="download-card patient">
-      <div class="card-badge optional">Mobile</div>
-      <div class="card-header">
-        <div class="card-icon">📱</div>
-        <div>
-          <div class="card-title">Patient App</div>
-          <div class="card-subtitle">Android · Symptom Tracker & Care</div>
-        </div>
-      </div>
-      <div class="card-desc">
-        Log daily symptoms, track medications, view appointments, and message your care team — right from your phone. Everything syncs to the server.
-      </div>
-      <div class="btn-row">
-        <a class="download-btn" href="https://github.com/videju/veltruvia/releases/latest/download/VELTRUVIA-Patient.apk" download>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-          Download APK
-        </a>
-        <button class="download-btn btn-secondary" type="button" data-qr="qr-patient">📱 Scan QR</button>
-      </div>
-      <div class="qr-wrap" id="qr-patient" hidden>
-        <img data-url="https://github.com/videju/veltruvia/releases/latest/download/VELTRUVIA-Patient.apk" alt="Patient APK QR code" width="260" height="260">
-        <span>Scan with your phone camera to install</span>
-      </div>
-      <div class="download-meta">
-        <span>📦 ~7 MB APK</span>
-        <span>🤖 Android 8+</span>
-        <span>🍎 iPhone → web install below</span>
+        <span>✉️ self-registration with email code</span>
       </div>
     </div>
 
     <!-- Lab -->
     <div class="download-card lab">
-      <div class="card-badge optional">Mobile</div>
+      <div class="card-badge optional">For Labs</div>
       <div class="card-header">
-        <div class="card-icon">🔬</div>
+        <div class="card-icon"><img src="/icons/brand/veltruvia-lab.jpg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
         <div>
-          <div class="card-title">Lab Portal</div>
-          <div class="card-subtitle">Android · Test Management & Results</div>
+          <div class="card-title">VELTRUVIA Lab</div>
+          <div class="card-subtitle">Windows &amp; Android · Test Management &amp; Results</div>
         </div>
       </div>
       <div class="card-desc">
-        Manage lab test orders, upload results, and track sample status from any phone. Task lists arrive from the doctor in real time.
+        Manage lab test orders, upload results, and track sample status. Install the Windows software on the lab computer, or the Android app on any phone — task lists arrive from the doctor in real time.
       </div>
       <div class="btn-row">
-        <a class="download-btn" href="https://github.com/videju/veltruvia/releases/latest/download/VELTRUVIA-Lab.apk" download>
+        <a class="download-btn" href="/downloads/VELTRUVIA-Lab-Setup.exe" download>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-          Download APK
+          Download for Windows
         </a>
-        <button class="download-btn btn-secondary" type="button" data-qr="qr-lab">📱 Scan QR</button>
+        <a class="download-btn btn-secondary" href="/downloads/VELTRUVIA-Lab-Portable.zip" download>
+          Portable ZIP
+        </a>
+      </div>
+      <div class="btn-row">
+        <a class="download-btn btn-secondary" href="/downloads/VELTRUVIA-Lab.apk" download>
+          📱 Download for Android
+        </a>
+        <button class="download-btn btn-secondary" type="button" data-qr="qr-lab">Scan QR</button>
       </div>
       <div class="qr-wrap" id="qr-lab" hidden>
-        <img data-url="https://github.com/videju/veltruvia/releases/latest/download/VELTRUVIA-Lab.apk" alt="Lab APK QR code" width="260" height="260">
+        <img data-url="/downloads/VELTRUVIA-Lab.apk" alt="Lab APK QR code" width="260" height="260">
         <span>Scan with your phone camera to install</span>
       </div>
       <div class="download-meta">
-        <span>📦 ~7 MB APK</span>
+        <span>💻 Windows 10/11</span>
+        <span>🤖 Android 8+</span>
+        <span>🔑 login from the clinic</span>
+      </div>
+    </div>
+
+    <!-- Patient -->
+    <div class="download-card patient">
+      <div class="card-badge optional">For Patients</div>
+      <div class="card-header">
+        <div class="card-icon"><img src="/icons/brand/veltruvia-patient.jpg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
+        <div>
+          <div class="card-title">VELTRUVIA Patient</div>
+          <div class="card-subtitle">Android · Symptom Tracker &amp; Care</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        Log daily symptoms, track medications, view appointments, and message your care team — right from your phone. Register yourself with your email, verify with the 6-digit code we send, and you're in.
+      </div>
+      <div class="btn-row">
+        <a class="download-btn" href="/downloads/VELTRUVIA-Patient.apk" download>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+          Download for Android
+        </a>
+        <button class="download-btn btn-secondary" type="button" data-qr="qr-patient">📱 Scan QR</button>
+      </div>
+      <div class="qr-wrap" id="qr-patient" hidden>
+        <img data-url="/downloads/VELTRUVIA-Patient.apk" alt="Patient APK QR code" width="260" height="260">
+        <span>Scan with your phone camera to install</span>
+      </div>
+      <div class="download-meta">
         <span>🤖 Android 8+</span>
         <span>🍎 iPhone → web install below</span>
+        <span>✉️ self-registration with email code</span>
       </div>
     </div>
 
@@ -402,28 +601,21 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:1rem;}
   <button class="download-btn" id="pwa-install" type="button" hidden>⬇️ Install as App</button>
 </div>
 
-<!-- ── Checksums ── -->
-<div class="checksums" id="checksums" hidden>
-  <h2>Verify Your Download</h2>
-  <p class="sha-hint">Compare the SHA-256 of the file you downloaded (on Windows: <code>certutil -hashfile &lt;file&gt; SHA256</code>) against this list, generated at release time.</p>
-  <table class="sha-table"><tbody id="sha-rows"></tbody></table>
-</div>
-
 <!-- ── How It Works ── -->
 <div class="how-it-works">
   <h2>How It Works</h2>
   <div class="step">
     <div class="step-num">1</div>
     <div class="step-text">
-      <h3>Install the Server</h3>
-      <p>The VELTRUVIA Server runs in the background (system tray on Windows, or a cloud VM — see <strong>DEPLOY.md</strong>). It links every app and stores all data.</p>
+      <h3>Get the App for Your Role</h3>
+      <p>Doctor and Lab: install the Windows software. Patient: install the Android app (or scan its QR). The VELTRUVIA cloud is already running for your clinic — every app connects to it automatically, no addresses or setup needed.</p>
     </div>
   </div>
   <div class="step">
     <div class="step-num">2</div>
     <div class="step-text">
-      <h3>Install Your App</h3>
-      <p>Patient &amp; Lab: download the APK on an Android phone. Doctor: install the Windows software. Sign in with your credentials — no server address needed.</p>
+      <h3>Sign In</h3>
+      <p>Doctors and patients create their own account: tap <strong>Register</strong>, enter your email, and a 6-digit verification code arrives in your inbox. Type the code, set your password — done. Labs receive their login from the clinic.</p>
     </div>
   </div>
   <div class="step">
@@ -496,9 +688,9 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:1rem;}
 </div>
 
 <div class="footer">
-  <p>VELTRUVIA Pro · Built with ❤️ for neuro-oncology care · <a href="https://github.com/videju/veltruvia">View Source on GitHub</a></p>
+  <p>VELTRUVIA · Built with ❤️ for neuro-oncology care · <a href="https://veltruvia.duckdns.org">veltruvia.duckdns.org</a></p>
 </div>
 
 </body>
-<script src="/js/download-page.js" defer></script>
+<script src="/js/download-page.js?v=20261001b" defer></script>
 </html>

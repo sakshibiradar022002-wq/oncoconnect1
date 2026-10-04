@@ -14,6 +14,21 @@ import { notifySubject } from '../push.js';
 
 export const prescriptionRouter = Router();
 
+// v2.5: prescriber display-name cache (patients' paper Rx needs "Prescribed
+// by Dr. X" to be pharmacy-valid). users.name_enc is AES-GCM encrypted —
+// decrypt once per doctor per boot.
+const _docNameCache = new Map();
+async function doctorDisplayName(doctorId) {
+  if (_docNameCache.has(doctorId)) return _docNameCache.get(doctorId);
+  let name = '';
+  try {
+    const u = await db.prepare('SELECT name_enc FROM users WHERE id = ?').get(doctorId);
+    if (u && u.name_enc) name = String(decryptPHI(u.name_enc) || '');
+  } catch { /* name is optional decoration */ }
+  _docNameCache.set(doctorId, name);
+  return name;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // DOCTOR ROUTES
 // ═══════════════════════════════════════════════════════════════════
@@ -23,8 +38,11 @@ const createRxSchema = z.object({
   patientMrn: z.string().min(1).max(40).transform(s => s.trim().toUpperCase()),
   medication: z.string().min(1).max(200),
   genericName: z.string().max(200).optional(),
+  composition: z.string().max(300).optional(),   // e.g. "Etoricoxib 60 mg + Thiocolchicoside 4 mg"
   dosage: z.string().min(1).max(100),
   frequency: z.string().min(1).max(100),
+  timing: z.string().max(20).optional(),          // morning-afternoon-night pattern, e.g. "0-0-1"
+  whenToTake: z.string().max(60).optional(),      // e.g. "After food"
   route: z.enum(['oral', 'iv', 'im', 'subcutaneous', 'topical', 'intrathecal', 'rectal', 'other']).optional().default('oral'),
   duration: z.string().max(100).optional(),
   quantity: z.number().positive().optional(),
@@ -101,14 +119,15 @@ prescriptionRouter.post('/', authenticate, requireRole('doctor', 'admin'),
     await db.prepare(`
       INSERT INTO prescriptions (id, doctor_id, patient_mrn, medication, generic_name,
         dosage, frequency, route, duration, quantity, refills, pharmacy,
-        status, instructions, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
+        status, instructions, composition, timing, when_to_take, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)
     `).run(
       id, req.auth.subjectId, rx.patientMrn,
       rx.medication, rx.genericName || null,
       rx.dosage, rx.frequency, rx.route,
       rx.duration || null, rx.quantity || null, rx.refills || 0,
       rx.pharmacy || null, rx.instructions || null,
+      rx.composition || null, rx.timing || null, rx.whenToTake || null,
       now, now
     );
 
@@ -119,6 +138,7 @@ prescriptionRouter.post('/', authenticate, requireRole('doctor', 'admin'),
     const rxs = existing ? (decryptPHI(existing.v_enc) || []) : [];
     rxs.push({
       id, medication: rx.medication, genericName: rx.genericName,
+      composition: rx.composition, timing: rx.timing, whenToTake: rx.whenToTake,
       dosage: rx.dosage, frequency: rx.frequency, route: rx.route,
       duration: rx.duration, refills: rx.refills, pharmacy: rx.pharmacy,
       instructions: rx.instructions, status: 'active',
@@ -292,13 +312,18 @@ prescriptionRouter.get('/my', authenticate, requireRole('kv-patient'), patientSc
       ORDER BY created_at DESC
     `).all(ownerId, mrn);
 
-    // Strip sensitive doctor info
+    // Prescriber name for the patient's paper Rx (name only — all other
+    // doctor fields stay stripped).
+    const docName = await doctorDisplayName(ownerId);
     res.json({
       ok: true,
       prescriptions: rows.map(r => ({
         id: r.id,
         medication: r.medication,
         genericName: r.generic_name,
+        composition: r.composition,
+        timing: r.timing,
+        whenToTake: r.when_to_take,
         dosage: r.dosage,
         frequency: r.frequency,
         route: r.route,
@@ -308,6 +333,7 @@ prescriptionRouter.get('/my', authenticate, requireRole('kv-patient'), patientSc
         instructions: r.instructions,
         status: r.status,
         prescribedDate: r.created_at?.split('T')[0],
+        doctorName: docName || undefined,
       })),
     });
   })
