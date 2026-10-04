@@ -57,7 +57,7 @@
         ]
       }
     ],
-    "icon": "public/icons/veltruvia.ico"
+    "icon": "public/icons/doctor-512.png"
   },
   "mac": {
     "target": "dmg",
@@ -68,7 +68,7 @@
       "AppImage",
       "deb"
     ],
-    "icon": "public/icons/veltruvia.ico",
+    "icon": "public/icons/doctor-512.png",
     "category": "Medical"
   },
   "asarUnpack": [

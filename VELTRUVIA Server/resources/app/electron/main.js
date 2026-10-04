@@ -240,9 +240,7 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => { mainWindow.show(); });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    // Never send about:blank to the system browser — reports now render in
-    // an in-app overlay instead of a popup window.
-    if (!/^about:blank/i.test(url)) shell.openExternal(url);
+    shell.openExternal(url);
     return { action: 'deny' };
   });
 
@@ -258,8 +256,7 @@ function createWindow() {
         { label: '🔬  Lab Portal', accelerator: 'CmdOrCtrl+3', click: () => mainWindow?.loadURL(`http://127.0.0.1:${serverPort}/lab.html`) },
         { type: 'separator' },
         { label: '🔄  Reload', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.webContents.reload() },
-        // DevTools only in dev builds — packaged apps expose PHI via the console.
-        ...(app.isPackaged ? [] : [{ role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' }]),
+        { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
       ]
     },
     {

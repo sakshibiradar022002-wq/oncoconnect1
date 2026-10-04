@@ -175,15 +175,7 @@
           const row = (window._availRows || [])[Number(idx)];
           if (row) {
             const v = arg(val, el);
-            if (prop === 'dayOfWeek' || prop === 'slotDuration') row[prop] = Number(v);
-            else if (prop === 'date') {
-              // Switching the row into date mode clears the weekly day;
-              // empty date input reverts it to a weekly row.
-              if (v) { row.date = v; delete row.dayOfWeek; }
-              else { delete row.date; row.dayOfWeek = 1; }
-              if (typeof window.renderAvailRows === 'function') window.renderAvailRows();
-            }
-            else row[prop] = v;
+            row[prop] = (prop === 'dayOfWeek' || prop === 'slotDuration') ? Number(v) : v;
           }
           break;
         }

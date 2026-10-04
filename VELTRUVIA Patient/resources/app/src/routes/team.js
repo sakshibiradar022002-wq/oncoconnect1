@@ -7,7 +7,6 @@ import { db, writeAudit } from '../db/index.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { encryptPHI, randomToken } from '../crypto.js';
-import { mailConfigured, sendMail } from '../mail.js';
 
 export const teamRouter = Router();
 
@@ -59,41 +58,17 @@ teamRouter.post('/invite', authenticate, requireRole('doctor', 'admin'), validat
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
   );
 
-  // Deliver the invite by email when mail is configured — and never claim
-  // "invite sent" unless it actually went out. The code is also returned so
-  // the inviting doctor can hand it over in person as a fallback.
-  let inviteDelivered = false;
-  let deliveryNote;
-  if (mailConfigured()) {
-    try {
-      await sendMail({
-        to: inviteeEmail,
-        subject: 'VELTRUVIA — team invitation',
-        text: `You have been invited to join a VELTRUVIA team as ${role}.\n\nYour invite code (valid 7 days): ${inviteCode}\n\nLog in to VELTRUVIA with this email and use the code to accept the invitation.`,
-      });
-      inviteDelivered = true;
-      deliveryNote = `Invitation emailed to ${inviteeEmail}.`;
-    } catch (e) {
-      deliveryNote = 'Email send failed — share the invite code with your colleague directly.';
-    }
-  } else {
-    deliveryNote = 'Email is not configured on this server — share the invite code with your colleague directly.';
-  }
+  // TODO: Send email with invite link
+  // const inviteUrl = `${process.env.APP_URL}/accept-invite?code=${inviteCode}`;
 
   await writeAudit({
     actorId: req.auth.subjectId, actorRole: 'doctor',
-    action: inviteDelivered ? 'team.invite_sent' : 'team.invite_created',
-    detail: { email: inviteeEmail, role, teamId, delivered: inviteDelivered },
+    action: 'team.invite_sent',
+    detail: { email: inviteeEmail, role, teamId },
     ip: req.ip,
   });
 
-  res.json({
-    ok: true,
-    inviteCode,
-    delivered: inviteDelivered,
-    expiresIn: '7 days',
-    message: deliveryNote,
-  });
+  res.json({ ok: true, inviteCode, expiresIn: '7 days' });
 }));
 
 // ── Accept team invite ────────────────────────────────────────────
@@ -199,16 +174,9 @@ teamRouter.post('/patients/:mrn/grant', authenticate, requireRole('doctor', 'adm
 teamRouter.delete('/patients/:mrn/access/:doctorId', authenticate, requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
   const { mrn, doctorId } = req.params;
 
-  const result = await db.prepare(
+  await db.prepare(
     'DELETE FROM patient_access WHERE patient_mrn = ? AND owner_id = ? AND doctor_id = ?'
   ).run(mrn, req.auth.subjectId, doctorId);
-
-  // Nothing deleted = there was nothing to revoke (adapter's `changes` is
-  // unreliable across drivers, so verify by re-read instead).
-  const stillThere = await db.prepare(
-    'SELECT 1 FROM patient_access WHERE patient_mrn = ? AND owner_id = ? AND doctor_id = ?'
-  ).get(mrn, req.auth.subjectId, doctorId);
-  if (stillThere) return res.status(500).json({ error: 'Revoke failed — access still present. Try again.' });
 
   await writeAudit({
     actorId: req.auth.subjectId, actorRole: 'doctor',
@@ -217,5 +185,5 @@ teamRouter.delete('/patients/:mrn/access/:doctorId', authenticate, requireRole('
     ip: req.ip,
   });
 
-  res.json({ ok: true, revoked: true });
+  res.json({ ok: true });
 }));

@@ -62,53 +62,15 @@ window.addEventListener('DOMContentLoaded',()=>{
       initDashboard();
     }else{
       document.getElementById('auth-screen').style.display='flex';
-      // Stay-logged-in restore (lab)
-      (async function(){
-        try{
-          if(!window.VxSession)return;
-          const who=VxSession.restore();
-          if(!who||who.kind!=='lab'||!who.username)return;
-          let found=null,foundDoc=null;
-          for(const name of SecureStore.names('lab_')){
-            const l=await SecureStore.getAsync(name);
-            if(l&&l.username===who.username){found=l;foundDoc=name.split('_')[1];break}
-          }
-          if(!found)return;
-          currentLab=found;_docId=foundDoc;
-          LS.set('current_lab',found);LS.set('current_docId',foundDoc);
-          document.getElementById('auth-screen').style.display='none';
-          document.getElementById('app-shell').style.display='flex';
-          initDashboard();
-        }catch(e){}
-      })();
     }
   },1600);
 });
 
 // ═══ AUTH ═══
-// Persist the “stay signed in” choice on EVERY successful login path —
-// previously only the offline fallback remembered it, so the Lab app asked
-// for credentials again after every restart.
-function rememberLabSession(lab){
-  try{
-    const cb=document.getElementById('stay-signed-in-lab');
-    if(window.VxSession){
-      if(!cb||cb.checked)VxSession.remember({kind:'lab',username:lab.username,name:lab.name||''});
-      else VxSession.forget();
-    }
-  }catch(e){}
-}
-
 async function doLogin(){
-  const btn=document.querySelector('#login-lab .log-btn, #login-lab button') || document.querySelector('[data-action="doLogin"]');
-  if(window.Busy&&Busy.isBusy(btn))return;
-  const run=async()=>{
   const user=v('li-user'),pass=v('li-pass');
   const errEl=document.getElementById('login-err');
   if(!user||!pass){showErr(errEl,'Enter username and password.');return}
-  // v2.5: track WHY login failed for honest errors (offline ≠ wrong password).
-  let sawServer=false,wrongCreds=false;
-  const netDown=e=>/failed to fetch|networkerror|load failed|timed?\s?out/i.test(String(e&&e.message||e));
   // 1. Try shared JSON store login first
   try{
     const result=await api('/sync/lab-store-login',{method:'POST',body:JSON.stringify({username:user,password:pass})});
@@ -116,14 +78,12 @@ async function doLogin(){
       currentLab=result.lab;_docId=result.lab.docId||'';
       if(result.keys)mergeServerKeys(result.keys); // pull assigned tasks + patient list issued with the session
       LS.set('current_lab',result.lab);LS.set('current_docId',_docId);
-      rememberLabSession(result.lab);
       document.getElementById('auth-screen').style.display='none';
       document.getElementById('app-shell').style.display='flex';
       initDashboard();
       return;
     }
-    sawServer=true;
-  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
+  }catch(e){/* store login failed, trying server */}
   // 2. Try server login (sql.js DB)
   try{
     const result=await api('/sync/lab-login',{method:'POST',body:JSON.stringify({username:user,password:pass})});
@@ -137,14 +97,13 @@ async function doLogin(){
       if(foundLab){
         currentLab=foundLab;_docId=foundDocId;
         LS.set('current_lab',foundLab);LS.set('current_docId',foundDocId);
-        rememberLabSession(foundLab);
         document.getElementById('auth-screen').style.display='none';
         document.getElementById('app-shell').style.display='flex';
         initDashboard();
         return;
       }
     }
-  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
+  }catch(e){/* Server unreachable — try local */}
   // 3. Local fallback
   let foundLab=null,foundDocId=null;
   for(const name of SecureStore.names('lab_')){
@@ -155,22 +114,12 @@ async function doLogin(){
       }
     }
   }
-  if(!foundLab){
-    // v2.5: honest messages — the old "No matching lab account found" fired
-    // for wrong passwords and offline servers alike.
-    if(wrongCreds)showErr(errEl,'Wrong username or password. Check with your doctor and try again.');
-    else if(sawServer)showErr(errEl,'No lab account with that username on the clinic server. Ask your doctor to create it.');
-    else showErr(errEl,"Can't reach the clinic server, and this device has no saved lab account. Connect to the internet once to log in for the first time.");
-    return;
-  }
+  if(!foundLab){showErr(errEl,'No matching lab account found.');return}
   currentLab=foundLab;_docId=foundDocId;
   LS.set('current_lab',foundLab);LS.set('current_docId',foundDocId);
-  rememberLabSession(foundLab);
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app-shell').style.display='flex';
   initDashboard();
-  };
-  if(window.Busy)Busy.btn(btn,run);else run();
 }
 
 async function checkAccounts(){
@@ -186,22 +135,11 @@ async function checkAccounts(){
 
 function doLogout(){
   fetch('/api/auth/logout',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}}).catch(()=>{});
-  if(window.VxSession)VxSession.forget();
   currentLab=null;_docId=null;
   LS.del('current_lab');LS.del('current_docId');
   document.getElementById('app-shell').style.display='none';
   document.getElementById('auth-screen').style.display='flex';
 }
-
-// v2.5: a 401 on a token-carrying request means the 30-day session ended —
-// land on the login screen with an honest message instead of silent failures.
-window.addEventListener('veltruvia:session-expired',function(){
-  if(!currentLab)return;
-  currentLab=null;_docId=null;
-  try{document.getElementById('app-shell').style.display='none';}catch(e){}
-  try{document.getElementById('auth-screen').style.display='flex';}catch(e){}
-  try{const errEl=document.getElementById('login-err');if(errEl)showErr(errEl,'Your session has expired — please log in again.');}catch(e){}
-});
 
 // ═══ NAVIGATION ═══
 function goScreen(name){
@@ -365,10 +303,8 @@ async function submitUpload(){
   const subs=LS.get('lab_subs_'+_docId)||[];
   subs.push({labId:currentLab.labId,labName:currentLab.name,mrn,test,date,results:res,notes,taskId,submittedAt:Date.now()});
   LS.set('lab_subs_'+_docId,subs);
-  // Push to server so the doctor's record picks the result up — and report
-  // honestly which happened. "Submitted" must mean the doctor can see it.
-  let delivered=false;
-  try{await api('/sync/lab',{method:'PUT',body:JSON.stringify({changes:{['pat_tokens_'+_docId]:tokens,['lab_subs_'+_docId]:subs}})});delivered=true}catch(e){console.warn('[lab] push failed:',e.message)}
+  // Push to server so the doctor's record picks the result up (offline-safe)
+  try{await api('/sync/lab',{method:'PUT',body:JSON.stringify({changes:{['pat_tokens_'+_docId]:tokens,['lab_subs_'+_docId]:subs}})})}catch(e){console.warn('[lab] push failed:',e.message)}
   // Clear form
   document.getElementById('ul-taskid').value='';
   document.getElementById('ul-mrn').value='';
@@ -376,30 +312,12 @@ async function submitUpload(){
   document.getElementById('ul-res').value='';
   document.getElementById('ul-notes').value='';
   document.getElementById('ul-mrn-manual').value='';
-  showToast(delivered?'✅ Report submitted — the doctor\'s record is updated':'⚠️ Saved on this phone — server unreachable, the doctor cannot see it yet. Submit again when online.');
+  showToast('✅ Report submitted successfully!');
   renderUpload();
 }
 
 // ═══ BATCH CSV ═══
 let _batchData=[];
-// v2.5: quote-aware CSV split — a naive split(',') silently shifted columns
-// for any result containing a comma (e.g. "WBC: 5.2, diff normal").
-function _csvSplit(line){
-  const out=[];let cur='',inQ=false;
-  for(let i=0;i<line.length;i++){
-    const ch=line[i];
-    if(inQ){
-      if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++}else inQ=false;}
-      else cur+=ch;
-    }else{
-      if(ch==='"')inQ=true;
-      else if(ch===','){out.push(cur);cur='';}
-      else cur+=ch;
-    }
-  }
-  out.push(cur);
-  return out.map(p=>p.trim());
-}
 function previewBatchCSV(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
@@ -407,7 +325,7 @@ function previewBatchCSV(input){
     const lines=e.target.result.split('\n').filter(l=>l.trim());
     _batchData=[];
     for(let i=1;i<lines.length;i++){// skip header
-      const parts=_csvSplit(lines[i]);
+      const parts=lines[i].split(',').map(p=>p.trim().replace(/^"|"$/g,''));
       if(parts.length>=4)_batchData.push({mrn:parts[0],test:parts[1],date:parts[2],results:parts[3],notes:parts[4]||''});
     }
     if(!_batchData.length){showToast('⚠️ No valid rows found in CSV');return}
@@ -419,18 +337,16 @@ function previewBatchCSV(input){
   reader.readAsText(file);
 }
 
-async function submitBatchCSV(){
+function submitBatchCSV(){
   if(!_batchData.length)return;
   const subs=LS.get('lab_subs_'+_docId)||[];
   _batchData.forEach(r=>{
     subs.push({labId:currentLab.labId,labName:currentLab.name,mrn:r.mrn,test:r.test,date:r.date,results:r.results,notes:r.notes,submittedAt:Date.now()});
   });
   LS.set('lab_subs_'+_docId,subs);
-  let delivered=false;
-  try{await api('/sync/lab',{method:'PUT',body:JSON.stringify({changes:{['lab_subs_'+_docId]:subs}})});delivered=true}catch(e){console.warn('[lab] batch push failed:',e.message)}
   _batchData=[];
   closeSheet('batch-sheet');
-  showToast(delivered?`✅ Results uploaded — the doctor\'s record is updated`:`⚠️ Saved on this phone — server unreachable. Upload again when online so the doctor can see them.`);
+  showToast(`✅ ${subs.length} results uploaded!`);
   renderUpload();
 }
 
@@ -524,10 +440,11 @@ function toggleTheme(){
   document.documentElement.setAttribute('data-theme',saved);
 })();
 
-// ═══ STAY SIGNED IN ═══
-// No client-side idle logout — the “stay signed in on this device” promise
-// means the Lab app reopens straight into the account (server session is
-// long-lived with sliding refresh; VxSession restores it on boot).
+// ═══ IDLE TIMEOUT ═══
+let _idleTimer=null;
+function resetIdleTimer(){clearTimeout(_idleTimer);_idleTimer=setTimeout(()=>{AppDialog.alert('Session expired due to inactivity.');doLogout()},30*60*1000)}
+['mousemove','mousedown','keydown','scroll','touchstart'].forEach(evt=>document.addEventListener(evt,resetIdleTimer,{passive:true}));
+resetIdleTimer();
 
 // Standalone mode: LOCK to Lab portal only
 (function(){

@@ -14,27 +14,15 @@
     const el = document.getElementById('ver-badge');
     if (!el) return;
     let text = '';
-    let serverVer = null;
     try {
       const h = await fetch('/health').then(r => r.json());
-      if (h.version) { serverVer = h.version; text = 'This server: v' + h.version; }
+      if (h.version) text = 'This server: v' + h.version;
     } catch (e) { /* not served by VELTRUVIA Server — skip local line */ }
-    // GitHub release check: query THIS project's repo (origin), never a
-    // third-party archive. Show it ONLY if it is NEWER than the running
-    // server — an old release tag (e.g. v1.0.0 left over from launch) must
-    // never overwrite the real current version on the badge.
-    const semver = (v) => String(v || '').replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
-    const isNewer = (a, b) => {
-      const [a1, a2, a3] = semver(a), [b1, b2, b3] = semver(b);
-      return a1 > b1 || (a1 === b1 && (a2 > b2 || (a2 === b2 && a3 > b3)));
-    };
     try {
-      const r = await fetch('https://api.github.com/repos/sakshibiradar022002-wq/oncoconnect1/releases/latest', { cache: 'no-store' });
+      const r = await fetch('https://api.github.com/repos/videju/veltruvia/releases/latest', { cache: 'no-store' });
       if (r.ok) {
         const j = await r.json();
-        if (j && j.tag_name && (!serverVer || isNewer(j.tag_name, serverVer))) {
-          text = 'Latest release: ' + j.tag_name;
-        }
+        if (j && j.tag_name) text = 'Latest release: ' + j.tag_name;
       }
     } catch (e) { /* offline / no release yet — server version stays */ }
     if (text) { el.textContent = text; el.hidden = false; }
@@ -47,46 +35,11 @@
       if (!wrap) return;
       const img = wrap.querySelector('img[data-url]');
       if (img && !img.src) {
-        // QR payloads must be ABSOLUTE urls — phone cameras can't open
-        // relative paths. Resolve against the page location.
-        const u = img.getAttribute('data-url');
-        drawLocalQr(img, new URL(u, window.location.href).href);
+        drawLocalQr(img, img.getAttribute('data-url'));
       }
       wrap.hidden = !wrap.hidden;
     });
   });
-
-  // ── Live stats in the hero mockup ─────────────────────────────────
-  // Tiles show real aggregate counters from /health?deep=1 (counts only,
-  // never patient data). Poll every 30s; keep the last good values on
-  // failure. Falls back to '—' until the first successful read.
-  (function () {
-    var kpis = { doctors: null, patients: null, audit: null };
-    function paint() {
-      var d = document.querySelector('[data-live="doctors"]');
-      var p = document.querySelector('[data-live="patients"]');
-      var a = document.querySelector('[data-live="audit"]');
-      if (d && kpis.doctors !== null) d.textContent = kpis.doctors;
-      if (p && kpis.patients !== null) p.textContent = kpis.patients;
-      if (a && kpis.audit !== null) a.textContent = kpis.audit.toLocaleString();
-      var bar = document.querySelector('.mock-title');
-      if (bar && kpis.doctors !== null) bar.textContent = 'VELTRUVIA DOC · LIVE';
-    }
-    function tick() {
-      fetch('/health?deep=1', { cache: 'no-store' })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (h) {
-          if (!h) return;
-          if (typeof h.doctors === 'number') kpis.doctors = h.doctors;
-          if (typeof h.patients === 'number') kpis.patients = h.patients;
-          if (typeof h.auditEntries === 'number') kpis.audit = h.auditEntries;
-          paint();
-        })
-        .catch(function () { /* keep last good values */ });
-    }
-    tick();
-    setInterval(tick, 30000);
-  })();
 
   // ── PWA install (beforeinstallprompt) ─────────────────────────────
   const banner = document.getElementById('pwa-banner');
@@ -201,7 +154,7 @@
 // qrcode-generator lib (local file, CSP-safe).
 function drawLocalQr(img, text) {
   var hide = function () {
-    var wrap = img.closest('.qr-wrap') || img.closest('.connect-qr');
+    var wrap = img.closest('.connect-qr');
     if (wrap) wrap.style.display = 'none';
   };
   var render = function () {

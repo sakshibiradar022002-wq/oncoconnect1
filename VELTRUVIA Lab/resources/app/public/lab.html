@@ -20,7 +20,7 @@
 
 <!-- ═══ SPLASH SCREEN ═══ -->
 <div id="splash">
-  <div class="splash-icon"><img src="/icons/brand/veltruvia-lab.jpg" alt="VELTRUVIA Lab" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
+  <div class="splash-icon">🔬</div>
   <div class="splash-title">VELTRUVIA Lab</div>
   <div class="splash-sub">Laboratory Management Portal</div>
   <div class="splash-loader"><div class="splash-loader-bar"></div></div>
@@ -30,16 +30,17 @@
 <div id="auth-screen" style="display:none">
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="auth-logo-icon"><img src="/icons/brand/veltruvia-lab.jpg" alt="VELTRUVIA Lab" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
+      <div class="auth-logo-icon">🔬</div>
       <div class="auth-title">VELTRUVIA Lab</div>
       <div class="auth-sub">Laboratory Portal</div>
     </div>
     <div class="err-box" id="login-err"></div>
     <div class="fg"><label>Username</label><input id="li-user" placeholder="lab_username" autocomplete="username"></div>
-    <div class="fg"><label>Password</label><span class="pw-wrap"><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password"></span></div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);margin-bottom:12px;cursor:pointer"><input type="checkbox" id="stay-signed-in-lab" checked style="width:16px;height:16px;accent-color:var(--purple)"> Stay signed in on this device</label>
+    <div class="fg"><label>Password</label><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="big-btn btn-purple" data-action="doLogin" style="margin-bottom:12px">Sign In →</button>
     <div style="text-align:center;margin-bottom:10px;"><a href="#" data-recover="lab" style="font-size:12.5px;color:#7dd3fc;text-decoration:none;">Forgot password?</a></div>
+    <button class="big-btn btn-ghost" data-action="checkAccounts" style="font-size:12px">🔍 Check Available Accounts</button>
+    <div id="accounts-list" style="margin-top:12px"></div>
 
   </div>
 </div>
@@ -146,13 +147,12 @@
 </div>
 
 <script src="js/qr-pairing.js"></script>
-<script src="js/mobile-api.js?v=20261002b"></script>
-<script src="sync-client.js"></script>
+<script src="js/mobile-api.js"></script>
 <script src="js/actions.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/secure-store.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/page/lab-1-app.js?v=20261002b"></script>
+<script src="js/page/lab-1-app.js"></script>
 <script src="js/recover.js"></script>
 <script src="js/push-client.js"></script>
 </body>

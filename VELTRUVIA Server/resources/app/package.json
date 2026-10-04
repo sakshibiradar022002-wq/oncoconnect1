@@ -27,7 +27,7 @@
   "devDependencies": {
     "@noble/hashes": "^1.8.0",
     "electron": "^35.7.5",
-    "electron-builder": "^26.15.3"
+    "electron-builder": "^26.17.0"
   },
   "overrides": {
     "@noble/hashes": "^1.8.0"

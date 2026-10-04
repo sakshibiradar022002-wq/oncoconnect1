@@ -237,12 +237,6 @@ async function checkAndSendReminders() {
           const patient = await getPatientInfo(ownerId, mrn);
           if (!patient) continue;
 
-          // Track whether ANY channel actually delivered before we mark this
-          // reminder as sent. Marking it sent on a total failure would both
-          // lie in the audit log and permanently swallow the reminder (the
-          // hasReminderSent() guard would skip it on every future scan).
-          let anyChannelDelivered = false;
-
           // Send email reminder
           if (emailReady && patient.email) {
             try {
@@ -252,7 +246,6 @@ async function checkAndSendReminders() {
                 text: buildReminderText(patient.name || 'Patient', appointment, tier),
                 html: buildReminderHtml(patient.name || 'Patient', appointment, tier),
               });
-              anyChannelDelivered = true;
             } catch (err) {
               console.error(`[reminder] Email failed for ${patient.email}:`, err.message);
             }
@@ -267,17 +260,13 @@ async function checkAndSendReminders() {
                 appointment,
                 tier.label
               );
-              if (smsResult && smsResult.sent) {
-                anyChannelDelivered = true;
-                console.log('[reminder] SMS sent');
-              }
+              if (smsResult.sent) console.log('[reminder] SMS sent');
             } catch (err) {
               console.error('[reminder] SMS failed:', err.message);
             }
           }
 
-          // Send push notification (best-effort; delivery is not confirmable,
-          // so it never satisfies the delivered-check on its own)
+          // Send push notification
           try {
             await notifySubject('%::' + mrn, {
               title: tier.subject,
@@ -286,13 +275,6 @@ async function checkAndSendReminders() {
             });
           } catch (err) {
             // Push is best-effort
-          }
-
-          // Nothing delivered: do NOT mark sent, do NOT write a success audit.
-          // The next hourly scan will retry this tier while its window is open.
-          if (!anyChannelDelivered) {
-            console.warn(`[reminder] All channels failed for MRN=${mrn} ${appointment.date} (${tier.label}) — will retry next scan while window is open`);
-            continue;
           }
 
           // Mark reminder as sent and write audit

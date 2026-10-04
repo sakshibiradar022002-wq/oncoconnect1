@@ -10,11 +10,11 @@
     "apk:release": "cd android && gradlew.bat assembleRelease"
   },
   "dependencies": {
-    "@capacitor/core": "^7.0.0",
-    "@capacitor/local-notifications": "^7.0.0"
+    "@capacitor/core": "^8.5.2"
   },
   "devDependencies": {
     "@capacitor/android": "^7.0.0",
-    "@capacitor/cli": "^7.0.0"
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/ios": "^8.5.2"
   }
 }

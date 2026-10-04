@@ -13,36 +13,9 @@ this tier. Free via Free Tier credits: $7 × 6 months = $42, fully covered
 
 ---
 
-## 🚀 SESSION (Sep 28–29, 2026) — sync hardening, password reset, lab registration, welcome card
-
-End-to-end QA session: pre-flighted the patient and lab apps, verified a
-phone-logged symptom from the doctor side, exercised offline sync, then
-fixed what the tests exposed. All changes deployed to the VM and verified
-live; installers + APKs rebuilt and re-uploaded (still v2.3.0).
-
-| Area | What changed | Verified live |
-|---|---|---|
-| Offline sync | Dirty queue persisted under `cc__sync_dirty` (kept on logout), flushed after any successful login (fetch hook on `*/login`), self-recovery on load/`online`. Wired into all 4 bundles + mobile `www` — all copies md5-identical | offline action survived logout + login, synced after reconnect |
-| SecureStore | Boot migration no longer encrypts/deletes `cc__sync_dirty` (root cause of the first sync-test failure) | queue survives boot across restarts |
-| Password reset | `POST /api/sync/reset-patient-password` (doctor/admin only, owner-scoped, server-side `hashUiPasswordV2`, audited, returns plaintext once) + 🔑 Reset Password button in the doctor record view | old pw → 401, new pw → 200; demo hash then restored |
-| RBAC hole | `/save-patient` had **no role check** — any authenticated user could overwrite patient credentials. Now `requireRole('doctor','admin')` | lab token → 403 |
-| Lab registration | New `POST /api/sync/save-lab` (zod-validated, username-hijack guard → 409, owner `docId`, audited); `createLab()` now hashes the password and shows an honest ⚠️ when either push fails | created lab → `lab-store-login` 200 (was broken), wrong pw 401 |
-| Welcome card | Printable A6 Patient Welcome Card (QR → download page) + Copy-credentials button in the doctor UI (vendored `qrcode-generator.js`) | card renders, QR scans, buttons verified on screen |
-
-Housekeeping: `sync-bundles` re-run and byte-identity re-verified across all
-bundles; `npm run check` ✅ + 39/39 tests + 69/69 feature sweep; monthly
-truth-check re-baselined (sync.js `ok:true` 42 → 44 = the two new audited
-routes); desktop installers + portable zips + APKs rebuilt with the new
-features, SHA256SUMS/`latest.yml`/QR sheet regenerated, all re-uploaded to
-`~/veltruvia/app/public/downloads/`. Demo accounts cleaned up after each
-test round; rotated credentials live only on the VM (`~/veltruvia-demo-*.txt`)
-and the printable QR sheet — **never committed to git** (op scripts in
-`.freebuff/` that embed them stay local-only).
-
 ## ⏸ STATE — MIGRATION COMPLETE (Sep 27, 2026)
 - VM: Lightsail `veltruvia-prod`, Mumbai ap-south-1a, Ubuntu 24.04, $7/mo
-  (Free plan account), static IP (kept out of this repo — see
-  `.freebuff/.vm-target` locally / the AWS console), SSH key at
+  (Free plan account), static IP **16.4.28.130**, SSH key at
   `C:\Users\Sara\.ssh\lightsail-mumbai.pem`
 - Stack: Node v24.21.0, 2 GB swap, deps via `npm install --omit=dev`
   (local package-lock was out of sync → `npm ci` unusable; consider
@@ -116,8 +89,7 @@ and the printable QR sheet — **never committed to git** (op scripts in
 
 ## 🌐 PERMANENT URL LIVE (Sep 27, 2026 night)
 - **https://veltruvia.duckdns.org** is now the canonical address (free DuckDNS
-  subdomain, Sara's account) → A record → the VM's static IP (kept out of
-  this repo — set manually in the DuckDNS panel; a one-time manual set
+  subdomain, Sara's account) → A record 16.4.28.130 (static IP — manual set
   is fine; no auto-updater needed).
 - Caddy 2.6.2 on the VM (systemd `caddy`, enabled), /etc/caddy/Caddyfile:
   `veltruvia.duckdns.org → reverse_proxy 127.0.0.1:3000`. Let's Encrypt cert
@@ -220,19 +192,6 @@ and the printable QR sheet — **never committed to git** (op scripts in
 - ethers added to package.json dependencies (deployed with --omit=dev).
 - ON-CHAIN ANCHORING = LIVE. Cost: ~0.00002 test-ETH/day (0.1 funds years).
 
-## 📋 ROUND 5 — PAID-ITEM PREP + FINAL AUDIT (Sep 27, 2026 late night)
-- Free pen-test portion DONE: `npm audit --omit=dev` = **0 vulnerabilities**;
-  live security-header audit passed (CSP w/ frame-ancestors+upgrade-insecure,
-  HSTS preload, XFO SAMEORIGIN, nosniff, Referrer/Permissions-Policy);
-  TLS cert Let's Encrypt YE2, valid to Dec 26.
-- **UPGRADE-PATHS.md** written: exact purchase/wiring steps + costs + trigger
-  conditions for CA signing, pen-test, mainnet anchoring, UptimeRobot,
-  private repo, multi-clinic — with priority order.
-- **MULTI-CLINIC-PLAYBOOK.md** written: shared-vs-isolated decision, 10-step
-  per-clinic checklist reusing the .freebuff scripts, scaling table.
-- Remaining for a literal 10/10: phone APK test + UptimeRobot + private repo
-  (all user's, free) — CA/pen-test/mainnet are paid and properly deferred.
-
 ## ⏸ OLD STATE (kept for reference)
 - AWS account OPENED on the **Free plan** (no card on file — account cannot
   be billed, so the billing-budget alert is unnecessary until upgrade)
@@ -329,24 +288,3 @@ an upgrade, not a dependency, until you say otherwise.
 - [ ] Phone (mobile data, not Wi-Fi) loads patient app via new URL
 - [ ] Telehealth call completes end-to-end
 - [ ] Budget alert email confirmed working
-
-## 🔍 Honesty audit (Sep 28, 2026) — the software never fakes success
-
-A three-pass audit (app UI → server routes → Electron mains) found and fixed
-**14 places** where a success message was shown without the work having
-happened. Rule now enforced everywhere: **"success" is only claimed when it
-actually happened; otherwise the message says what did happen and what to do
-next.**
-
-| Commit | Layer | Fixes |
-|---|---|---|
-| `63d00a5` | Web/mobile UI | SOS said "alert sent!" without touching the server; chat bubble appeared on failed delivery; "Log saved ✓" and lab-report/CSV "submitted ✓" were local-only; photos "added to your record"; doctor's `pushToServer` swallowed all errors ("Task sent to lab" could be a lie) — **7 fixes** |
-| `22a08fa` | Server | "OTP sent via SMS" claimed on silent Twilio failures; reminders marked sent + audited even when every channel failed (reminder lost forever); `save-log`/`send-message`/`save-appointment` answered ok on disk failure; `update-appointment` ok on missing rows; `/health?deep=1` had a hardcoded blockchain placeholder — **5 fixes** |
-| `e93bf48` | Electron + routes | Electron mains audited clean; team invites wrote "invite_sent" audit while email was a TODO — now really sends (or says to hand over the code), revoke verifies deletion — **1 fix + clean bill for Electron** |
-| `2a52615` | Enforcement | `.freebuff/truth-check.sh` + monthly Task Scheduler task "VELTRUVIA Monthly Truth-Check" (1st, 09:00): regression-greps every fixed pattern and flags any new unreviewed `ok:true`. Caught one more lie on day one: slot-refusal still showed "✅ submitted" — fixed. **14th fix** |
-
-Usability fixes shipped alongside (`28b59c6`): stay-signed-in on all portals,
-honest offline booking errors, double-submit guard, Enter-key login, offline
-banner, stuck-"Loading..." retry, copy button for one-time lab credentials,
-vitals range clamping. All verified live: 39/39 tests, bundle checks green,
-`/health?deep=1` → `blockchain:"sepolia"`.

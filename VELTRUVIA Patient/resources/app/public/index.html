@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VELTRUVIA Doc — Doctor Software</title>
+<title>VELTRUVIA Pro — Doctor Software</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1a56db">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="VELTRUVIA Doc">
+<meta name="apple-mobile-web-app-title" content="VELTRUVIA Pro">
 <link rel="apple-touch-icon" href="/icons/doctor-192.png">
 <link rel="icon" type="image/png" href="/icons/doctor-192.png">
 <link href="/fonts/fonts.css" rel="stylesheet">
@@ -23,8 +23,8 @@
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="auth-logo-icon"><img src="/icons/brand/veltruvia-doc.jpg" alt="VELTRUVIA Doc" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
-      <div><h1 class="auth-logo-text" style="margin:0;">VELTRUVIA Doc</h1><div style="font-size:11px;color:var(--text-muted);">Doctor Software · v2.5.0</div></div>
+      <div class="auth-logo-icon">🧬</div>
+      <div><h1 class="auth-logo-text" style="margin:0;">VELTRUVIA Pro</h1><div style="font-size:11px;color:var(--text-muted);">Doctor Software · v2.0</div></div>
     </div>
     <div class="tab-switcher">
       <button class="ts-btn active" data-action="switchATab:login,@this">Sign In</button>
@@ -33,9 +33,8 @@
     <div id="a-login">
       <div class="msg err" id="login-msg"></div>
       <div class="fg"><label for="li-email">Email</label><input id="li-email" type="email" placeholder="dr.smith@hospital.com"></div>
-      <div class="fg"><label for="li-pass">Password</label><span class="pw-wrap"><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password"></span></div>
+      <div class="fg"><label for="li-pass">Password</label><input id="li-pass" type="password" placeholder="••••••••"></div>
       <div id="li-totp-field" style="display:none"><div class="fg"><label for="li-totp">Authenticator Code</label><input id="li-totp" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" style="text-align:center;letter-spacing:4px;font-size:16px;"></div></div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-muted);margin:6px 0 2px;cursor:pointer"><input type="checkbox" id="stay-signed-in-doc" checked style="width:16px;height:16px;accent-color:var(--blue)"> Stay signed in on this device</label>
       <button class="btn btn-primary btn-full" style="margin-top:4px;" data-action="doLogin">Sign In →</button>
       <div style="text-align:center;margin-top:10px;"><a href="#" data-recover="doctor" style="font-size:12px;color:var(--blue);text-decoration:none;">Forgot password?</a></div>
     </div>
@@ -51,7 +50,7 @@
         </div>
         <div class="fg">
           <label>Password <span style="font-weight:400;color:var(--text-dim);">(min 10 characters)</span></label>
-          <span class="pw-wrap"><input id="rg-pass" type="password" placeholder="Min 10 characters" autocomplete="new-password" data-action-input="checkPassStrength:@value"></span>
+          <input id="rg-pass" type="password" placeholder="Min 10 characters" data-action-input="checkPassStrength:@value">
           <div id="rg-pass-bar" style="height:4px;border-radius:2px;background:var(--border2);margin-top:6px;overflow:hidden;"><div id="rg-pass-fill" style="height:100%;width:0%;border-radius:2px;transition:all .3s;"></div></div>
           <div id="rg-pass-label" style="font-size:11px;color:var(--text-dim);margin-top:3px;"></div>
         </div>
@@ -72,7 +71,8 @@
               <input id="rg-otp" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" style="flex:1;text-align:center;letter-spacing:4px;font-size:18px;font-weight:700;font-family:var(--mono);padding:10px;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;color:var(--text);outline:none">
               <button class="btn btn-primary" data-action="verifyRegOtp" style="padding:10px 16px">Verify</button>
             </div>
-            <div style="margin-top:10px;font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:8px;flex-wrap:wrap">Didn't get the code? <button type="button" class="btn btn-ghost" id="btn-resend-otp" data-action="sendRegOtp" style="padding:6px 14px;font-size:12px;font-weight:700">📧 Send Code Again</button> <span id="rg-resend-status" style="color:var(--green);font-weight:700"></span></div>
+            <div id="rg-otp-dev" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.15);border-radius:8px;font-size:12px;color:var(--blue)"></div>
+            <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">Didn't receive it? <a href="javascript:void(0)" data-action="sendRegOtp" style="color:var(--blue)">Resend</a></div>
           </div>
           <div id="rg-verify-done" style="display:none;text-align:center;padding:8px 0">
             <div style="font-size:20px;margin-bottom:4px">✅</div>
@@ -83,7 +83,6 @@
         <div id="rg-create-hint" style="font-size:11px;color:var(--text-dim);text-align:center;margin-top:6px">Verify your email above first</div>
       </div>
     </div>
-    <div id="conn-indicator" style="margin-top:10px;text-align:center;font-size:11px;color:var(--text-dim);display:none;"></div>
     <div style="margin-top:16px;text-align:center;font-size:11px;color:var(--text-dim);">🔒 Data stored locally on this device</div>
   </div>
 </div>
@@ -94,7 +93,7 @@
     <!-- SIDEBAR -->
     <div class="sidebar" role="navigation" aria-label="Main navigation">
       <div style="padding:16px 14px 8px;display:flex;align-items:center;gap:10px;">
-        <div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:#0d1420;display:flex;align-items:center;justify-content:center;"><img src="/icons/brand/veltruvia-doc.jpg" alt="" style="width:100%;height:100%;object-fit:cover"></div>
+        <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-size:16px;">🧬</div>
         <div><div style="font-weight:800;font-size:13px;color:var(--text);">VELTRUVIA</div><div style="font-size:9px;color:var(--text-dim);font-family:var(--mono);">SOFTWARE</div></div>
       </div>
       <div class="sidebar-scroll">
@@ -727,11 +726,7 @@
         <div class="cred-row"><span class="cred-key">MRN</span><span class="cred-val" id="ap-creds-mrn"></span></div>
         <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val" id="ap-creds-pass" style="word-break:break-all;"></span></div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">⚠ Copy these now — password cannot be viewed again after closing.</div>
-        <div style="display:flex;gap:8px;margin-top:14px">
-          <button class="btn btn-ghost" style="flex:1" id="ap-creds-copy-btn" data-action="copyPatientCreds">📋 Copy</button>
-          <button class="btn btn-primary" style="flex:2" data-action="printPatientWelcomeCard">🖨 Print Welcome Card</button>
-        </div>
-        <button class="btn btn-primary btn-full" style="margin-top:8px" data-action="closeOverlay:add-pat-modal">Done — Close</button>
+        <button class="btn btn-primary btn-full" style="margin-top:14px" data-action="closeOverlay:add-pat-modal">Done — Close</button>
       </div>
     </div>
   </div>
@@ -766,26 +761,24 @@
 <!-- SCRIPT BLOCK 1 — Core, Auth, Storage                       -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script src="js/actions.js"></script>
-<script src="js/vendor/qrcode-generator.js"></script>
-<script src="sync-client.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/secure-store.js"></script>
-<script src="js/utils.js?v=20261001a"></script>
+<script src="js/utils.js"></script>
 <script src="js/telehealth-ws.js"></script>
-<script src="js/rtc-config.js?v=20261003a"></script>
+<script src="js/rtc-config.js"></script>
 <script src="js/readonly-banner.js"></script>
 <script src="js/recover.js"></script>
-<script src="js/page/index-1-helpers.js?v=20260930c"></script>
+<script src="js/page/index-1-helpers.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- SCRIPT BLOCK 2 — Record Tabs                               -->
 <!-- ═══════════════════════════════════════════════════════════ -->
-<script src="js/page/index-2-record.js?v=20261001a"></script>
+<script src="js/page/index-2-record.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- SCRIPT BLOCK 3 — New Features                              -->
 <!-- ═══════════════════════════════════════════════════════════ -->
-<script src="js/page/index-3-reports.js?v=20261002b"></script>
+<script src="js/page/index-3-reports.js"></script>
 
 <!-- Standalone mode: hide portal switcher when loaded from a separate app -->
 <script src="js/page/index-4-standalone.js"></script>

@@ -7,6 +7,7 @@
  */
 
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog, safeStorage } from 'electron';
+import { setupAutoUpdate } from './updater.js';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, extname, relative, isAbsolute } from 'node:path';
 
@@ -15,13 +16,14 @@ app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('disable-gpu');
 
 import { createServer } from 'node:http';
-import https from 'node:https';
 import { createReadStream, existsSync, readFileSync, writeFileSync, statSync, mkdirSync } from 'node:fs';
 import net from 'node:net';
 import http from 'node:http';
 import blockchain from './blockchain.js';
 import { getServerUrl } from './shared-config.js';
-import { installDownloadPolicy } from './download-policy.js';
+
+// Auto-update via GitHub Releases (no-op in dev / before first release)
+try { setupAutoUpdate({ channel: 'latest-patient' }); } catch {}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -93,33 +95,23 @@ function serveStatic(req, res) {
 }
 
 async function probeServer(url, timeout = 2000) {
-  // fetch handles both http:// (clinic PC) and https:// (cloud VM) and
-  // follows redirects. http.get silently fails on https:// URLs, which used
-  // to drop cloud-configured apps into an empty local standalone database.
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), timeout);
-    const res = await fetch(`${url}/api/health`, { signal: ctrl.signal });
-    clearTimeout(timer);
-    return res.ok ? url : null;
-  } catch { return null; }
+  return new Promise((resolve) => {
+    const req = http.get(`${url}/api/health`, { timeout }, (res) => {
+      let data = '';
+      res.on('data', (c) => data += c);
+      res.on('end', () => resolve(res.statusCode === 200 ? url : null));
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+  });
 }
 
 async function tryLoadExpress(port) {
-  // 0) Explicit override wins (cloud deployments): VELTRUVIA_SERVER_URL env var
-  let serverUrl = (process.env.VELTRUVIA_SERVER_URL || '').replace(/\/+$/, '') || null;
+  // 1) Try shared config file first
+  let serverUrl = getServerUrl();
   if (serverUrl) {
     const ok = await probeServer(serverUrl);
-    if (ok) { serverUrl = ok; console.log(`[patient] Using VELTRUVIA_SERVER_URL: ${ok}`); }
-    else { console.warn(`[patient] VELTRUVIA_SERVER_URL unreachable: ${serverUrl}`); serverUrl = null; }
-  }
-  // 1) Try shared config file next
-  if (!serverUrl) {
-    serverUrl = getServerUrl();
-    if (serverUrl) {
-      const ok = await probeServer(serverUrl);
-      if (ok) { serverUrl = ok; } else { serverUrl = null; }
-    }
+    if (ok) { serverUrl = ok; } else { serverUrl = null; }
   }
 
   // 2) If config didn't work, scan common ports for the Server
@@ -137,15 +129,14 @@ async function tryLoadExpress(port) {
     console.log(`[patient] ✅ Connected to central Server at ${serverUrl}`);
     expressApp = (req, res) => {
       const proxyUrl = new URL(req.url, serverUrl);
-      const transport = proxyUrl.protocol === 'https:' ? https : http;
       const options = {
         hostname: proxyUrl.hostname,
-        port: proxyUrl.port || (proxyUrl.protocol === 'https:' ? 443 : 80),
+        port: proxyUrl.port,
         path: proxyUrl.pathname + proxyUrl.search,
         method: req.method,
         headers: { ...req.headers, host: proxyUrl.host, origin: proxyUrl.origin },
       };
-      const proxyReq = transport.request(options, (proxyRes) => {
+      const proxyReq = http.request(options, (proxyRes) => {
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
         proxyRes.pipe(res);
       });
@@ -208,9 +199,12 @@ function createWindow() {
     show: false,
   });
 
-  // Download policy: allow in-app generated exports (Export My Data / ICS),
-  // block web downloads (previously every download was cancelled).
-  installDownloadPolicy(mainWindow.webContents, 'patient');
+  // Nuclear download prevention
+  mainWindow.webContents.session.on('will-download', (event, item) => {
+    item.cancel();
+    event.preventDefault();
+    console.log('[patient] Download blocked');
+  });
 
   // Strip Content-Disposition headers from all local responses
   mainWindow.webContents.session.webRequest.onHeadersReceived(
@@ -230,15 +224,11 @@ function createWindow() {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
   mainWindow.on('closed', () => { mainWindow = null; });
 
-  // DevTools only in dev builds (packaged apps expose PHI via the console).
-  const devMenu = app.isPackaged ? [] : [
-    { type: 'separator' },
-    { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
-  ];
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'VELTRUVIA Patient', submenu: [
       { label: '🔄 Refresh', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
-      ...devMenu,
+      { type: 'separator' },
+      { role: 'toggleDevTools', accelerator: 'CmdOrCtrl+Shift+I' },
     ]},
     { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'close' }] },
   ]));

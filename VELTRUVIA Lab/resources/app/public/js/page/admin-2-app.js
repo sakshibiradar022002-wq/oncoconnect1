@@ -56,7 +56,11 @@ function exportAuditCSV(){
 api('/admin/users').then(()=>{document.getElementById('login-card').style.display='none';document.getElementById('panel').style.display='block';loadAll();loadDashboard();}).catch(()=>{});
 document.getElementById('pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
-// ── Stay signed in (no client-side idle logout) ──
+// ── Session timeout: auto-logout after 30 minutes of inactivity ──
+let _idleTimer=null;
+function resetIdleTimer(){clearTimeout(_idleTimer);_idleTimer=setTimeout(()=>{AppDialog.alert('Session expired due to inactivity.');location.reload();},30*60*1000);}
+['mousemove','mousedown','keydown','scroll','touchstart'].forEach(evt=>document.addEventListener(evt,resetIdleTimer,{passive:true}));
+resetIdleTimer();
 
 // ── Session security: page visibility → validate session on return ──
 document.addEventListener('visibilitychange',()=>{

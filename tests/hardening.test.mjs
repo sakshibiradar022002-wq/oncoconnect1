@@ -20,22 +20,6 @@ const dbPath = join(dataDir, 'test.db');
 const lockPath = dbPath + '.lock';
 const storePath = join(dataDir, 'patient-store.json');
 
-// v2.5: the shared patient store is AES-256-GCM encrypted at rest
-// (patient-store.enc.json). Give the TEST process the same key the spawned
-// server uses, and read the store through the app's crypto module — falling
-// back to the legacy plaintext file only if migration hasn't happened yet.
-process.env.PHI_ENCRYPTION_KEY = process.env.PHI_ENCRYPTION_KEY || 'test-phi-key-32-bytes-long-here';
-async function readPatientStore() {
-  const encPath = join(dataDir, 'patient-store.enc.json');
-  if (existsSync(encPath)) {
-    const { decryptPHI } = await import(pathToFileURL(join(APP, 'src', 'crypto.js')).href);
-    const data = decryptPHI(readFileSync(encPath, 'utf-8'));
-    if (data && typeof data === 'object') return data;
-  }
-  if (existsSync(storePath)) return JSON.parse(readFileSync(storePath, 'utf-8'));
-  return {};
-}
-
 try { rmSync(dataDir, { recursive: true, force: true }); } catch {}
 mkdirSync(dataDir, { recursive: true });
 
@@ -59,10 +43,6 @@ const server = spawn('node', ['src/server.js'], {
     VELTRUVIA_DEMO: 'false',
     MLLP_ENABLED: undefined,                 // default off — the point of the test
     BACKUP_INTERVAL_MS: '8000',              // fire within test lifetime
-    // Hermetic mail: tests must never inherit real Gmail/SMTP credentials
-    // (e.g. from resources/app/.env) — recovery flows then try to email.
-    GMAIL_USER: '', GMAIL_APP_PASSWORD: '', RESEND_API_KEY: '',
-    SMTP_HOST: '', SMTP_USER: '', SMTP_PASS: '',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -145,7 +125,7 @@ test('login-time migration hashes plaintext credentials (LEG001)', async () => {
   assert.equal(r.status, 200, 'legacy plaintext login should succeed: ' + JSON.stringify(body));
   assert.ok(body.ok);
 
-  const store = await readPatientStore();
+  const store = JSON.parse(readFileSync(storePath, 'utf-8'));
   assert.ok(String(store.LEG001.pass).startsWith('pbkdf2v2:'), 'pass must now be a v2 hash');
   assert.equal(store.LEG001.passPlain, undefined, 'passPlain must be stripped');
   // ...and the hashed credential must still verify
@@ -197,7 +177,7 @@ test('self-service password recovery: request is uniform, reset rejects bad toke
     body: JSON.stringify({ mrn: 'RECOV1', email: 'recov1@example.com', token: 'bogus-token-123456', newPassword: 'NewPass123' }),
   });
   assert.equal(r3.status, 400);
-  const store = await readPatientStore();
+  const store = JSON.parse(readFileSync(storePath, 'utf-8'));
   assert.ok(!String(store.RECOV1.pass || '').includes('NewPass123'), 'password unchanged after bad token');
   assert.ok(!store.RECOV1.resetTokenHash, 'no token hash leaks to disk on failed reset');
 });

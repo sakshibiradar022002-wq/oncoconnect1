@@ -1,6 +1,6 @@
 {
   "name": "veltruvia-server",
-  "version": "2.3.0",
+  "version": "2.5.0",
   "description": "VELTRUVIA neuro-oncology EMR — secure backend (Node + Express + SQLite)",
   "type": "module",
   "main": "electron/main-patient.js",

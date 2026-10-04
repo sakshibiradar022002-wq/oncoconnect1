@@ -70,6 +70,7 @@
   "publish": {
     "provider": "github",
     "owner": "sakshibiradar022002-wq",
-    "repo": "oncoconnect1"
+    "repo": "oncoconnect1",
+    "channel": "latest-patient"
   }
 }

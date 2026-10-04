@@ -61,9 +61,6 @@ CREATE TABLE IF NOT EXISTS prescriptions (
     'active', 'completed', 'cancelled', 'expired', 'pending-refill'
   )),
   instructions  TEXT,                       -- special instructions (encrypted)
-  composition   TEXT,                       -- drug composition line, e.g. "Etoricoxib 60 mg + Thiocolchicoside 4 mg"
-  timing        TEXT,                       -- morning-afternoon-night pattern, e.g. "0-0-1"
-  when_to_take  TEXT,                       -- e.g. "After food", "Before food", "At bedtime"
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL,
   FOREIGN KEY (doctor_id) REFERENCES users(id)

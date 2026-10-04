@@ -39,11 +39,6 @@ adminRouter.post('/users/:id/active', validate(activeSchema), asyncHandler(async
   }
   const r = await db.prepare('UPDATE users SET active = ? WHERE id = ?').run(req.valid.active ? 1 : 0, req.params.id);
   if (!r.changes) return res.status(404).json({ error: 'User not found' });
-  // Deactivating must also kill live sessions: without this the (now)
-  // deactivated user keeps their up-to-30-day token until natural expiry.
-  if (!req.valid.active) {
-    await db.prepare('UPDATE sessions SET revoked = 1 WHERE subject_id = ? AND revoked = 0').run(req.params.id);
-  }
   await writeAudit({
     actorId: req.auth.subjectId, actorRole: 'admin',
     action: req.valid.active ? 'admin.user_approve' : 'admin.user_deactivate',

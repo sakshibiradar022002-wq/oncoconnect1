@@ -308,13 +308,8 @@ function buildRecordTabs(p){
       </div>
       <div style="display:flex;gap:6px;">
         <button class="btn btn-ghost btn-sm" data-action="rRxLoadServerPrescriptions;;rRxLoadAllergySummary">🔄 Refresh</button>
+        <button class="btn btn-primary btn-sm" data-action="toggleDisplay:r-rx-create-form">+ New Prescription</button>
       </div>
-    </div>
-
-    <!-- Prescription tabs: list ⇄ add -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button class="btn btn-sm" id="r-rx-tab-list" data-action="rRxTab:list" style="background:var(--blue);color:#fff;">📋 Prescriptions</button>
-      <button class="btn btn-ghost btn-sm" id="r-rx-tab-add" data-action="rRxTab:add">➕ Add Prescription</button>
     </div>
 
     <!-- Drug Interaction Banner -->
@@ -334,22 +329,10 @@ function buildRecordTabs(p){
     <div id="r-rx-create-form" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px;">
       <div style="font-weight:700;font-size:13px;margin-bottom:12px;">✍️ New Prescription</div>
       <div class="g2">
-        <div class="fg" style="margin:0 0 10px;"><label>Medicine (brand) *</label><input id="r-med-name" placeholder="e.g. DUVANTA 20" data-action-input="rRxLiveAllergyCheck:@value"></div>
+        <div class="fg" style="margin:0 0 10px;"><label>Medication *</label><input id="r-med-name" placeholder="e.g. Temozolomide" data-action-input="rRxLiveAllergyCheck:@value"></div>
         <div class="fg" style="margin:0 0 10px;"><label>Generic Name</label><input id="r-rx-generic" placeholder="Optional generic name"></div>
-        <div class="fg" style="margin:0 0 10px;"><label>Composition</label><input id="r-med-comp" placeholder="e.g. Duloxetine 20 mg"></div>
         <div class="fg" style="margin:0 0 10px;"><label>Dosage *</label><input id="r-med-dose" placeholder="e.g. 150 mg/m²"></div>
         <div class="fg" style="margin:0 0 10px;"><label>Frequency *</label><select id="r-med-freq"><option>QD</option><option>BID</option><option>TID</option><option>QID</option><option>PRN</option><option>Monthly</option><option>Cycle Day 1-5</option></select></div>
-        <div class="fg" style="margin:0 0 10px;"><label>When to take (0-0-1 = morning-afternoon-night)</label>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <input id="r-med-m" type="number" min="0" max="4" placeholder="0" style="width:52px;text-align:center" title="Morning">
-            <span style="color:var(--text-dim);">-</span>
-            <input id="r-med-a" type="number" min="0" max="4" placeholder="0" style="width:52px;text-align:center" title="Afternoon">
-            <span style="color:var(--text-dim);">-</span>
-            <input id="r-med-n" type="number" min="0" max="4" placeholder="0" style="width:52px;text-align:center" title="Night">
-            <span style="font-size:10px;color:var(--text-muted);">M - A - N</span>
-          </div>
-        </div>
-        <div class="fg" style="margin:0 0 10px;"><label>Take it</label><select id="r-med-when"><option value="">—</option><option>Before food</option><option>After food</option><option>Empty stomach</option><option>With milk</option><option>At bedtime</option></select></div>
         <div class="fg" style="margin:0 0 10px;"><label>Route</label><select id="r-med-route"><option value="oral">Oral</option><option value="iv">IV</option><option value="im">IM</option><option value="subcutaneous">Subcutaneous</option><option value="intrathecal">Intrathecal</option><option value="topical">Topical</option></select></div>
         <div class="fg" style="margin:0 0 10px;"><label>Duration</label><input id="r-med-dur" placeholder="e.g. 30 days"></div>
         <div class="fg" style="margin:0 0 10px;"><label>Indication</label><input id="r-med-indication" placeholder="e.g. Anti-epileptic"></div>
@@ -373,8 +356,6 @@ function buildRecordTabs(p){
       </div>
     </div>
 
-    <!-- Lists (shown on the Prescriptions tab) -->
-    <div id="r-rx-lists">
     <!-- Active E-Prescriptions (Server) -->
     <div class="g2" style="margin-bottom:18px;">
       <div class="info-card">
@@ -402,7 +383,6 @@ function buildRecordTabs(p){
       </div>
       <div id="r-cds-drug-info" style="margin-top:12px;"></div>
     </div>
-    </div><!-- /r-rx-lists -->
   </div>
 
   <!-- ══ TAB 6B: CLINICAL SUPPORT (per-patient) ══ -->
@@ -930,21 +910,8 @@ const LAB_TESTS=[
 
 // ── Prescriptions (merged E-Prescribing & Medication Management) ──
 
-// ── Prescription tabs: list ⇄ add ──
-function rRxTab(tab){
-  const list=document.getElementById('r-rx-lists'),form=document.getElementById('r-rx-create-form');
-  const tabList=document.getElementById('r-rx-tab-list'),tabAdd=document.getElementById('r-rx-tab-add');
-  if(!list||!form)return;
-  const showAdd=tab==='add';
-  list.style.display=showAdd?'none':'block';
-  form.style.display=showAdd?'block':'none';
-  if(tabList){tabList.style.background=showAdd?'var(--surface2)':'var(--blue)';tabList.style.color=showAdd?'var(--text)':'#fff';}
-  if(tabAdd){tabAdd.style.background=showAdd?'var(--blue)':'transparent';tabAdd.style.color=showAdd?'#fff':'var(--text)';}
-  if(showAdd&&selectedMRN)rRxLoadAllergySummary();
-}
-
 // ── Save local medication (legacy) ──
-function showMedForm(){rRxTab('add');}
+function showMedForm(){document.getElementById('r-rx-create-form').style.display='block';}
 function hideMedForm(){document.getElementById('r-rx-create-form').style.display='none';document.getElementById('r-med-allergy-check').style.display='none';document.getElementById('r-med-interaction-check').style.display='none';}
 function saveMed(){const med={name:v('r-med-name'),dose:v('r-med-dose'),route:v('r-med-route'),freq:v('r-med-freq'),indication:v('r-med-indication'),status:'Active',addedAt:Date.now()};if(!med.name){AppDialog.alert('Enter drug name.');return;}rMeds.push(med);hideMedForm();renderMedList();checkDrugAllergyWarning();renderDrugInteractionBanner(selectedMRN);}
 
@@ -988,10 +955,6 @@ async function rRxPrescribeWithCDS(){
   if(!selectedMRN)return;
   const med=v('r-med-name');const dose=v('r-med-dose');const freq=v('r-med-freq');
   if(!med||!dose){AppDialog.alert('Enter medication and dosage');return}
-  // When-to-take pattern (Indian Rx style): 0-0-1 = night only, 1-0-1 = morning + night
-  const mRaw=v('r-med-m'),aRaw=v('r-med-a'),nRaw=v('r-med-n');
-  const timing=(mRaw||aRaw||nRaw)?`${parseInt(mRaw||'0',10)}-${parseInt(aRaw||'0',10)}-${parseInt(nRaw||'0',10)}`:undefined;
-  const whenToTake=v('r-med-when')||undefined;
   // Run allergy check
   let allergyBlocked=false;
   try{
@@ -1002,11 +965,10 @@ async function rRxPrescribeWithCDS(){
     }
   }catch(e){}
   // Create server prescription
-  try{      const r=await api('/rx',{method:'POST',body:JSON.stringify({
+  try{
+    const r=await api('/rx',{method:'POST',body:JSON.stringify({
       patientMrn:selectedMRN,medication:med,
       genericName:v('r-rx-generic')||undefined,
-      composition:v('r-med-comp')||undefined,
-      timing,whenToTake,
       dosage:dose,frequency:freq,
       route:v('r-med-route'),duration:v('r-med-dur')||undefined,
       quantity:parseInt(v('r-med-qty'))||undefined,
@@ -1027,11 +989,9 @@ async function rRxPrescribeWithCDS(){
       document.getElementById('r-med-name').value='';
       document.getElementById('r-med-dose').value='';
       document.getElementById('r-med-instructions').value='';
-      ['r-med-comp','r-med-m','r-med-a','r-med-n','r-med-dur','r-med-qty'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-      const whenEl=document.getElementById('r-med-when');if(whenEl)whenEl.value='';
       document.getElementById('r-med-allergy-check').style.display='none';
       document.getElementById('r-med-interaction-check').style.display='none';
-      rRxTab('list');
+      document.getElementById('r-rx-create-form').style.display='none';
       // Refresh lists
       renderMedList();
       rRxLoadServerPrescriptions();
@@ -1068,15 +1028,12 @@ async function rRxLoadServerPrescriptions(){
   try{
     const r=await api('/rx/patient/'+selectedMRN);
     if(!r.ok||!r.prescriptions||!r.prescriptions.length){el.innerHTML='<div class="empty-card">No e-prescriptions on file.</div>';return;}
-    window._serverPrescriptions=r.prescriptions; // cached for the paper-Rx print
     const statusColors={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--orange)'};
     el.innerHTML=r.prescriptions.map(rx=>`
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
         <div style="flex:1;">
           <div style="font-weight:700;font-size:13px;">💊 ${rx.medication}</div>
-          ${rx.composition?`<div style="font-size:11px;color:var(--text-dim);">${rx.composition}</div>`:''}
           <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${rx.dosage} · ${rx.frequency} · ${rx.route||'oral'}${rx.duration?' · '+rx.duration:''}</div>
-          ${rx.timing?`<div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:2px;">🕐 ${rx.timing}${rx.when_to_take?' · '+rx.when_to_take:''}</div>`:''}
           ${rx.instructions?`<div style="font-size:11px;color:var(--text-dim);margin-top:2px;">📝 ${rx.instructions}</div>`:''}
           ${rx.pharmacy?`<div style="font-size:11px;color:var(--text-dim);">🏪 ${rx.pharmacy}</div>`:''}
         </div>
@@ -1249,7 +1206,7 @@ async function loadPendingPasswordRequests(mrn){
   }catch(e){el.style.display='none';}
 }
 
-async function deletePatient(){if(!await AppDialog.confirm('DELETE this patient record? This cannot be undone.',{danger:true}))return;const mrn=selectedMRN;LS.del('pat_'+mrn);const pushed=await pushToServer({['pat_'+mrn]:null});let serverDeleted=false;try{await api('/sync/delete-patient',{method:'POST',body:JSON.stringify({mrn})});serverDeleted=true}catch(e){}closeRecord();refreshAll();flash(pushed&&serverDeleted?'Patient deleted everywhere':'⚠️ Deleted locally — server unreachable, the cloud copy remains and will update on next sync');}
+async function deletePatient(){if(!await AppDialog.confirm('DELETE this patient record? This cannot be undone.',{danger:true}))return;const mrn=selectedMRN;LS.del('pat_'+mrn);pushToServer({['pat_'+mrn]:null});try{api('/sync/delete-patient',{method:'POST',body:JSON.stringify({mrn})})}catch(e){}closeRecord();refreshAll();flash('Patient deleted');}
 
 // ── AI Analysis ──
 // ── FHIR ──
@@ -1259,11 +1216,11 @@ function sendFHIRToServer(){AppDialog.alert('FHIR server POST — configure serv
 
 // ── Lab Management ──
 function openAddLabModal(){openOverlay('add-lab-modal');}
-async function createLab(){const name=v('lab-name').trim();if(!name){AppDialog.alert('Enter lab name.');return;}const username=genLabUser(name);const pass=genPass();const labId='LAB-'+Date.now().toString(36);const passHash=await makePasswordHash(pass);const docId=currentDoc.docId;const lab={labId,name,contact:v('lab-contact'),phone:v('lab-phone'),email:v('lab-email'),address:v('lab-address'),specialty:v('lab-specialty'),username,docId,password:passHash,created:Date.now()};LS.set('lab_'+docId+'_'+labId,lab);const labPushOk=await pushToServer({['lab_'+docId+'_'+labId]:lab});let storeOk=true;try{const sr=await api('/sync/save-lab',{method:'POST',body:JSON.stringify({labId,username,name,password:pass})});storeOk=!!(sr&&sr.ok);}catch(e){storeOk=false;}const display=document.getElementById('lab-creds-display');display.style.display='block';display.innerHTML=`<div style="text-align:center;"><div style="font-size:18px;margin-bottom:8px;">${(labPushOk&&storeOk)?'✅':'⚠️'}</div><div style="font-weight:800;font-size:16px;margin-bottom:4px;">Lab Created Successfully</div>${(labPushOk&&storeOk)?'':'<div style="font-size:11px;color:var(--orange);margin-bottom:8px;">'+(storeOk?'Lab credentials could not be saved to the login store — the lab cannot log in yet. Check the connection and create the account again.':'Not yet on the server — the lab cannot log in until the connection returns.')+'</div>'}<div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">${esc(name)}</div><div style="background:var(--surface2);border-radius:8px;padding:14px;text-align:left;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;margin-bottom:8px;">🔑 Login Credentials</div><div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-muted);font-size:12px;">Username</span><span style="font-family:var(--mono);font-weight:600;font-size:12px;">${username}</span></div><div style="display:flex;justify-content:space-between;padding:6px 0;"><span style="color:var(--text-muted);font-size:12px;">Password</span><span style="font-family:var(--mono);font-weight:600;font-size:12px;">${pass}</span></div></div><div style=\"font-size:11px;color:var(--orange);margin-bottom:12px;\">⚠ Copy these credentials now — password cannot be viewed again.</div><button class=\"btn btn-primary\" id=\"lab-creds-copy-btn\" style=\"margin-bottom:8px;\">📋 Copy credentials</button><button class=\"btn btn-primary\" data-action=\"hide:lab-creds-display\">Done</button></div>`;closeOverlay('add-lab-modal');refreshLabList();setTimeout(()=>{const cb=document.getElementById('lab-creds-copy-btn');if(cb)cb.addEventListener('click',async()=>{const txt='VELTRUVIA Lab login\\nLab: '+name+'\\nUsername: '+username+'\\nPassword: '+pass;try{await navigator.clipboard.writeText(txt);cb.textContent='✅ Copied to clipboard';}catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');cb.textContent='✅ Copied to clipboard';}catch(e2){cb.textContent='Select and copy manually';}document.body.removeChild(ta);}});},50);}
+function createLab(){const name=v('lab-name').trim();if(!name){AppDialog.alert('Enter lab name.');return;}const username=genLabUser(name);const pass=genPass();const labId='LAB-'+Date.now().toString(36);const lab={labId,name,contact:v('lab-contact'),phone:v('lab-phone'),email:v('lab-email'),address:v('lab-address'),specialty:v('lab-specialty'),username,password:pass,created:Date.now()};const docId=currentDoc.docId;LS.set('lab_'+docId+'_'+labId,lab);pushToServer({['lab_'+docId+'_'+labId]:lab});const display=document.getElementById('lab-creds-display');display.style.display='block';display.innerHTML=`<div style="text-align:center;"><div style="font-size:18px;margin-bottom:8px;">✅</div><div style="font-weight:800;font-size:16px;margin-bottom:4px;">Lab Created Successfully</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">${esc(name)}</div><div style="background:var(--surface2);border-radius:8px;padding:14px;text-align:left;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;margin-bottom:8px;">🔑 Login Credentials</div><div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-muted);font-size:12px;">Username</span><span style="font-family:var(--mono);font-weight:600;font-size:12px;">${username}</span></div><div style="display:flex;justify-content:space-between;padding:6px 0;"><span style="color:var(--text-muted);font-size:12px;">Password</span><span style="font-family:var(--mono);font-weight:600;font-size:12px;">${pass}</span></div></div><div style="font-size:11px;color:var(--orange);margin-bottom:12px;">⚠ Copy these credentials now — password cannot be viewed again.</div><button class="btn btn-primary" data-action="hide:lab-creds-display">Done</button></div>`;closeOverlay('add-lab-modal');refreshLabList();}
 function refreshLabList(){const docId=currentDoc?.docId;if(!docId)return;const labs=LS.keys('lab_'+docId+'_').map(k=>LS.get(k)).filter(Boolean);const container=document.getElementById('labs-list-container');if(!labs.length){container.innerHTML='<div class="empty-card">No laboratories added.</div>';return;}container.innerHTML=labs.map(l=>`<div class="info-card"><div style="display:flex;justify-content:space-between;align-items:center;"><strong>${esc(l.name)}</strong><span style="font-size:11px;color:var(--text-dim);font-family:var(--mono);">${l.username}</span></div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${esc(l.contact||'')} · ${esc(l.phone||'')} · ${esc(l.email||'')}</div></div>`).join('');}
 function switchLabMainTab(tab,btn){document.querySelectorAll('.lab-main-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');['labs','pending','assign'].forEach(t=>{const el=document.getElementById('lv-'+t);if(el)el.style.display=t===tab?'block':'none';});}
 function updateAutoprioFromDate(d){if(!d)return;const diff=Math.ceil((new Date(d)-new Date())/(1000*60*60*24));const hint=document.getElementById('pqr-due-hint');if(diff<=0){hint.textContent='⚠ Overdue → STAT';hint.style.color='var(--red)';document.querySelector('input[value="STAT"]').checked=true;}else if(diff<=3){hint.textContent='⚠ Due in '+diff+' day(s) → Urgent';hint.style.color='var(--orange)';document.querySelector('input[value="Urgent"]').checked=true;}else{hint.textContent='📅 Due in '+diff+' days → Routine';hint.style.color='var(--green)';document.querySelector('input[value="Routine"]').checked=true;}}
-async function sendLabTask(){const sendBtn=document.querySelector('[data-action="sendLabTask"]');const run=async()=>{const patient=v('pqr-patient'),labId=v('pqr-lab'),desc=v('pqr-desc'),dueDate=v('pqr-due-date');const priority=document.querySelector('input[name="pqr-prio"]:checked')?.value||'Routine';if(!patient||!labId||!dueDate){AppDialog.alert('Fill all required fields.');return;}const p=LS.get('pat_'+patient);const labs=LS.keys('lab_'+currentDoc.docId+'_').map(k=>LS.get(k)).filter(Boolean);const lab=labs.find(l=>l.labId===labId);const tokens=LS.get('pat_tokens_'+currentDoc.docId)||[];tokens.push({taskId:'TK-'+Date.now().toString(36),mrn:patient,patName:p?.name||'',labId,labName:lab?.name||'',desc,priority,dueDate,docId:currentDoc.docId,docName:currentDoc.name,createdAt:Date.now(),status:'Pending Upload',used:false});LS.set('pat_tokens_'+currentDoc.docId,tokens);const ok=await pushToServer({['pat_tokens_'+currentDoc.docId]:tokens});flash(ok?'Task sent to lab ✓':'⚠️ Task saved locally — the lab will receive it when the server connection returns');renderLabTaskQueue();};if(window.Busy)Busy.btn(sendBtn,run);else run();}
+function sendLabTask(){const patient=v('pqr-patient'),labId=v('pqr-lab'),desc=v('pqr-desc'),dueDate=v('pqr-due-date');const priority=document.querySelector('input[name="pqr-prio"]:checked')?.value||'Routine';if(!patient||!labId||!dueDate){AppDialog.alert('Fill all required fields.');return;}const p=LS.get('pat_'+patient);const labs=LS.keys('lab_'+currentDoc.docId+'_').map(k=>LS.get(k)).filter(Boolean);const lab=labs.find(l=>l.labId===labId);const tokens=LS.get('pat_tokens_'+currentDoc.docId)||[];tokens.push({taskId:'TK-'+Date.now().toString(36),mrn:patient,patName:p?.name||'',labId,labName:lab?.name||'',desc,priority,dueDate,docId:currentDoc.docId,docName:currentDoc.name,createdAt:Date.now(),status:'Pending Upload',used:false});LS.set('pat_tokens_'+currentDoc.docId,tokens);pushToServer({['pat_tokens_'+currentDoc.docId]:tokens});flash('Task sent to lab');renderLabTaskQueue();}
 function renderLabTaskQueue(){const tokens=(LS.get('pat_tokens_'+currentDoc.docId)||[]).filter(t=>!t.used&&t.status!=='Cancelled');const el=document.getElementById('lab-task-queue');if(!el)return;if(!tokens.length){el.innerHTML='<div class="empty-card">No active tasks.</div>';return;}tokens.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));el.innerHTML=tokens.map(t=>{const now=new Date();const due=new Date(t.dueDate);const diff=Math.ceil((due-now)/(1000*60*60*24));let urgency='',borderCol='';if(diff<0){urgency='🔴 Overdue!';borderCol='var(--red)';}else if(diff===0){urgency='🔴 Due today';borderCol='var(--red)';}else if(diff===1){urgency='⚠ Due tomorrow';borderCol='var(--orange)';}else if(diff<=3){urgency='⚠ Due in '+diff+' days';borderCol='var(--orange)';}else{urgency='📅 Due '+t.dueDate;borderCol='';}const prioCol={STAT:'var(--red)',Urgent:'var(--orange)',Routine:'var(--green)'}[t.priority]||'var(--text-dim)';return `<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${prioCol};border-radius:8px;padding:12px;margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;"><span style="color:${borderCol};font-weight:600;">${urgency}</span><span class="badge" style="background:${prioCol}22;color:${prioCol};">${t.priority}</span></div><div style="font-weight:600;font-size:13px;margin-bottom:4px;">${esc(t.desc)}</div><div style="font-size:11px;color:var(--text-muted);">Patient: ${esc(t.patName)} · Lab: ${esc(t.labName)}</div></div>`;}).join('');}
 
 // ── Data & Backup ──
@@ -1456,12 +1413,11 @@ function renderTrends(mrn){
 }
 
 // ── v2.1 PRINT / PDF — prescription, invoice, day-sheet ──
-// Renders the document in the in-app viewer (iframe overlay) and opens the
-// print / Save-as-PDF dialog from there. A window.open popup used to be
-// denied by the Electron shells and forwarded to the system browser.
+// Opens a print-optimized popup (system Save-as-PDF works from any OS)
 function _printDoc(title,innerCss,innerHtml){
-  if(!window._vxReportOverlay){return;}
-  _vxReportOverlay(title,`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+  const w=window.open('','_blank','width=800,height=900');
+  if(!w){AppDialog.alert('Allow popups for this app to print.');return;}
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>
     body{font-family:'Segoe UI',system-ui,sans-serif;color:#111;margin:32px;max-width:720px;}
     h1{font-size:20px;margin:0 0 2px;}h2{font-size:15px;margin:18px 0 6px;border-bottom:1.5px solid #222;padding-bottom:4px;}
     .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0f4c81;padding-bottom:10px;margin-bottom:16px;}
@@ -1472,7 +1428,8 @@ function _printDoc(title,innerCss,innerHtml){
     td{padding:6px 8px;border:1px solid #d8dee6;} .tot{font-weight:700;}
     .sig{margin-top:48px;display:flex;justify-content:space-between;} .sig div{border-top:1px solid #333;padding-top:4px;font-size:12px;width:200px;text-align:center;}
     @media print{.noprint{display:none}} ${innerCss||''}
-  </style></head><body>${innerHtml}</body></html>`,{autoPrint:true});
+  </style></head><body>${innerHtml}</body></html>`);
+  w.document.close();setTimeout(()=>{try{w.focus();w.print();}catch(e){}},350);
 }
 function printPrescription(rxId){
   api('/rx/'+rxId).then(rx=>{

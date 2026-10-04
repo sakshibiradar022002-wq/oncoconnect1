@@ -29,21 +29,12 @@ window.addEventListener('DOMContentLoaded',async()=>{
   // Hide splash screen
   setTimeout(()=>{const sp=document.getElementById('splash');if(sp){sp.style.opacity='0';sp.style.visibility='hidden';setTimeout(()=>sp.remove(),500)}},1600);
   const b=document.getElementById('conn-banner');
-  // Stay-logged-in: try to reopen straight into the account BEFORE any
-  // early-return below — previously the local-data banner check returned
-  // first and the restore never ran in the native app.
-  tryRestoreSession();
   // First check local data
   const hasLocal=LS.keys('pat_').length>0||LS.keys('doc_').filter(k=>!k.startsWith('doc_email')).length>0;
   if(hasLocal){b.textContent='🔗 Connected to Doctor Software';b.className='conn-banner';return}
   // No local data — check if server is reachable
   try{await api('/health');b.textContent='🟢 Server connected — log in to sync your data';b.className='conn-banner'}
   catch(e){b.textContent='⚠ Doctor Software not connected — data shared when served from same server';b.className='conn-banner warn'}
-  // Default the booking form's date range: today onward, 1 year out.
-  try{
-    const d=document.getElementById('appt-req-date');
-    if(d){const today=new Date().toISOString().slice(0,10);d.min=today;d.max=new Date(Date.now()+365*86400000).toISOString().slice(0,10);}
-  }catch(e){}
 });
 
 // Find which doctor owns a patient
@@ -62,17 +53,9 @@ function findDoctorForPatient(pat){
 }
 
 async function doLogin(){
-  const btn=document.querySelector('#login-patient .log-btn');
-  if(window.Busy&&Busy.isBusy(btn))return;
-  const run=async()=>{
   const mrn=v('li-mrn'),pass=v('li-pass');
   const errEl=document.getElementById('pat-login-err');
   if(!mrn||!pass){showErr(errEl,'Enter MRN and password.');return}
-  // v2.5: track WHY login failed so the messages below are honest instead
-  // of the old blanket "No patient accounts exist yet" (which fired for
-  // wrong passwords AND offline phones alike).
-  let sawServer=false,wrongCreds=false;
-  const netDown=e=>/failed to fetch|networkerror|load failed|timed?\s?out/i.test(String(e&&e.message||e));
   // ── 1. Try shared JSON store login (most reliable cross-app method) ──
   try{
     const result=await api('/sync/store-login',{method:'POST',body:JSON.stringify({mrn, password:pass})});
@@ -80,11 +63,17 @@ async function doLogin(){
       const pat={...result.patient,pass:undefined,passPlain:undefined};
       LS.set('pat_'+mrn,pat);
       currentPat=pat;_docId=findDoctorForPatient(pat);
-      finishPatientLogin(pat,true);
+      document.getElementById('screen-login').style.display='none';
+      document.getElementById('app-shell').style.display='flex';
+      document.getElementById('cal-greeting').textContent='Hello, '+pat.name?.split(' ')[0]+' 👋';
+      document.getElementById('cal-phase').textContent=(pat.phase||'Treatment')+(pat.diag?' · '+pat.diag:'');
+      document.getElementById('cal-today-badge').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      renderCalendar();
+      checkPendingPCR();
+      const b=document.getElementById('conn-banner');b.textContent='🔗 Connected to Doctor Software';b.className='conn-banner';
       return;
     }
-    sawServer=true;
-  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
+  }catch(e){/* store login failed, trying server */}
   // ── 2. Try server login (sql.js DB) ──
   try{
     const result=await api('/sync/patient-login',{method:'POST',body:JSON.stringify({mrn, password:pass})});
@@ -93,36 +82,30 @@ async function doLogin(){
       const pat=LS.get('pat_'+mrn);
       if(pat){
         currentPat=pat;_docId=findDoctorForPatient(pat);
-        finishPatientLogin(pat,true);
+        document.getElementById('screen-login').style.display='none';
+        document.getElementById('app-shell').style.display='flex';
+        document.getElementById('cal-greeting').textContent='Hello, '+pat.name?.split(' ')[0]+' 👋';
+        document.getElementById('cal-phase').textContent=(pat.phase||'Treatment')+(pat.diag?' · '+pat.diag:'');
+        document.getElementById('cal-today-badge').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+        renderCalendar();
+        checkPendingPCR();
+        const b=document.getElementById('conn-banner');b.textContent='🔗 Connected to Doctor Software';b.className='conn-banner';
         return;
       }
     }
-    sawServer=true;
-  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
+  }catch(e){/* Server unreachable or invalid credentials — try local fallback */}
   // ── 3. Local fallback (offline mode) ──
   let pat=null;
   if(LS.get('pat_'+mrn))pat=LS.get('pat_'+mrn);
   else{const keys=LS.keys('pat_');for(const k of keys){const p=LS.get(k);if(p&&p.mrn&&p.mrn.toLowerCase()===mrn.toLowerCase()){pat=p;break}}}
-  if(!pat){
-    if(wrongCreds)showErr(errEl,'Wrong MRN or password. Check the slip your doctor gave you and try again.');
-    else if(sawServer)showErr(errEl,'No account found for that MRN on the clinic server. Ask your doctor to register you.');
-    else showErr(errEl,"Can't reach the clinic server, and this device has no saved copy of this account. Connect to the internet once (Wi-Fi or mobile data) to log in for the first time.");
-    return;
-  }
+  if(!pat){showErr(errEl,'No patient accounts exist yet. Ask your doctor to create one.');return}
   if(pat.pass&&pat.pass.startsWith('pbkdf2v2:')){
     if(!await verifyPBKDF2v2(pass,pat.pass)){showErr(errEl,'Wrong password.');return}
   }else if(pat.pass&&pat.pass.startsWith('pbkdf2:')){
     if(!await verifyPBKDF2(pass,pat.pass)){showErr(errEl,'Wrong password.');return}
-  }  else if(pat.passPlain){if(pass!==pat.passPlain){showErr(errEl,'Wrong password.');return}}
+  }else if(pat.passPlain){if(pass!==pat.passPlain){showErr(errEl,'Wrong password.');return}}
   else if(pat.pass){if(pass!==pat.pass){showErr(errEl,'Wrong password.');return}}
   currentPat=pat;_docId=findDoctorForPatient(pat);
-  finishPatientLogin(pat,false);
-  };
-  if(window.Busy)Busy.btn(btn,run);else run();
-}
-
-// Shared post-login: enter the app + honor the Stay signed-in checkbox.
-function finishPatientLogin(pat, viaServer){
   document.getElementById('screen-login').style.display='none';
   document.getElementById('app-shell').style.display='flex';
   document.getElementById('cal-greeting').textContent='Hello, '+pat.name?.split(' ')[0]+' 👋';
@@ -130,71 +113,6 @@ function finishPatientLogin(pat, viaServer){
   document.getElementById('cal-today-badge').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   renderCalendar();
   checkPendingPCR();
-  try{setupMedReminders();}catch(e){}   // v2.5: (re)build reminders + device alarms on every login
-  const b=document.getElementById('conn-banner');
-  if(b){b.textContent=viaServer?'🔗 Connected to Doctor Software':'🔗 Offline mode — data will sync when the server is reachable';b.className='conn-banner';}
-  try{
-    const cb=document.getElementById('stay-signed-in');
-    if(cb&&cb.checked&&window.VxSession){
-      VxSession.remember({kind:'patient',mrn:pat.mrn,name:pat.name||''});
-      // Native WebView storage is sometimes cleared between visits — keep a
-      // plain (non-PHI) pointer in unencrypted localStorage as a fallback so
-      // the app can still reopen straight into the account.
-      try{localStorage.setItem('current_patient',JSON.stringify({mrn:pat.mrn,docId:pat.docId||_docId||'',at:Date.now()}));}catch(e){}
-    }
-    else if(window.VxSession){
-      VxSession.forget();
-      try{localStorage.removeItem('current_patient');}catch(e){}
-    }
-  }catch(e){}
-}
-
-// v2.5: honest expired-session handling — a 401 on a request that carried a
-// token means the 30-day session finally ended (or was revoked). Return to
-// the login screen with a clear message instead of the old confusion.
-window.addEventListener('veltruvia:session-expired',function(){
-  if(!currentPat)return;
-  currentPat=null;
-  try{document.getElementById('app-shell').style.display='none';}catch(e){}
-  try{document.getElementById('screen-login').style.display='block';}catch(e){}
-  try{const errEl=document.getElementById('pat-login-err');if(errEl)showErr(errEl,'Your session has expired — please log in again.');}catch(e){}
-});
-
-// Reopen → skip login when the user chose Stay signed-in. Uses the existing
-// session (cookie in web/Electron, Bearer token in native apps) — never a
-// password retry, so lockout counters are untouched.
-async function tryRestoreSession(){
-  try{
-    if(!window.VxSession)return;
-    let mrn=null;
-    const who=VxSession.restore();
-    if(who&&who.kind==='patient'&&who.mrn)mrn=who.mrn;
-    if(!mrn){
-      // Fallback pointer written at login (survives SecureStore hiccups in
-      // the native WebView). Contains only MRN/docId — no PHI, no password.
-      try{const cp=JSON.parse(localStorage.getItem('current_patient')||'null');if(cp&&cp.mrn)mrn=cp.mrn;}catch(e){}
-    }
-    if(!mrn)return;
-    let pat=LS.get('pat_'+mrn);
-    let viaServer=false;
-    if(pat){
-      try{
-        const r=await api('/sync/patient');
-        if(r&&r.ok&&r.keys){mergeServerKeys(r.keys);pat=LS.get('pat_'+mrn)||pat;viaServer=true;}
-      }catch(e){/* offline or session expired — restore locally */}
-    } else {
-      // No local profile: try pulling from the server session alone.
-      try{
-        const r=await api('/sync/patient');
-        if(r&&r.ok&&r.keys){mergeServerKeys(r.keys);pat=LS.get('pat_'+mrn);viaServer=true;}
-      }catch(e){}
-    }
-    if(!pat)return;
-    currentPat=pat;_docId=findDoctorForPatient(pat);
-    // We already know who this is — skip the rest of the splash delay.
-    try{const sp=document.getElementById('splash');if(sp){sp.style.opacity='0';sp.style.visibility='hidden';setTimeout(()=>sp.remove(),400);}}catch(e){}
-    finishPatientLogin(pat,viaServer);
-  }catch(e){/* never block manual login over restore */}
 }
 
 async function verifyPBKDF2(input,stored){
@@ -302,18 +220,17 @@ function updateThemeUI(theme){
 function doLogout(){
   // Revoke session server-side
   fetch('/api/auth/logout',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}}).catch(()=>{});
-  if(window.VxSession)VxSession.forget();
   currentPat=null;currentLab=null;_docId=null;
   document.getElementById('screen-login').style.display='flex';
   document.getElementById('app-shell').style.display='none';
   document.getElementById('screen-lab').style.display='none';
 }
-// ── Stay signed in ────────────────────────────────────────────────
-// No client-side idle logout: the “stay signed in on this device” promise
-// means the app reopens straight into the account. The server session is
-// long-lived (30 days, sliding) and the UI restores it below on boot.
-// Session security: revalidate on tab visibility change — this also lets the
-// server slide the session expiry forward for active users.
+// ── Session timeout: auto-logout after 30 minutes of inactivity ──
+let _idleTimer=null;
+function resetIdleTimer(){clearTimeout(_idleTimer);_idleTimer=setTimeout(()=>{AppDialog.alert('Session expired due to inactivity.');doLogout();},30*60*1000);}
+['mousemove','mousedown','keydown','scroll','touchstart'].forEach(evt=>document.addEventListener(evt,resetIdleTimer,{passive:true}));
+resetIdleTimer();
+// ── Session security: validate session on tab visibility change ──
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&(currentPat||currentLab)){
     const endpoint=currentPat?'/api/sync/patient':'/api/sync/lab';
@@ -473,34 +390,17 @@ function selectSlot(date,time,endTime,dur){
 
 async function confirmBookAppt(){
   if(!_selectedSlot)return AppDialog.alert('Select a time slot first');
-  const btn=document.querySelector('[data-action="confirmBookAppt"]');
-  const run=async()=>{
   const type=document.getElementById('book-appt-type').value;
   const notes=document.getElementById('book-appt-notes').value;
-  // Save to shared appointment store (works in desktop mode). If this succeeds
-  // the appointment IS on the server and the doctor's software can see it —
-  // later failures must never claim otherwise.
-  let stored=false;
+  // Save to shared appointment store (works in desktop mode)
   try{
     await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:{date:_selectedSlot.date,time:_selectedSlot.time,type,notes,status:'Scheduled',createdAt:Date.now()}})});
-    stored=true;
-  }catch(e){console.warn('[appt] shared-store save failed:',e.message)}
-  // Also try server booking (puts it on the doctor's calendar)
+  }catch(e){}
+  // Also try server booking
   try{
     const r=await api('/schedule/book',{method:'POST',body:JSON.stringify({date:_selectedSlot.date,startTime:_selectedSlot.time,type,notes})});
-    if(r.ok){AppDialog.alert('✅ '+r.message)}else{AppDialog.alert('⚠️ '+(r.error||'This slot could not be booked')+'\n\nYour request is saved and your doctor can see it — pick another time if needed.');}
-  }catch(e){
-    // Network failure vs server refusal are very different situations — say
-    // which one happened instead of always claiming the server was down.
-    const offline=!e||/failed to fetch|networkerror|load failed|timed?\s?out|internet/i.test(e.message||'');
-    if(offline){
-      AppDialog.alert(stored
-        ?'✅ Appointment request saved. It will reach your doctor when the connection is back.'
-        :'⚠️ No internet connection right now. Your appointment is saved on this device and will sync later — check My Appts.');
-    }else{
-      AppDialog.alert('⚠️ '+(e.message||'Booking failed')+"\n\nYour request is saved and your doctor can see it in their software.");
-    }
-  }
+    if(r.ok){AppDialog.alert('✅ '+r.message)}else{AppDialog.alert('✅ Appointment request submitted!')}
+  }catch(e){AppDialog.alert('✅ Appointment request submitted!')}
   _selectedSlot=null;
   document.getElementById('slot-selected-info').style.display='none';
   // Refresh slots
@@ -509,8 +409,6 @@ async function confirmBookAppt(){
     const sr=await api(url);if(sr.ok&&sr.slots)_slotData=sr.slots;
   }catch(e){}
   renderSlotDate();
-  };
-  if(window.Busy)Busy.btn(btn,run);else run();
 }
 
 async function renderMyAppts(){
@@ -557,171 +455,28 @@ async function cancelPatAppt(id){
 // ═══════════════════════════════════════════════════════════════
 // PATIENT PRESCRIPTIONS
 // ═══════════════════════════════════════════════════════════════
-// ═══ PATIENT PRESCRIPTIONS (v2.4 — paper-Rx layout + Add Prescription tab) ═══
-let _rxTab='list';
-function rRxPatientTab(tab){_rxTab=tab;renderPatientRx();}
-// "0-0-1" (morning-afternoon-night) pattern → plain English
-function _rxPattern(rx){
-  const t=String(rx.timing||'').match(/^(\d)-(\d)-(\d)$/);
-  if(!t)return null;
-  const words=[];
-  if(+t[1])words.push(t[1]+' in the morning');
-  if(+t[2])words.push(t[2]+' in the afternoon');
-  if(+t[3])words.push(t[3]+' at night');
-  return words.length?words.join(' · '):null;
-}
-function _rxWhenText(rx){const parts=[];const p=_rxPattern(rx);if(rx.whenToTake)parts.push(rx.whenToTake);if(p)parts.push(p);return parts.join(' · ');}
-function rxAddFormHtml(){
-  return `
-  <div class="info-card">
-    <div class="info-card-title">➕ Add a medicine you take</div>
-    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;">Record a prescription from any doctor (paper slips count) or a supplement you take. Your doctor can see it too.</div>
-    <div class="fg"><label>Medicine name *</label><input id="sx-name" placeholder="e.g. DUVANTA 20" style="text-transform:uppercase"></div>
-    <div class="fg"><label>Composition (optional)</label><input id="sx-comp" placeholder="e.g. Duloxetine 20 mg"></div>
-    <div class="fg"><label>When to take — Morning - Afternoon - Night</label>
-      <div style="display:flex;gap:6px;align-items:center">
-        <input id="sx-m" type="number" min="0" max="4" placeholder="0" style="width:54px;text-align:center">
-        <span style="color:var(--text-dim)">-</span>
-        <input id="sx-a" type="number" min="0" max="4" placeholder="0" style="width:54px;text-align:center">
-        <span style="color:var(--text-dim)">-</span>
-        <input id="sx-n" type="number" min="0" max="4" placeholder="0" style="width:54px;text-align:center">
-        <span style="font-size:10px;color:var(--text-muted)">M - A - N</span>
-      </div>
-    </div>
-    <div class="fg"><label>Take it</label><select id="sx-when"><option value="">—</option><option>Before food</option><option>After food</option><option>Empty stomach</option><option>With milk</option><option>At bedtime</option></select></div>
-    <div class="fg"><label>How long</label><input id="sx-dur" placeholder="e.g. 10 days"></div>
-    <div class="fg"><label>Notes (optional)</label><textarea id="sx-notes" rows="2" placeholder="Anything else about this medicine..."></textarea></div>
-    <button class="big-btn log-btn" data-action="saveSelfRx">💾 Save Medicine</button>
-  </div>`;
-}
-async function saveSelfRx(){
-  if(!currentPat)return;
-  const name=v('sx-name');
-  if(!name){AppDialog.alert('Enter the medicine name.');return}
-  const mRaw=v('sx-m'),aRaw=v('sx-a'),nRaw=v('sx-n');
-  const timing=(mRaw||aRaw||nRaw)?`${parseInt(mRaw||'0',10)}-${parseInt(aRaw||'0',10)}-${parseInt(nRaw||'0',10)}`:'';
-  const rx={id:'self-'+Date.now().toString(36),medication:name.toUpperCase(),composition:v('sx-comp'),timing,whenToTake:v('sx-when'),duration:v('sx-dur'),instructions:v('sx-notes'),dosage:timing||'—',frequency:v('sx-when')||'',status:'active',selfAdded:true,prescribedDate:new Date().toISOString().slice(0,10)};
-  const arr=LS.get('selfrx_'+currentPat.mrn)||[];arr.unshift(rx);LS.set('selfrx_'+currentPat.mrn,arr);
-  // Best-effort server sync so the doctor's software can see it too.
-  try{await api('/sync/patient',{method:'PUT',body:JSON.stringify({changes:{['selfrx_'+currentPat.mrn]:arr}})})}catch(e){console.warn('[selfrx] push failed:',e.message)}
-  _rxTab='list';renderPatientRx();
-  showToast('✅ '+rx.medication+' saved');
-}
-function selfRxDelete(id){
-  const arr=(LS.get('selfrx_'+currentPat.mrn)||[]).filter(x=>x.id!==id);
-  LS.set('selfrx_'+currentPat.mrn,arr);
-  api('/sync/patient',{method:'PUT',body:JSON.stringify({changes:{['selfrx_'+currentPat.mrn]:arr}})}).catch(()=>{});
-  renderPatientRx();
-}
-// Compact report stylesheet for the patient app's paper-Rx print (the full
-// _REPORT_CSS lives in the doctor app's index-3-reports.js, which the patient
-// app does not load).
-const _RX_PRINT_CSS=`
-@page{size:A4;margin:0}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:11px;color:#111827;line-height:1.55;background:#dfe4ec;padding:18px 8px}
-.page{width:210mm;min-height:297mm;margin:0 auto 20px;padding:15mm 14mm 18mm;background:#fff;box-shadow:0 3px 24px rgba(15,30,60,.3);border-radius:3px;position:relative}
-@media screen and (max-width:860px){body{background:#fff;padding:0}.page{width:auto;min-height:auto;margin:0;padding:10mm 4mm;box-shadow:none}}
-@media print{body{background:#fff;padding:0}.page{width:210mm;min-height:296mm;margin:0;box-shadow:none;border-radius:0;page-break-after:always}}
-.hdr{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2.5px solid #16345c;padding-bottom:9px;margin-bottom:12px}
-.hdr-left h1{font-size:18px;color:#16345c}
-.hdr-left .inst-name{font-size:11.5px;color:#1f2937;margin-top:2px}
-.hdr-left .sub{font-size:9px;color:#6b7280;letter-spacing:.3px;margin-top:1px}
-.hdr-right .report-id{font-size:9px;color:#5b6b82}
-.pat-banner{background:#eef3fb;border:1px solid #c9d6ea;border-radius:6px;padding:10px 14px;margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap}
-.pat-banner .field{display:flex;flex-direction:column}
-.pat-banner .lbl{font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5b6b82}
-.pat-banner .val{font-size:12.5px;font-weight:700}
-.pat-banner .val.big{font-size:14px}
-.rx-table{width:100%;border-collapse:collapse;margin:8px 0 10px;border:1.5px solid #16345c}
-.rx-table th{background:#16345c;color:#fff;font-size:9px;text-transform:uppercase;letter-spacing:.8px;padding:7px 9px;text-align:left;border:1px solid #10263f}
-.rx-table td{border:1px solid #d8e0ec;padding:8px 9px;font-size:10.5px;vertical-align:top;background:#fff}
-.rx-table tr:nth-child(even) td{background:#f6f9fd}
-.rx-name{font-size:12.5px;font-weight:800;color:#111827}
-.rx-comp{display:block;font-size:9px;color:#5b6b82;margin-top:2px}
-.rx-dose{font-size:12px;font-weight:700;color:#16345c;font-family:Consolas,monospace;letter-spacing:2px}
-.rx-when{font-size:9.5px;color:#334155}
-.rx-line{display:block;font-size:9px;color:#6b7280;margin-top:2px}
-`;
-function rxPrintPaper(){
-  // Print the whole prescription list as a paper-style Rx sheet (A4)
-  if(!currentPat)return;
-  const pat=currentPat;
-  LS.get('selfrx_'+pat.mrn);// warm SecureStore
-  (async()=>{
-    let serverRx=[];
-    try{const r=await api('/rx/my');if(r&&r.ok&&r.prescriptions)serverRx=r.prescriptions;}catch(e){}
-    const selfRx=LS.get('selfrx_'+pat.mrn)||[];
-    const all=[...serverRx,...selfRx].filter(x=>x.status!=='cancelled');
-    if(!all.length){AppDialog.alert('No prescriptions to print yet.');return}
-    const rows=all.map(rx=>{
-      const p=_rxPattern(rx);
-      const dose=p?`<span class="rx-dose">${esc(rx.timing)}</span><span class="rx-line">${esc(p)}</span>`:esc(rx.dosage||'—');
-      return `<tr><td><span class="rx-name">${esc(rx.medication)}</span>${(rx.composition||rx.genericName)?`<span class="rx-comp">${esc(rx.composition||rx.genericName)}</span>`:''}</td><td style="white-space:nowrap">${dose}</td><td><span class="rx-when">${esc(rx.whenToTake||'—')}</span><span class="rx-line">${esc([rx.frequency,rx.duration].filter(Boolean).join(' · '))}</span></td></tr>`;
-    }).join('');
-    const docName=(all.find(x=>x.doctorName)||{}).doctorName||'';
-    const html=`
-    <div class="page">
-      <div class="hdr">
-        <div class="hdr-left"><h1>℞ Prescription</h1><div class="inst-name">VELTRUVIA Neuro-Oncology</div><div class="sub">Patient medication record${docName?' · Prescribed by '+esc(docName):''}</div></div>
-        <div class="hdr-right"><div class="report-id">${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div></div>
-      </div>
-      <div class="pat-banner">
-        <div class="field"><span class="lbl">Patient</span><span class="val big">${esc(pat.name||'')}</span></div>
-        <div class="field"><span class="lbl">MRN</span><span class="val" style="font-family:monospace">${esc(pat.mrn)}</span></div>
-        ${pat.diag?`<div class="field"><span class="lbl">Diagnosis</span><span class="val">${esc(pat.diag)}</span></div>`:''}
-      </div>
-      <table class="rx-table">
-        <thead><tr><th style="width:45%">Medicine</th><th style="width:20%">Dosage</th><th>When to take · How often · How long</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div style="font-size:9.5px;color:#5b6b82;line-height:1.6;border-top:1px solid #d8e0ec;padding-top:8px;">
-        <b>Dosage key:</b> numbers are doses in the Morning - Afternoon - Night pattern. Example: 0-0-1 = one dose at night.<br>
-        ${docName?`Prescribed by ${esc(docName)}. `:''}Generated from the VELTRUVIA record on ${new Date().toLocaleString()}. Please confirm with your doctor before changing any medicine.
-      </div>
-    </div>`;
-    if(window._vxReportOverlay){_vxReportOverlay('Prescription — '+(pat.name||pat.mrn),`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Prescription</title><style>${_RX_PRINT_CSS}</style></head><body>${html}</body></html>`,{});}
-  })();
-}
 async function renderPatientRx(){
   const el=document.getElementById('rx-list');
-  const tabs=`<div class="rx-tabs">
-    <button class="rx-tab ${_rxTab==='list'?'active':''}" data-action="rRxPatientTab:list">💊 My Prescriptions</button>
-    <button class="rx-tab ${_rxTab==='add'?'active':''}" data-action="rRxPatientTab:add">➕ Add Prescription</button>
-  </div>`;
-  if(_rxTab==='add'){el.innerHTML=tabs+rxAddFormHtml();return}
   try{
     const r=await api('/rx/my');
-    const serverRx=(r&&r.ok&&r.prescriptions)?r.prescriptions:[];
-    let selfRx=[];try{selfRx=LS.get('selfrx_'+currentPat.mrn)||[];}catch(e){}
-    const all=[...serverRx,...selfRx];
-    if(!all.length){el.innerHTML=tabs+'<div class="empty-card">No prescriptions on file.<br><span style="font-size:11px;color:var(--text-dim)">Tap “➕ Add Prescription” to record a medicine you take.</span></div>';return}
-    const statusIcon={active:'✅',completed:'✔️',cancelled:'❌',expired:'⏰','pending-refill':'🔄','self':'📝'};
-    const statusColor={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--blue)',self:'var(--blue)'};
-    const timingChips=(t)=>{const m=String(t||'').match(/^(\d)-(\d)-(\d)$/);if(!m)return '';const mk=(v,l)=>`<span class="rx-chip" style="background:${+v?'rgba(5,150,105,.12)':'rgba(100,116,139,.08)'};color:${+v?'var(--green)':'var(--text-dim)'}">${l} ${esc(v)}</span>`;return `<div style="display:flex;gap:4px;margin-top:6px">${mk(m[1],'M')}${mk(m[2],'A')}${mk(m[3],'N')}</div>`;};
-    el.innerHTML=tabs+`<button class="big-btn" data-action="rxPrintPaper" style="margin-bottom:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12.5px">🖨 Print as Paper Rx (A4)</button>`+all.map(rx=>`
+    if(!r.ok||!r.prescriptions||!r.prescriptions.length){el.innerHTML='<div class="empty-card">No prescriptions on file.</div>';return}
+    const statusIcon={active:'✅',completed:'✔️',cancelled:'❌',expired:'⏰','pending-refill':'🔄'};
+    const statusColor={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--blue)'};
+    el.innerHTML=r.prescriptions.map(rx=>`
       <div class="info-card" style="margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-          <div><div style="font-weight:700;font-size:15px">${esc(rx.medication)}</div>
-          ${(rx.composition||rx.genericName)?`<div style="font-size:11px;color:var(--text-muted)">${esc(rx.composition||rx.genericName)}</div>`:''}
-          ${rx.selfAdded?'<span class="badge" style="background:rgba(37,99,235,.12);color:var(--blue);font-size:9.5px;padding:2px 8px;border-radius:8px;margin-top:4px;display:inline-block">Added by you</span>':''}
-          </div>
-          <span style="font-size:11px;color:${statusColor[rx.status]||'var(--text-muted)'};font-weight:700">${statusIcon[rx.status]||''} ${rx.selfAdded?'active':esc(rx.status||'')}</span>
+          <div><div style="font-weight:700;font-size:15px">${esc(rx.medication)}${rx.genericName?' <span style="font-size:12px;color:var(--text-muted);font-weight:400">('+esc(rx.genericName)+')</span>':''}</div></div>
+          <span style="font-size:11px;color:${statusColor[rx.status]};font-weight:700">${statusIcon[rx.status]||''} ${rx.status}</span>
         </div>
-        ${timingChips(rx.timing)}
-        ${_rxWhenText(rx)?`<div style="margin-top:6px;font-size:12px;color:var(--text)"><b>When to take:</b> ${esc(_rxWhenText(rx))}</div>`:''}
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:11.5px;color:var(--text-muted)">
-          ${rx.dosage&&!rx.timing?`<span><b>Dose:</b> ${esc(rx.dosage)}</span>`:''}
-          ${rx.duration?`<span><b>Duration:</b> ${esc(rx.duration)}</span>`:''}
-          ${rx.route?`<span><b>Route:</b> ${esc(rx.route)}</span>`:''}
-          ${rx.refills?`<span><b>Refills:</b> ${rx.refills} left</span>`:''}
-        </div>
+        <div class="irow"><div class="ikey">Dosage</div><div class="ival">${esc(rx.dosage)}</div></div>
+        <div class="irow"><div class="ikey">Frequency</div><div class="ival">${esc(rx.frequency)}</div></div>
+        ${rx.route?`<div class="irow"><div class="ikey">Route</div><div class="ival">${esc(rx.route)}</div></div>`:''}
+        ${rx.duration?`<div class="irow"><div class="ikey">Duration</div><div class="ival">${esc(rx.duration)}</div></div>`:''}
+        ${rx.refills?`<div class="irow"><div class="ikey">Refills</div><div class="ival">${rx.refills} remaining</div></div>`:''}
+        ${rx.pharmacy?`<div class="irow"><div class="ikey">Pharmacy</div><div class="ival">${esc(rx.pharmacy)}</div></div>`:''}
         ${rx.instructions?`<div style="margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-muted)">📋 ${esc(rx.instructions)}</div>`:''}
-        <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
-          ${(!rx.selfAdded&&rx.status==='active')?`<button data-action="requestRefill:${rx.id}" style="padding:8px 14px;border-radius:8px;border:1px solid var(--green);background:rgba(5,150,105,.06);color:var(--green);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">🔄 Request Refill</button>`:''}
-          ${rx.selfAdded?`<button data-action="selfRxDelete:${rx.id}" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Remove</button>`:''}
-          <span style="font-size:10px;color:var(--text-dim);margin-left:auto">Prescribed: ${rx.prescribedDate||'—'}</span>
-        </div>
+        ${rx.status==='active'?`<button data-action="requestRefill:${rx.id}" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px solid var(--green);background:rgba(5,150,105,.06);color:var(--green);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">🔄 Request Refill</button>`:''}
+        <div style="font-size:10px;color:var(--text-dim);margin-top:6px">Prescribed: ${rx.prescribedDate||'N/A'}</div>
       </div>
     `).join('');
   }catch(e){el.innerHTML='<div class="empty-card">Error loading prescriptions.</div>'}
@@ -851,18 +606,13 @@ async function saveLog(){
   const date=new Date().toISOString().slice(0,10);
   const items=[];
   document.querySelectorAll('#log-form-content .check-item.checked').forEach(ci=>items.push(ci.textContent.trim()));
-  const clamp=(x,lo,hi,fb)=>{const n=+x;return Number.isFinite(n)?Math.min(hi,Math.max(lo,n)):fb};
-  const tempRaw=parseFloat(v('v-temp'));
-  const tempVal=Number.isFinite(tempRaw)&&tempRaw>=30&&tempRaw<=45?tempRaw:'';
-  const log={date,cognitive:clamp(v('s-cog'),0,10,5),seizure:clamp(v('s-sz'),0,10,0),vision:clamp(v('s-vis'),0,10,5),headache:clamp(v('s-head'),0,10,0),fatigue:clamp(v('s-fat'),0,10,3),nausea:clamp(v('s-naus'),0,10,0),appetite:clamp(v('s-app'),0,10,7),sleep:clamp(v('s-sleep'),0,10,6),mood:clamp(v('s-mood'),0,10,6),temp:tempVal,bp:v('v-bp'),weight:v('v-weight'),meds:v('v-meds'),notes:v('v-notes'),items,savedAt:Date.now()};
+  const log={date,cognitive:+v('s-cog')||5,seizure:+v('s-sz')||0,vision:+v('s-vis')||5,headache:+v('s-head')||0,fatigue:+v('s-fat')||3,nausea:+v('s-naus')||0,appetite:+v('s-app')||7,sleep:+v('s-sleep')||6,mood:+v('s-mood')||6,temp:v('v-temp'),bp:v('v-bp'),weight:v('v-weight'),meds:v('v-meds'),notes:v('v-notes'),items,savedAt:Date.now()};
   LS.set('log_'+currentPat.mrn+'_'+date,log);
-  // Also save to shared store so Doctor can see it — and tell the truth
-  // about whether it reached the server.
-  let delivered=true;
-  try{await api('/sync/save-log',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,date,log})})}catch(e){delivered=false;console.warn('[log] save to store failed:',e.message)}
+  // Also save to shared store so Doctor can see it
+  try{await api('/sync/save-log',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,date,log})})}catch(e){console.warn('[log] save to store failed:',e.message)}
   closeSheet('log-sheet');
   renderCalendar();
-  AppDialog.alert(delivered?'Log saved! ✓ Your doctor can see today\'s entry.':'⚠️ Log saved on this phone only — no connection to the server. It will stay here; try Save again later to sync.');
+  AppDialog.alert('Log saved! ✓');
 }
 
 // ═══ FACT-BR ═══
@@ -965,22 +715,16 @@ async function renderVisits(){
 }
 async function submitApptRequest(){
   if(!currentPat)return;
-  const run=async()=>{
   const date=v('appt-req-date'),time=v('appt-req-time'),type=v('appt-req-type'),notes=v('appt-req-notes');
   if(!date){AppDialog.alert('Select a date.');return}
-  if(date<new Date().toISOString().slice(0,10)){AppDialog.alert('That date is in the past — please pick today or a future date.');return}
   const appt={date,time,type,notes,status:'Requested',createdAt:Date.now()};
   const appts=LS.get('appts_'+currentPat.mrn)||[];
   appts.push(appt);
   LS.set('appts_'+currentPat.mrn,appts);
-  let delivered=true;
-  try{await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:appt})})}catch(e){delivered=false;console.warn('[appt] save to store failed:',e.message)}
+  try{await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:appt})})}catch(e){console.warn('[appt] save to store failed:',e.message)}
   closeSheet('appt-sheet');
-  AppDialog.alert(delivered?'Appointment request submitted! ✓':'⚠️ Saved on this device — the server was unreachable, so your doctor may not see it yet. It will show in Visits.');
+  AppDialog.alert('Appointment request submitted! ✓');
   renderVisits();
-  };
-  const btn=document.querySelector('[data-action="submitApptRequest"]');
-  if(window.Busy)Busy.btn(btn,run);else run();
 }
 
 // ═══ MESSAGES ═══
@@ -1005,19 +749,11 @@ async function sendPatMsg(){
   const text=v('chat-inp');if(!text)return;
   const key='msgs_'+_docId+'_'+currentPat.mrn;
   const msgs=LS.get(key)||[];
-  const entry={role:'patient',text,timestamp:Date.now(),sent:false};
-  msgs.push(entry);
+  msgs.push({role:'patient',text,timestamp:Date.now()});
   LS.set(key,msgs);
+  // Also save to shared store
+  try{await api('/sync/send-message',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,docId:_docId,role:'patient',text})})}catch(e){console.warn('[chat] save to store failed:',e.message)}
   document.getElementById('chat-inp').value='';
-  renderChat();
-  // Mark the message honestly: sent = delivered to the server (queued for
-  // the doctor); otherwise it stays local-only with a pending marker.
-  try{
-    await api('/sync/send-message',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,docId:_docId,role:'patient',text})});
-    entry.sent=true;
-  }catch(e){entry.pending=true;console.warn('[chat] save to store failed:',e.message)}
-  LS.set(key,msgs);
-  if(entry.pending&&window.AppDialog&&AppDialog.toast)AppDialog.toast('📴 Message saved on this phone — will not reach your doctor until connection returns');
   renderChat();
 }
 
@@ -1078,37 +814,9 @@ async function exportMyData(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='MyData_'+currentPat.mrn+'.json';a.click();
 }
 
-// ═══ PUSH NOTIFICATIONS (wired to push-client.js + sw.js in v2.5 —
-// the server always supported Web Push; the button used to show a
-// "removed" alert, which eroded trust). ═══
-function _vxUrlB64ToU8(base64String){
-  const padding='='.repeat((4-(base64String.length%4))%4);
-  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
-  const raw=atob(base64);
-  return Uint8Array.from(raw,(c)=>c.charCodeAt(0));
-}
+// ═══ PUSH NOTIFICATIONS (no service worker) ═══
 async function subscribeToPush(){
-  try{
-    if(!('serviceWorker' in navigator)||!('PushManager' in window)){
-      AppDialog.alert('Push reminders work in the VELTRUVIA web app (open veltruvia.duckdns.org in Chrome). On this device, medicine reminders fire while the app is open.');
-      return;
-    }
-    const reg=await navigator.serviceWorker.register('./sw.js');
-    await navigator.serviceWorker.ready;
-    const perm=await Notification.requestPermission();
-    if(perm!=='granted'){AppDialog.alert('Notifications are blocked for this app. Enable them in your browser/device settings to get reminders.');return}
-    const keyRes=await fetch('/api/push/vapid-public-key');
-    if(!keyRes.ok){AppDialog.alert('Reminders could not be enabled — push is not configured on the clinic server yet.');return}
-    const {key}=await keyRes.json();
-    if(!key){AppDialog.alert('Reminders could not be enabled — push is not configured on the clinic server yet.');return}
-    const existing=await reg.pushManager.getSubscription();
-    const sub=existing||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_vxUrlB64ToU8(key)});
-    const r=await fetch('/api/push/subscribe',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON()})});
-    if(r.ok)AppDialog.alert('✅ Reminders are ON for this device. You\'ll get a notification when appointments change.');
-    else AppDialog.alert('Could not save the reminder subscription (server said '+r.status+'). Please try again later.');
-  }catch(e){
-    AppDialog.alert('Could not enable reminders: '+((e&&e.message)||'permission denied')+'. Check that notifications are allowed for this site.');
-  }
+  AppDialog.alert('Push notifications require a service worker which has been removed.');
 }
 
 // ═══ LAB PORTAL ═══
@@ -1164,7 +872,7 @@ function renderLabUpload(){
   })}
   document.getElementById('lab-screen-upload').innerHTML=h;
 }
-async function submitUpload(taskId,mrn){
+function submitUpload(taskId,mrn){
   if(!currentLab||!_docId)return;
   const date=v('ul-date-'+taskId),test=v('ul-test-'+taskId),res=v('ul-res-'+taskId),notes=v('ul-notes-'+taskId);
   if(!test){AppDialog.alert('Enter test name.');return}
@@ -1174,12 +882,7 @@ async function submitUpload(taskId,mrn){
   const subs=LS.get('lab_subs_'+_docId)||[];
   subs.push({labId:currentLab.labId,labName:currentLab.name,mrn,test,date,results:res,notes,submittedAt:Date.now()});
   LS.set('lab_subs_'+_docId,subs);
-  // Push to the server so the doctor actually receives it — and say which
-  // happened. "Submitted" must mean the doctor can see it, not just the phone.
-  let delivered=false;
-  try{await api('/sync/lab',{method:'PUT',body:JSON.stringify({changes:{['pat_tokens_'+_docId]:tokens,['lab_subs_'+_docId]:subs}})});delivered=true;}
-  catch(e){console.warn('[lab] push failed:',e.message)}
-  AppDialog.alert(delivered?'Report submitted ✓ — the doctor\'s record has been updated.':'⚠️ Saved on this phone, but the server was unreachable — the doctor cannot see it yet. Try Submit again when you have internet.');
+  AppDialog.alert('Report submitted! ✓');
   renderLabUpload();
   refreshLabTasks();
 }
@@ -1233,7 +936,6 @@ function setupMedReminders(){
     for(const id of Object.keys(all)){if(!active.some(p=>String(p.id)===String(id))){delete all[id];}}
     _remindSave(all);
     if(added)showToast('⏰ '+added+' medication reminder'+(added===1?'':'s')+' scheduled');
-    try{scheduleNativeMedReminders();}catch(e){}
   }).catch(()=>{});
 }
 function checkMedReminders(){
@@ -1255,46 +957,6 @@ function checkMedReminders(){
 }
 setInterval(checkMedReminders,30000);
 setTimeout(setupMedReminders,4000);
-
-// v2.5: REAL device alarms on Android — the 30-second in-app timer above only
-// fires while the app is open, which is useless for a 0-0-1 dose at night.
-// With Capacitor LocalNotifications (installed in the APK build) the same
-// reminder table becomes daily OS-level alarms that fire even when VELTRUVIA
-// is closed. Silent no-op in browsers and desktop shells.
-async function scheduleNativeMedReminders(){
-  try{
-    const LN=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.LocalNotifications;
-    if(!LN)return;
-    const all=_remindAll();
-    const slots={};
-    for(const r of Object.values(all)){
-      if(!r||!r.enabled)continue;
-      for(const t of (r.times||[])){
-        (slots[t]=slots[t]||[]).push(r.med);
-      }
-    }
-    const notifications=[];
-    for(const [t,meds] of Object.entries(slots)){
-      const parts=String(t).split(':').map(Number);
-      const h=parts[0]||8,m=parts[1]||0;
-      notifications.push({
-        id:1000+(h*60+m),
-        title:'💊 VELTRUVIA medicine reminder',
-        body:'Time to take: '+meds.join(', ')+(meds.length>1?'':' (as prescribed)'),
-        schedule:{on:{hour:h,minute:m},allowWhileIdle:true},
-      });
-    }
-    if(!notifications.length)return;
-    try{const p=await LN.requestPermissions();if(p&&p.display==='denied')return;}catch(e){}
-    let pending=[];
-    try{pending=((await LN.getPending())||{notifications:[]}).notifications||[];}catch(e){}
-    const wanted=notifications.map(n=>n.id);
-    const stale=pending.map(n=>n.id).filter(id=>!wanted.includes(id));
-    if(stale.length){try{await LN.cancel({notifications:stale.map(id=>({id}))});}catch(e){}}
-    await LN.schedule({notifications});
-    console.log('[med-reminders] native daily alarms scheduled:',notifications.length);
-  }catch(e){console.debug('[med-reminders] native alarms unavailable:',e&&e.message)}
-}
 
 // ═══════════════════════════════════════════════════════════════
 // 🪑 PATIENT WAITING ROOM (v2.3) — join puts you in a queue; the

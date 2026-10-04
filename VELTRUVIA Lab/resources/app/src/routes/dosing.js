@@ -148,8 +148,7 @@ async function loadPatientContext(mrn) {
   //     exists for demo-seeded accounts). Same shape as the kv patient blob.
   if (ctx.dob == null && ctx.weightKg == null) {
     try {
-      const { createEncryptedStore } = await import('../lib/json-stores.js');
-      const store = createEncryptedStore('patient-store.json', { label: 'dosing-store' }).read();
+      const store = JSON.parse(_readFileSync(_join(_dirname(process.env.DB_PATH || '.'), 'patient-store.json'), 'utf-8'));
       const p = store[String(mrn).toUpperCase()];
       if (p) {
         ctx.dob = p.dob || p.dateOfBirth || null;

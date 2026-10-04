@@ -239,8 +239,7 @@ ipcMain.handle('server:status', () => ({ ok: expressOk, port: serverPort }));
 // ── App lifecycle ─────────────────────────────────────────────────
 app.whenReady().then(async () => {
   try {
-    // Auto-update via GitHub Releases (no-op in dev / before first release).
-    // Own channel so the Server never downloads another app's installer.
+    // Auto-update via GitHub Releases (no-op in dev / before first release)
     try { setupAutoUpdate({ channel: 'latest-server' }); } catch {}
 
     // Auto-start with Windows on first run (user can disable via tray menu).

@@ -1,7 +1,7 @@
 {
   "name": "veltruvia-lab-mobile",
   "private": true,
-  "version": "2.3.0",
+  "version": "2.5.0",
   "description": "VELTRUVIA Lab — Android app (Capacitor shell around the existing lab portal)",
   "scripts": {
     "cap:add": "cap add android",
