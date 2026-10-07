@@ -16,7 +16,15 @@ app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('disable-gpu');
 
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, readFileSync, writeFileSync, statSync, mkdirSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, writeFileSync, statSync, mkdirSync, appendFileSync } from 'node:fs';
+import os from 'node:os';
+// Boot diagnostics: capture uncaught errors next to the app (silent Error dialogs are otherwise undiagnosable).
+process.on('uncaughtException', (err) => {
+  try { appendFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'boot-error.log'), `[${new Date().toISOString()}] LAB UNCAUGHT: ${err && err.stack || err}\n\n`); } catch {}
+});
+process.on('unhandledRejection', (reason) => {
+  try { appendFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'boot-error.log'), `[${new Date().toISOString()}] LAB REJECTION: ${reason && reason.stack || reason}\n\n`); } catch {}
+});
 import net from 'node:net';
 import http from 'node:http';
 import https from 'node:https';
@@ -294,6 +302,7 @@ app.whenReady().then(async () => {
 
     createWindow();
   } catch (err) {
+    try { appendFileSync(join(os.tmpdir(), 'veltruvia-lab-boot-error.log'), `[${new Date().toISOString()}] ${err.stack || err.message || String(err)}\n\n`); } catch {}
     dialog.showErrorBox('VELTRUVIA Lab — Error', err.message || String(err));
     app.quit();
   }
