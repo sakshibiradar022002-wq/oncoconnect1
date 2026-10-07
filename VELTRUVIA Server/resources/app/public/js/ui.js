@@ -282,7 +282,7 @@
   const A11Y_CSS = `
 .vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
   clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.vd-skip{position:fixed;top:-48px;left:16px;z-index:100002;background:var(--blue,#2563eb);color:#fff;
+.vd-skip{position:fixed;top:-48px;left:16px;z-index:100002;background:#1d4ed8;color:#fff;
   padding:10px 18px;border-radius:10px;font-weight:700;font-size:13px;transition:top .2s ease}
 .vd-skip:focus{top:12px}
 html.vd-text-sm{font-size:92%}html.vd-text-lg{font-size:110%}html.vd-text-xl{font-size:122%}
@@ -331,7 +331,7 @@ html.vd-text-sm{font-size:92%}html.vd-text-lg{font-size:110%}html.vd-text-xl{fon
     // Headings (visible hierarchy without changing markup)
     document.querySelectorAll('.page-title').forEach(el => { el.setAttribute('role', 'heading'); el.setAttribute('aria-level', '1'); });
     document.querySelectorAll('.modal-title, .sheet-title, .rt-title').forEach(el => { el.setAttribute('role', 'heading'); el.setAttribute('aria-level', '2'); });
-    document.querySelectorAll('.card-title, .info-card-title, .settings-section h3, .log-sec-title').forEach(el => { el.setAttribute('role', 'heading'); el.setAttribute('aria-level', '3'); });
+    document.querySelectorAll('.card-title, .info-card-title, .settings-section h3, .log-sec-title').forEach(el => { el.setAttribute('role', 'heading'); el.setAttribute('aria-level', '2'); });
 
     // Nav current-item management (click + programmatic showPanel)
     const NAV_SEL = '.nav-item, .rnav-item, .nav-btn, .ltab, .ts-btn';

@@ -116,6 +116,73 @@ tr:nth-child(even) td{background:#f8fafc;}
 .conf-footer{text-align:center;font-size:7.5px;color:#dc2626;font-weight:600;letter-spacing:1px;padding:4px 0;border-top:2px solid #dc2626;margin-top:10px;}
 /* ── Print ── */
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}.watermark{display:none;}}
+/* ═════════════════════════════════════════════════════════════════════
+   v2.4 REPORT REDESIGN — true A4 sheets + cleaner clinical typography
+   Appended last on purpose: these rules override the legacy ones above
+   at equal specificity, so every existing generator gets the new look.
+   ═════════════════════════════════════════════════════════════════════ */
+/* Exact A4 in print. Margins come from .page padding (screen + print match). */
+@page{size:A4;margin:0;}
+body{font-size:11px;line-height:1.55;color:#111827;}
+/* On screen: a real paper sheet on a neutral desk backdrop */
+@media screen{
+  body{background:#dfe4ec;padding:18px 8px;}
+  .page{width:210mm;min-height:297mm;margin:0 auto 20px;padding:15mm 14mm 18mm;background:#fff;box-shadow:0 3px 24px rgba(15,30,60,.30);border-radius:3px;position:relative;overflow:hidden;}
+}
+/* On phones the sheet would need horizontal scrolling — fall back to a
+   readable flow (print/PDF output is still exact A4 either way). */
+@media screen and (max-width:860px){
+  body{background:#fff;padding:0;}
+  .page{width:auto;min-height:auto;margin:0;padding:10mm 4mm;box-shadow:none;border-radius:0;}
+}
+/* Print: each .page is one physical A4 sheet */
+@media print{
+  body{background:#fff;padding:0;}
+  .page{width:210mm;min-height:296mm;margin:0 auto;padding:15mm 14mm 18mm;box-shadow:none;border-radius:0;page-break-after:always;}
+  .page:last-child{page-break-after:auto;}
+}
+/* ── Typography refresh ── */
+.hdr{border-bottom:2.5px solid #16345c;padding-bottom:9px;margin-bottom:12px;}
+.hdr-left h1{font-size:18px;color:#16345c;letter-spacing:.2px;}
+.hdr-left .inst-name{font-size:11.5px;color:#1f2937;}
+.sec{margin-bottom:14px;}
+.sec-title{background:#eef3fb;border-left:4px solid #16345c;color:#16345c;font-size:10.5px;font-weight:800;letter-spacing:1px;padding:6px 10px;border-radius:0 4px 4px 0;margin-bottom:8px;}
+th{background:#16345c;border:1px solid #10263f;font-size:8.5px;letter-spacing:.6px;padding:6px 8px;}
+.matrix-table th{background:#16345c;border:1px solid #10263f;}
+td{border:1px solid #d8e0ec;padding:6px 8px;}
+tr:nth-child(even) td{background:#f6f9fd;}
+.pat-banner{background:#eef3fb;border:1px solid #c9d6ea;border-radius:6px;}
+.pat-banner .lbl{color:#5b6b82;}
+.pat-banner .val{font-size:12.5px;}
+.doc-info{border-left:4px solid #16345c;background:#f6f9fd;border-color:#d8e0ec;}
+.watermark{font-size:54px;color:rgba(22,52,92,.035);}
+.conf-banner{background:#7f1d1d;font-size:8.5px;padding:4px 0;}
+.footer{border-top:1.5px solid #d8e0ec;}
+.page-num{color:#7a8699;}
+.conf-footer{color:#7f1d1d;border-top:1.5px solid #7f1d1d;}
+/* ── Paper-style Rx table (Medicine | Dosage 0-0-1 | Timing·Freq·Duration) ── */
+.rx-table{width:100%;border-collapse:collapse;margin:8px 0 10px;border:1.5px solid #16345c;}
+.rx-table th{background:#16345c;color:#fff;font-size:9px;text-transform:uppercase;letter-spacing:.8px;padding:7px 9px;text-align:left;border:1px solid #10263f;}
+.rx-table td{border:1px solid #d8e0ec;padding:8px 9px;font-size:10.5px;vertical-align:top;background:#fff;}
+.rx-table tr:nth-child(even) td{background:#f6f9fd;}
+.rx-table .rx-name{font-size:12.5px;font-weight:800;color:#111827;}
+.rx-table .rx-comp{font-size:9px;color:#5b6b82;margin-top:2px;}
+.rx-table .rx-dose{font-size:12px;font-weight:700;color:#16345c;font-family:Consolas,monospace;letter-spacing:2px;}
+.rx-table .rx-when{font-size:9.5px;color:#334155;}
+.rx-table .rx-line{display:block;font-size:9px;color:#6b7280;margin-top:2px;}
+/* ── Welcome / access card (looks like a physical card on the sheet) ── */
+.vx-card{border:1.6px dashed #8ea3c0;border-radius:14px;background:#fff;padding:0 0 0 0;overflow:hidden;box-shadow:0 2px 10px rgba(15,30,60,.12);}
+.vx-card-head{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(120deg,#16345c,#1a56db);color:#fff;padding:8mm 9mm;}
+.vx-card-head .vc-title{font-size:19px;font-weight:800;letter-spacing:.4px;}
+.vx-card-head .vc-sub{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;opacity:.85;}
+.vx-card-body{display:flex;gap:8mm;padding:8mm 9mm;}
+.vx-card-foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #d8e0ec;padding:4mm 9mm;font-size:8.5px;color:#7a8699;background:#f6f9fd;}
+.vx-cred{border:1.5px solid #c9d6ea;border-radius:10px;background:#f6f9fd;padding:5mm 6mm;margin:0 0 5mm;}
+.vx-cred .vc-lbl{font-size:8px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#5b6b82;}
+.vx-cred .vc-val{font-family:Consolas,monospace;font-size:15px;font-weight:800;color:#16345c;word-break:break-all;}
+.vx-steps{font-size:10px;color:#334155;line-height:1.75;}
+.vx-steps b{color:#16345c;}
+.vx-cut{text-align:center;font-size:8px;color:#8ea3c0;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
 `;
 
 const _SVG_LOGO=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" width="42" height="42"><defs><linearGradient id="dnaGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1a56db"/><stop offset="100%" stop-color="#388bfd"/></linearGradient></defs><circle cx="28" cy="28" r="26" fill="none" stroke="url(#dnaGrad)" stroke-width="1.5"/><path d="M14 8 C14 8, 20 14, 20 20 S14 28, 14 28 S20 34, 20 40 S14 48, 14 48" stroke="#1a56db" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M42 8 C42 8, 36 14, 36 20 S42 28, 42 28 S36 34, 36 40 S42 48, 42 48" stroke="#2563eb" stroke-width="2.2" fill="none" stroke-linecap="round"/><line x1="17" y1="11" x2="39" y2="11" stroke="#388bfd" stroke-width="1.2" opacity="0.5"/><line x1="15" y1="16" x2="41" y2="16" stroke="#388bfd" stroke-width="1.2" opacity="0.5"/><line x1="14" y1="21" x2="42" y2="21" stroke="#388bfd" stroke-width="1.2" opacity="0.5"/><line x1="14" y1="26" x2="42" y2="26" stroke="#388bfd" stroke-width="1.2" opacity="0.5"/><line x1="14" y1="31" x2="42" y2="31" stroke="#388bfd" stroke-width="1.2" opacity="0.5"/><line x1="15" y1="36" x2="41" y2="36" stroke="#388bfd" stroke-width="1.2" opacity="0.5"/><line x1="17" y1="41" x2="39" y2="41" stroke="#388bfd" stroke-width="1.2" opacity="0.5"/><circle cx="17" cy="11" r="1.8" fill="#1a56db"/><circle cx="39" cy="11" r="1.8" fill="#2563eb"/><circle cx="15" cy="16" r="1.8" fill="#1a56db"/><circle cx="41" cy="16" r="1.8" fill="#2563eb"/><circle cx="14" cy="21" r="1.8" fill="#1a56db"/><circle cx="42" cy="21" r="1.8" fill="#2563eb"/><circle cx="14" cy="31" r="1.8" fill="#1a56db"/><circle cx="42" cy="31" r="1.8" fill="#2563eb"/><circle cx="15" cy="36" r="1.8" fill="#1a56db"/><circle cx="41" cy="36" r="1.8" fill="#2563eb"/><circle cx="17" cy="41" r="1.8" fill="#1a56db"/><circle cx="39" cy="41" r="1.8" fill="#2563eb"/><text x="28" y="31" text-anchor="middle" font-size="9" font-weight="bold" fill="#1a56db" font-family="Arial">+</text></svg>`;
@@ -193,32 +260,14 @@ function _renderLetterheadHTML(){
   </div>`;
 }
 
-function _openReport(title,bodyHtml){
-  let w;
-  try{w=window.open('about:blank','_blank','width=820,height=900');}catch(e){}
-  if(!w||w.closed||typeof w.document==='undefined'){
-    // Popup blocked — fall back to printing the current page
-    AppDialog.alert('Popup blocked. Please allow popups for this site, or use Ctrl+P to print.');
-    return null;
-  }
-  w.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>${_REPORT_CSS}</style></head><body>
-  <div id="__rpt-body">${bodyHtml}</div>
-  <script>
-  window.addEventListener('load',function(){
-    var pages=document.querySelectorAll('.page');
-    var total=pages.length;
-    pages.forEach(function(p,i){
-      var el=p.querySelector('.page-num');
-      if(!el){el=document.createElement('div');el.className='page-num';p.appendChild(el);}
-      el.textContent='Page '+(i+1)+' of '+total;
-    });
-    var s=document.createElement('style');
-    s.textContent='.page::after{content:none !important;}';
-    document.head.appendChild(s);
-  });
-  <\/script></body></html>`);
-  w.document.close();
-  return w;
+function _openReport(title,bodyHtml,opts){
+  // In-app viewer: renders the report inside the app (Electron, browser and
+  // phone app all behave the same). window.open used to be denied by the
+  // desktop shells and routed to the system browser — a blank page opened in
+  // a different app — so the document never appeared where the user was.
+  return window._vxReportOverlay
+    ? _vxReportOverlay(title, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>${_REPORT_CSS}</style></head><body><div id="__rpt-body">${bodyHtml}</div></body></html>`, opts)
+    : null;
 }
 function printPatientSummary(){
   if(!selectedMRN){AppDialog.alert('Open a patient record first.');return;}
@@ -272,7 +321,7 @@ function printPatientSummary(){
         <div style="display:flex;align-items:center;gap:10px;">
           <div class="logo-svg">${_SVG_LOGO}</div>
           <div>
-            <h1>VELTRUVIA Pro</h1>
+            <h1>VELTRUVIA Doc</h1>
             <div class="inst-name">${esc(docInst)}</div>
             <div class="sub">Department of ${esc(docSpec)} · Clinical Patient Report</div>
           </div>
@@ -590,7 +639,7 @@ function printPatientSummary(){
     <!-- FOOTER -->
     <div class="footer">
       <div class="left">
-        VELTRUVIA Pro · Neuro-Oncology EMR<br>
+        VELTRUVIA Doc · Neuro-Oncology EMR<br>
         ${esc(docInst)} · ${esc(docSpec)} Department<br>
         Report ID: ${reportId} · Generated: ${reportDateStr} ${reportTimeStr}<br>
         This document is auto-generated from the patient electronic medical record.<br>
@@ -601,8 +650,7 @@ function printPatientSummary(){
     <div class="conf-footer">THIS DOCUMENT CONTAINS PROTECTED HEALTH INFORMATION (PHI) — HIPAA COMPLIANT — DO NOT DISTRIBUTE WITHOUT AUTHORIZATION</div>
   </div>`;
   
-  const w=_openReport('Clinical Report — '+p.name,html);
-  if(w)setTimeout(()=>{try{w.print();}catch(e){}},500);
+  const w=_openReport('Clinical Report — '+p.name,html,{autoPrint:true});
 }
 
 function downloadPrescription(){
@@ -687,24 +735,26 @@ function downloadPrescription(){
     
     <div class="sec">
       <div class="sec-title"><span class="icon">💊</span> Prescribed Medications</div>
-      ${am.map((m,i)=>`<div class="rx-box">
-        <div class="rx-header">℞ ${i+1} — ${esc(m.name)}</div>
-        <div class="g2" style="margin-top:6px;">
-          <div>
-            <div class="field-row"><span class="field-key">Drug Name</span><span class="field-val" style="font-weight:800;font-size:12px;">${esc(m.name)}</span></div>
-            <div class="field-row"><span class="field-key">Dose</span><span class="field-val" style="font-weight:700;">${esc(m.dose)}</span></div>
-            <div class="field-row"><span class="field-key">Route</span><span class="field-val">${m.route||'PO'}</span></div>
-            <div class="field-row"><span class="field-key">Frequency</span><span class="field-val">${m.freq||'OD'}</span></div>
-          </div>
-          <div>
-            ${m.indication?`<div class="field-row"><span class="field-key">Indication</span><span class="field-val">${esc(m.indication)}</span></div>`:''}
-            <div class="field-row"><span class="field-key">Duration</span><span class="field-val">30 days</span></div>
-            <div class="field-row"><span class="field-key">Refills</span><span class="field-val">___</span></div>
-            <div class="field-row"><span class="field-key">Status</span><span class="field-val"><span class="tag tag-green">${m.status}</span></span></div>
-          </div>
-        </div>
-        <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #c4d9f5;font-size:9px;color:#6b7280;font-style:italic;">Dispense: 30 days supply · Qty: ___ · DAW: ☐ Yes ☐ No</div>
-      </div>`).join('')}
+      ${(()=>{
+        // Prefer the e-prescription server list (has composition / timing /
+        // when_to_take); fall back to the local med list.
+        const srv=(window._serverPrescriptions||[]).filter(x=>x.status==='active');
+        const rows=(srv.length?srv:am.map(m=>({medication:m.name,dosage:m.dose,frequency:m.freq,route:m.route,duration:'30 days',timing:m.timing,when_to_take:m.whenToTake,composition:m.composition})));
+        if(!rows.length)return '<div class="empty-card" style="border:1px dashed #d8e0ec;padding:14px;text-align:center;color:#6b7280;">No active medications.</div>';
+        const patt=r=>{const t=String(r.timing||'').match(/^(\d)-(\d)-(\d)$/);if(!t)return null;const w=[];if(+t[1])w.push(t[1]+' in the morning');if(+t[2])w.push(t[2]+' in the afternoon');if(+t[3])w.push(t[3]+' at night');return w.join(' · ');};
+        return `<table class="rx-table">
+          <thead><tr><th style="width:45%">Medicine</th><th style="width:18%">Dosage</th><th>Timing · Frequency · Duration</th></tr></thead>
+          <tbody>${rows.map((r,i)=>{
+            const p=patt(r);
+            const dose=(r.timing&&p)?`<span class="rx-dose">${esc(r.timing)}</span><span class="rx-line">${esc(p)}</span>`:esc(r.dosage||r.dose||'—');
+            const comp=r.composition||r.generic_name||r.genericName||'';
+            const when=[r.when_to_take||r.whenToTake||r.frequency||''].filter(Boolean).join(' · ');
+            const dur=[r.duration||''].filter(Boolean).join(' · ');
+            return `<tr><td><span class="rx-name">${i+1}. ${esc(r.medication||r.name)}</span>${comp?`<span class="rx-comp">${esc(comp)}</span>`:''}</td><td style="white-space:nowrap">${dose}</td><td><span class="rx-when">${esc(when||'—')}</span>${dur?`<span class="rx-line">${esc(dur)}</span>`:''}</td></tr>`;
+          }).join('')}</tbody>
+        </table>
+        <div style="font-size:8.5px;color:#6b7280;margin-top:4px;">Dosage numbers are doses per day in the Morning - Afternoon - Night pattern (0-0-1 = one dose at night).</div>`;
+      })()}
     </div>
     
     <div style="margin-top:16px;padding:12px;border:1px solid #e2e8f0;border-radius:4px;background:#fafcff;">
@@ -734,7 +784,7 @@ function downloadPrescription(){
     
     <div class="footer">
       <div class="left">
-        VELTRUVIA Pro · Neuro-Oncology EMR<br>
+        VELTRUVIA Doc · Neuro-Oncology EMR<br>
         ${esc(docInst)} · Rx ID: ${rxId}<br>
         Generated: ${rxDateStr} ${rxTimeStr} · This prescription is generated from the electronic medical record system.<br>
         Verify with original records. Not valid without prescriber signature.
@@ -743,8 +793,7 @@ function downloadPrescription(){
     <div class="conf-footer">THIS PRESCRIPTION CONTAINS PROTECTED HEALTH INFORMATION — HIPAA COMPLIANT — DO NOT DISTRIBUTE WITHOUT AUTHORIZATION</div>
   </div>`;
   
-  const w=_openReport('Prescription — '+p.name,html);
-  if(w)setTimeout(()=>{try{w.print();}catch(e){}},500);
+  const w=_openReport('Prescription — '+p.name,html,{autoPrint:true});
 }
 
 function generatePDFDownload(){
@@ -766,8 +815,10 @@ window.openRecord=function(mrn){
   const btnPdf=document.createElement('button');btnPdf.id='btn-pdf-download';btnPdf.className='btn btn-primary btn-sm';btnPdf.style.cssText='margin-right:4px';btnPdf.textContent='⬇ PDF';btnPdf.title='Opens print dialog — choose Save as PDF';btnPdf.onclick=printPatientSummary;
   const btnSummary=document.createElement('button');btnSummary.id='btn-print-summary';btnSummary.className='btn btn-ghost btn-sm';btnSummary.style.cssText='margin-right:4px';btnSummary.textContent='📄 Report';btnSummary.onclick=printPatientSummary;
   const btnRx=document.createElement('button');btnRx.id='btn-rx-download';btnRx.className='btn btn-ghost btn-sm';btnRx.style.cssText='color:var(--blue)';btnRx.textContent='℞ Rx';btnRx.onclick=downloadPrescription;
+  const btnReset=document.createElement('button');btnReset.id='btn-reset-password';btnReset.className='btn btn-ghost btn-sm';btnReset.style.cssText='margin-right:4px;color:var(--orange)';btnReset.textContent='🔑 Reset Password';btnReset.title='Patient lost their one-time password? Generate a new one (shown once)';btnReset.onclick=function(){if(typeof resetPatientPassword==='function')resetPatientPassword(window.selectedMRN||selectedMRN);};
   // Insert before the existing close button (first child)
-  btnsDiv.insertBefore(btnRx,btnsDiv.firstChild);
+  btnsDiv.insertBefore(btnReset,btnsDiv.firstChild);
+  btnsDiv.insertBefore(btnRx,btnReset);
   btnsDiv.insertBefore(btnSummary,btnRx);
   btnsDiv.insertBefore(btnPdf,btnSummary);
   },200);};
@@ -997,7 +1048,7 @@ function renderWeeklyView(el,appts,monday,sunday){
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:${isToday?'var(--blue)':'var(--text-muted)'};">${DAY_SHORT[i]}</div>
         <div style="font-size:16px;font-weight:800;color:${isToday?'var(--blue)':'var(--text)'};">${d.getDate()}</div>
       </div>
-      <div style="padding:6px;max-height:300px;overflow-y:auto;">`;
+      <div tabindex="0" role="region" aria-label="${DAY_FULL[i]} appointments" style="padding:6px;max-height:300px;overflow-y:auto;">`;
     if(!dayAppts.length){
       html+=`<div style="text-align:center;padding:16px 4px;font-size:10px;color:var(--text-dim);">No appointments</div>`;
     } else {
@@ -2287,14 +2338,20 @@ async function renderAvailabilityPanel(){
 
 function renderAvailRows(){
   const el=document.getElementById('avail-rows');
-  el.innerHTML=_availRows.map((r,i)=>`
-    <div style="display:grid;grid-template-columns:100px 1fr 1fr 80px 1fr;gap:8px;align-items:center;margin-bottom:6px">
-      <select data-action-change="availRow:${i}:dayOfWeek:@num" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
-        ${DAY_NAMES.map((d,j)=>`<option value="${j}" ${j===r.dayOfWeek?'selected':''}>${d}</option>`).join('')}
-      </select>
-      <input type="time" value="${r.startTime}" data-action-change="availRow:${i}:startTime:@value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
-      <input type="time" value="${r.endTime}" data-action-change="availRow:${i}:endTime:@value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
-      <input type="number" value="${r.slotDuration}" min="10" max="120" data-action-change="availRow:${i}:slotDuration:@num" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+  el.innerHTML=_availRows.map((r,i)=>{
+    const isDate=!!r.date;
+    return `
+    <div style="display:grid;grid-template-columns:110px ${isDate?'110px':'110px'} 1fr 1fr 70px 1fr;gap:6px;align-items:center;margin-bottom:6px">
+      ${isDate
+        ?`<input type="date" value="${r.date}" data-action-change="availRow:${i}:date:@value" title="One-off date" aria-label="One-off date, block ${i+1}" style="padding:8px;border:1px solid var(--blue);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+          <span style="font-size:10px;color:var(--blue);font-weight:700;text-align:center;">One-off</span>`
+        :`<select data-action-change="availRow:${i}:dayOfWeek:@num" aria-label="Day of week, block ${i+1}" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+            ${DAY_NAMES.map((d,j)=>`<option value="${j}" ${j===r.dayOfWeek?'selected':''}>${d}</option>`).join('')}
+          </select>
+          <span style="font-size:10px;color:var(--text-dim);text-align:center;">Every week</span>`}
+      <input type="time" value="${r.startTime}" data-action-change="availRow:${i}:startTime:@value" aria-label="Start time, block ${i+1}" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+      <input type="time" value="${r.endTime}" data-action-change="availRow:${i}:endTime:@value" aria-label="End time, block ${i+1}" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+      <input type="number" value="${r.slotDuration}" min="10" max="120" title="Slot minutes" aria-label="Slot duration in minutes, block ${i+1}" data-action-change="availRow:${i}:slotDuration:@num" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
       <div style="display:flex;gap:6px;align-items:center">
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--text-muted);">
           <input type="checkbox" ${r.active?'checked':''} data-action-change="availRow:${i}:active:@checked" style="width:16px;height:16px;accent-color:var(--blue)">
@@ -2302,9 +2359,13 @@ function renderAvailRows(){
         </label>
         <button class="btn btn-ghost btn-sm" data-action="availSplice:${i}" style="color:var(--red)">✕</button>
       </div>
-    </div>
-  `).join('')+
-  `<button class="btn btn-ghost btn-sm" data-action="addDefaultAvailRow">+ Add Time Block</button>`;
+    </div>`;
+  }).join('')+
+  `<div style="display:flex;gap:8px;margin-top:4px;">
+    <button class="btn btn-ghost btn-sm" data-action="addDefaultAvailRow">+ Add Weekly Block</button>
+    <button class="btn btn-ghost btn-sm" data-action="addDateAvailRow" style="color:var(--blue)">+ Add Specific Date</button>
+  </div>
+  <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Weekly blocks repeat every week. <span style="color:var(--blue);font-weight:600;">Specific dates</span> are one-off extra clinic days (or holidays — just switch them Off).</div>`;
 }
 
 function showAvailMsg(msg,type){
@@ -2331,7 +2392,8 @@ function renderAvailSlotPreview(){
     const dateStr=d.toISOString().slice(0,10);
     const dayOfWeek=d.getDay();
     const daySlots=[];
-    _availRows.filter(r=>r.active&&r.dayOfWeek===dayOfWeek).forEach(r=>{
+    // Weekly rows match by weekday; one-off rows match by exact date.
+    _availRows.filter(r=>r.active&&(r.date?r.date===dateStr:r.dayOfWeek===dayOfWeek)).forEach(r=>{
       const[sh,sm]=r.startTime.split(':').map(Number);
       const[eh,em]=r.endTime.split(':').map(Number);
       const dur=r.slotDuration||30;
@@ -2349,7 +2411,7 @@ function renderAvailSlotPreview(){
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:${isToday?'var(--blue)':'var(--text-muted)'};">${DAY_SHORT[dayOfWeek]}</div>
         <div style="font-size:13px;font-weight:800;color:${isToday?'var(--blue)':'var(--text)'};">${d.getDate()}</div>
       </div>
-      <div style="padding:4px 6px;max-height:160px;overflow-y:auto;">`;
+      <div tabindex="0" role="region" aria-label="${DAY_SHORT[dayOfWeek]} ${d.getDate()} available slots" style="padding:4px 6px;max-height:160px;overflow-y:auto;">`;
     if(!daySlots.length){
       html+='<div style="text-align:center;padding:10px 2px;font-size:9px;color:var(--text-dim);">—</div>';
     } else {
@@ -2365,17 +2427,28 @@ function renderAvailSlotPreview(){
 }
 
 async function saveAvailability(){
-  const activeSlots=_availRows.filter(r=>r.active);
+  const activeSlots=_availRows.filter(r=>r.active).map(r=>r.date
+    ?{date:r.date,startTime:r.startTime,endTime:r.endTime,slotDuration:r.slotDuration,active:true}
+    :{dayOfWeek:r.dayOfWeek,startTime:r.startTime,endTime:r.endTime,slotDuration:r.slotDuration,active:true});
   LS.set('avail_'+(currentDoc?.docId||''),_availRows);
-  // Save to shared JSON store (works in desktop mode)
+  // Save to shared JSON store (this is what the patient app reads)
+  let stored=false;
   try{
     await api('/sync/save-availability',{method:'POST',body:JSON.stringify({docId:currentDoc?.docId||'unknown',slots:activeSlots})});
-  }catch(e){}
-  // Also try server DB
+    stored=true;
+  }catch(e){console.warn('[availability] shared-store save failed:',e.message)}
+  // Also try server DB (doctor calendar + validation)
+  let dbOk=false;
   try{
     await api('/schedule/availability',{method:'PUT',body:JSON.stringify({slots:activeSlots})});
-  }catch(e){}
-  showAvailMsg('✅ Schedule saved! Patients can book during these times.','success');
+    dbOk=true;
+  }catch(e){console.warn('[availability] DB save failed:',e.message)}
+  // Tell the truth about whether patients will actually see this schedule.
+  if(stored||dbOk)showAvailMsg('✅ Schedule saved! Patients can book during these times.','success');
+  else showAvailMsg('⚠️ Could not reach the server — schedule kept on this computer only. Check the connection, then press Save Schedule again.','warn');
+  // v2.5: re-read what the server actually holds (incl. one-off date rows)
+  // so the editor never shows stale or "vanished" rows after a save.
+  try{await renderAvailabilityPanel();}catch(e){}
   renderAvailSlotPreview();
 }
 

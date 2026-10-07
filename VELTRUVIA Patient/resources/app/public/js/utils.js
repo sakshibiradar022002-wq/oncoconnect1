@@ -175,12 +175,89 @@ function localQr(text, opts) {
   return img;
 }
 
+// ── In-app report / print viewer ─────────────────────────────────
+// Reports (Welcome Card, clinical report, prescription, patient summary)
+// used to open via window.open + document.write. The Electron shells deny
+// window.open and route it to the system browser — the patient saw a blank
+// tab “open in a different app” — and the Android WebView has no popups at
+// all. This overlay renders the document INSIDE the app in a same-origin
+// iframe (srcdoc), so it works identically in the desktop software, the
+// browser, and the phone app. Print uses the iframe's own print(), which
+// gives the normal print / Save-as-PDF dialog on desktop.
+function _vxReportOverlay(title, docHtml, opts){
+  opts = opts || {};
+  const _e = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const ov = document.createElement('div');
+  ov.className = 'vx-report-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:10060;background:rgba(3,9,22,.74);display:flex;flex-direction:column;font-family:inherit;';
+  ov.innerHTML =
+    '<div class="vx-rpt-bar" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0d1526;border-bottom:1px solid #223052;flex:0 0 auto;">' +
+      '<strong style="color:#e8eefc;font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _e(title) + '</strong>' +
+      '<button data-r="print" style="padding:8px 14px;border-radius:9px;border:1px solid rgba(74,144,226,.45);background:rgba(74,144,226,.14);color:#9cc3f5;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;">🖨 Print / Save PDF</button>' +
+      '<button data-r="close" style="padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#cdd7ea;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;">✕ Close</button>' +
+    '</div>' +
+    '<div style="flex:1;overflow:hidden;display:flex;">' +
+      '<iframe class="vx-rpt-frame" style="flex:1;border:0;background:#dfe4ec;" title="' + _e(title) + '"></iframe>' +
+    '</div>';
+  document.body.appendChild(ov);
+  const frame = ov.querySelector('iframe');
+  frame.srcdoc = docHtml;
+  const close = () => ov.remove();
+  let loaded = false;
+  const doPrint = () => {
+    if (!loaded) return; // load listener prints once the document is ready
+    try {
+      const w = frame.contentWindow;
+      w.focus();
+      if (typeof w.print !== 'function') throw new Error('no-print');
+      w.print();
+    } catch (err) {
+      if (window.AppDialog) {
+        AppDialog.alert('Printing is not available on this device.\n\nThe document is shown above — open VELTRUVIA on a computer and tap Print there to save it as a PDF.');
+      } else {
+        window.alert('Printing is not available on this device. The document is shown above.');
+      }
+    }
+  };
+  ov.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-r]');
+    if (!b) return;
+    if (b.dataset.r === 'close') close();
+    if (b.dataset.r === 'print') doPrint();
+  });
+  ov.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') close(); });
+  // Post-process the document once it renders (page numbers on .page divs —
+  // replaces the old inline <script> inside document.write, which a CSP would
+  // block inside a srcdoc iframe).
+  frame.addEventListener('load', () => {
+    try {
+      const doc = frame.contentDocument;
+      if (!doc) return;
+      const pages = doc.querySelectorAll('.page');
+      pages.forEach((p, i) => {
+        let el = p.querySelector('.page-num');
+        if (!el) { el = doc.createElement('div'); el.className = 'page-num'; p.appendChild(el); }
+        el.textContent = 'Page ' + (i + 1) + ' of ' + pages.length;
+      });
+      if (pages.length) {
+        const s = doc.createElement('style');
+        s.textContent = '.page::after{content:none !important;}';
+        doc.head.appendChild(s);
+      }
+      if (opts.onReady) opts.onReady();
+      loaded = true;
+      if (opts.autoPrint || opts.printWhenReady) setTimeout(doPrint, 250);
+    } catch (err) { /* cross-origin safety net — never breaks the viewer */ }
+  });
+  return { close, print: doPrint, overlay: ov };
+}
+
 // ── Export all to window ──────────────────────────────────────────
 if (typeof window !== 'undefined') {
   Object.assign(window, {
     esc, escAttr, api, formatDate, formatDateTime, formatTime, timeAgo,
     formatCurrency, formatNumber, formatPercent,
     $, $$, show, hide, toggle, setText, setHTML,
-    showToast, confirm2, debounce, localQr,
+    showToast, confirm2, debounce, localQr, _vxReportOverlay,
   });
 }

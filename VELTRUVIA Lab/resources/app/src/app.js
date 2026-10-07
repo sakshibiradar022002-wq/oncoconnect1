@@ -165,6 +165,9 @@ if (config.isProd) {
       res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Veltruvia-Native');
+      // Let native WebViews read the sliding-renewal header (mobile-api.js
+      // swaps it into localStorage so APK sessions never hard-expire).
+      res.setHeader('Access-Control-Expose-Headers', 'X-Veltruvia-Refreshed-Token');
     }
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
@@ -197,9 +200,40 @@ app.get('/health', async (req, res) => {
       health.db = false;
       health.ok = false;
     }
+
+    // Live aggregate counters for the public download page mockup.
+    // Counts only — no patient identifiers or clinical data leave the box.
+    try {
+      const docs = await db.prepare("SELECT COUNT(*) AS n FROM users WHERE role IN ('doctor','admin')").get();
+      health.doctors = docs ? Number(docs.n) : 0;
+    } catch (e) { /* non-fatal */ }
+    try {
+      const entries = await db.prepare('SELECT COUNT(*) AS n FROM audit_log').get();
+      health.auditEntries = entries ? Number(entries.n) : 0;
+    } catch (e) { /* non-fatal */ }
+    try {
+      // v2.5: the patient store is now encrypted (patient-store.enc.json) via
+      // lib/json-stores.js — read() transparently migrates legacy plaintext.
+      const { createEncryptedStore } = await import('./lib/json-stores.js');
+      const store = createEncryptedStore('patient-store.json', { label: 'health-count' }).read();
+      if (store && typeof store === 'object') {
+        health.patients = Object.keys(store).filter(k => !/^lab_/.test(k)).length;
+      }
+    } catch (e) { /* non-fatal */ }
+    try {
+      health.uptimeHours = Math.floor(process.uptime() / 3600);
+    } catch (e) { /* non-fatal */ }
     
-    // Blockchain status
-    health.blockchain = 'electron-module';
+    // Blockchain status — the real backend (file / hardhat / sepolia), not a
+    // hardcoded placeholder. Non-fatal: a failed read is reported, not 500.
+    try {
+      const { default: blockchain } = await import('./blockchain/index.js');
+      const stats = await blockchain.getStats();
+      health.blockchain = stats.connected ? (stats.backend || 'unknown') : 'disconnected';
+      health.blockchainEntryCount = stats.entryCount;
+    } catch (e) {
+      health.blockchain = 'error';
+    }
     
     if (!health.ok) {
       return res.status(503).json(health);
@@ -264,10 +298,11 @@ app.all('/api/*', (req, res) => {
 // ── Serve the frontend (built HTML apps) ──────────────────────────
 app.use(express.static(join(__dirname, '..', 'public')));
 
-// SPA-ish fallback: send the doctor app for unknown non-API GETs.
+// Unknown non-API GETs get a real 404 (the SPA fallback previously served
+// index.html with HTTP 200 for ANY path, hiding broken links).
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
-  res.sendFile(join(__dirname, '..', 'public', 'index.html'));
+  res.status(404).sendFile(join(__dirname, '..', 'public', 'index.html'));
 });
 
 // ── Error handlers (order matters: Sentry before custom) ────────────

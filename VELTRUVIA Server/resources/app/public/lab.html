@@ -63,7 +63,7 @@
   </div>
 
   <!-- DASHBOARD -->
-  <div class="screen active" id="screen-dashboard">
+  <div class="screen active" id="screen-dashboard" role="region" aria-label="Lab dashboard" tabindex="0">
     <div class="page-title">Dashboard</div>
     <div class="page-sub" id="dash-date"></div>
     <div class="stats-grid">
@@ -87,7 +87,7 @@
   </div>
 
   <!-- TASKS -->
-  <div class="screen" id="screen-tasks">
+  <div class="screen" id="screen-tasks" role="region" aria-label="Assigned tasks" tabindex="0">
     <div class="page-title">Assigned Tasks</div>
     <div class="page-sub">Lab tests assigned by your doctor</div>
     <input class="search-bar" placeholder="🔍 Search tasks..." id="task-search" data-action-input="renderTasks" style="margin-bottom:12px">
@@ -95,14 +95,14 @@
   </div>
 
   <!-- UPLOAD -->
-  <div class="screen" id="screen-upload">
+  <div class="screen" id="screen-upload" role="region" aria-label="Upload results" tabindex="0">
     <div class="page-title">Upload Results</div>
     <div class="page-sub">Submit lab test reports</div>
     <div id="upload-content"></div>
   </div>
 
   <!-- HISTORY -->
-  <div class="screen" id="screen-history">
+  <div class="screen" id="screen-history" role="region" aria-label="Results history" tabindex="0">
     <div class="page-title">Results History</div>
     <div class="page-sub">Past test submissions</div>
     <input class="search-bar" placeholder="🔍 Search history..." id="hist-search" data-action-input="renderHistory" style="margin-bottom:12px">
@@ -110,7 +110,7 @@
   </div>
 
   <!-- SETTINGS -->
-  <div class="screen" id="screen-settings">
+  <div class="screen" id="screen-settings" role="region" aria-label="Lab settings" tabindex="0">
     <div class="page-title">Settings</div>
     <div class="page-sub">Lab profile & preferences</div>
     <div id="settings-content"></div>

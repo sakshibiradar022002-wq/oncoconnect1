@@ -20,8 +20,8 @@
 
 <!-- ═══ SPLASH SCREEN ═══ -->
 <div id="splash" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#040c0a 0%,#071210 35%,#0d1c18 70%,#122620 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s,visibility .5s">
-  <div style="width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,#059669,#34d399);display:flex;align-items:center;justify-content:center;font-size:42px;box-shadow:0 12px 48px rgba(5,150,105,.4);animation:splashPulse 2s ease-in-out infinite;margin-bottom:20px">🧬</div>
-  <div style="font-size:1.6rem;font-weight:800;color:#e8faf2;letter-spacing:-.5px;margin-bottom:6px">VELTRUVIA</div>
+  <div style="width:88px;height:88px;border-radius:24px;overflow:hidden;box-shadow:0 12px 48px rgba(5,150,105,.4);animation:splashPulse 2s ease-in-out infinite;margin-bottom:20px"><img src="/icons/brand/veltruvia-patient.jpg" alt="VELTRUVIA Patient" style="width:100%;height:100%;object-fit:cover"></div>
+  <div style="font-size:1.6rem;font-weight:800;color:#e8faf2;letter-spacing:-.5px;margin-bottom:6px">VELTRUVIA Patient</div>
   <div style="font-size:13px;color:#7d9b8e;margin-bottom:28px">Patient Portal</div>
   <div style="width:120px;height:3px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:0%;background:linear-gradient(90deg,#059669,#34d399,#60a5fa);border-radius:3px;animation:splashLoad 1.5s ease-in-out forwards"></div></div>
 </div>
@@ -29,8 +29,8 @@
 
 <div id="screen-login">
   <div class="auth-logo">
-    <div class="auth-logo-icon">🧬</div>
-    <h1 class="app-title" style="margin:0;">VELTRUVIA</h1>
+    <div class="auth-logo-icon"><img src="/icons/brand/veltruvia-patient.jpg" alt="VELTRUVIA Patient" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
+    <h1 class="app-title" style="margin:0;">VELTRUVIA Patient</h1>
     <div class="app-sub">Patient Portal</div>
   </div>
   <div class="conn-banner" id="conn-banner">🔗 Connected to Doctor Software</div>
@@ -40,10 +40,10 @@
   <div class="auth-card" id="login-patient">
     <div class="err-box" id="pat-login-err"></div>
     <div class="fg"><label>MRN</label><input id="li-mrn" placeholder="MRN-XXXXXXXX" style="text-transform:uppercase" data-action-input="upper" aria-label="Medical record number"></div>
-    <div class="fg"><label>Password</label><input id="li-pass" type="password" placeholder="••••••••" aria-label="Password"></div>
+    <div class="fg"><label>Password</label><span class="pw-wrap"><input id="li-pass" type="password" placeholder="••••••••" aria-label="Password" autocomplete="current-password"></span></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-muted);margin-bottom:12px;cursor:pointer"><input type="checkbox" id="stay-signed-in" checked style="width:16px;height:16px;accent-color:var(--green)"> Stay signed in on this device</label>
     <button class="big-btn log-btn" data-action="doLogin" style="margin-bottom:12px">Sign In →</button>
     <div style="text-align:center;margin-bottom:10px;"><a href="#" data-recover="patient" style="font-size:12.5px;color:#7dd3fc;text-decoration:none;">Forgot password?</a></div>
-    <button class="big-btn nav-btn-style" data-action="checkPatientAccounts" style="font-size:12px">🔍 Check Available Accounts</button>
     <div id="pat-accounts-list" style="margin-top:10px;font-size:12px;color:var(--text-muted)"></div>
   </div>
 
@@ -74,7 +74,7 @@
     <div class="cal-grid7" id="cal-grid"></div>
     <div style="display:flex;gap:8px;margin-top:16px">
       <button class="big-btn log-btn" data-action="openSheet:log-sheet" style="flex:1">📋 Log Today</button>
-      <button class="big-btn" data-action="openFactBr" style="flex:1;background:linear-gradient(135deg,#6d28d9,#8b5cf6);color:#fff">🧠 FACT-Br</button>
+      <button class="big-btn" data-action="openFactBr" style="flex:1;background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff">🧠 FACT-Br</button>
     </div>
   </div>
 
@@ -130,7 +130,7 @@
       </div>
     </div>
     <div id="video-call-btn-container" style="margin-top:12px">
-      <button class="big-btn" data-action="promptJoinVideo" style="background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;border-radius:12px">📹 Join Video Call</button>
+      <button class="big-btn" data-action="promptJoinVideo" style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff;border-radius:12px">📹 Join Video Call</button>
     </div>
   </div>
 
@@ -182,9 +182,9 @@
       <div class="log-sec"><div class="log-sec-hdr"><div class="log-sec-title">😊 Mood & Wellbeing</div><div class="log-sec-score" id="sc-mood">6/10</div></div><input type="range" min="0" max="10" value="6" id="s-mood" data-action-input="mirror:sc-mood%/10"><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px"><div class="check-item" data-action="toggle:@this">Hopeful</div><div class="check-item" data-action="toggle:@this">Anxious</div><div class="check-item" data-action="toggle:@this">Sad</div><div class="check-item" data-action="toggle:@this">Irritable</div><div class="check-item" data-action="toggle:@this">Content</div></div></div>
       <div class="sec-head">Vitals Today</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="fg"><label>Temperature °C</label><input id="v-temp" type="number" step="0.1" placeholder="36.5"></div>
+        <div class="fg"><label>Temperature °C</label><input id="v-temp" type="number" step="0.1" min="30" max="45" placeholder="36.5"></div>
         <div class="fg"><label>BP (sys/dia)</label><input id="v-bp" placeholder="120/80"></div>
-        <div class="fg"><label>Weight (kg)</label><input id="v-weight" type="number" step="0.1" placeholder="70"></div>
+        <div class="fg"><label>Weight (kg)</label><input id="v-weight" type="number" step="0.1" min="2" max="400" placeholder="70"></div>
         <div class="fg"><label>Meds Taken</label><input id="v-meds" placeholder="e.g. TMZ, Keppra"></div>
       </div>
       <div class="fg"><label>Notes</label><textarea id="v-notes" rows="2" placeholder="Additional notes..."></textarea></div>
@@ -205,7 +205,7 @@
 <div class="sheet-overlay" id="appt-sheet">
   <div class="sheet">
     <div class="sheet-title">Request Appointment <button class="sheet-x" data-action="closeSheet:appt-sheet">✕</button></div>
-    <div class="fg"><label>Date</label><input type="date" id="appt-req-date"></div>
+    <div class="fg"><label>Date</label><input type="date" id="appt-req-date" min=""></div>
     <div class="fg"><label>Time</label><input type="time" id="appt-req-time"></div>
     <div class="fg"><label>Type</label><select id="appt-req-type"><option>Follow-up</option><option>MRI Review</option><option>Lab Review</option><option>Treatment Planning</option><option>Emergency</option><option>Teleconsult</option></select></div>
     <div class="fg"><label>Notes</label><textarea id="appt-req-notes" rows="2" placeholder="Reason for visit"></textarea></div>
@@ -250,16 +250,15 @@
 
 
 <script src="js/qr-pairing.js"></script>
-<script src="js/mobile-api.js"></script>
+<script src="js/mobile-api.js?v=20261002b"></script>
+<script src="sync-client.js"></script>
 <script src="js/actions.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/secure-store.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/secure-store.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/telehealth-ws.js"></script>
-<script src="js/rtc-config.js"></script>
-<script src="js/page/patient-1-core.js"></script>
+<script src="js/rtc-config.js?v=20261003a"></script>
+<script src="js/page/patient-1-core.js?v=20261002b"></script>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- SCRIPT BLOCK 2 — Patient/Lab New Features                  -->

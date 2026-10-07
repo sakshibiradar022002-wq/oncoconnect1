@@ -1048,7 +1048,7 @@ function renderWeeklyView(el,appts,monday,sunday){
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:${isToday?'var(--blue)':'var(--text-muted)'};">${DAY_SHORT[i]}</div>
         <div style="font-size:16px;font-weight:800;color:${isToday?'var(--blue)':'var(--text)'};">${d.getDate()}</div>
       </div>
-      <div style="padding:6px;max-height:300px;overflow-y:auto;">`;
+      <div tabindex="0" role="region" aria-label="${DAY_FULL[i]} appointments" style="padding:6px;max-height:300px;overflow-y:auto;">`;
     if(!dayAppts.length){
       html+=`<div style="text-align:center;padding:16px 4px;font-size:10px;color:var(--text-dim);">No appointments</div>`;
     } else {
@@ -2343,15 +2343,15 @@ function renderAvailRows(){
     return `
     <div style="display:grid;grid-template-columns:110px ${isDate?'110px':'110px'} 1fr 1fr 70px 1fr;gap:6px;align-items:center;margin-bottom:6px">
       ${isDate
-        ?`<input type="date" value="${r.date}" data-action-change="availRow:${i}:date:@value" title="One-off date" style="padding:8px;border:1px solid var(--blue);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+        ?`<input type="date" value="${r.date}" data-action-change="availRow:${i}:date:@value" title="One-off date" aria-label="One-off date, block ${i+1}" style="padding:8px;border:1px solid var(--blue);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
           <span style="font-size:10px;color:var(--blue);font-weight:700;text-align:center;">One-off</span>`
-        :`<select data-action-change="availRow:${i}:dayOfWeek:@num" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+        :`<select data-action-change="availRow:${i}:dayOfWeek:@num" aria-label="Day of week, block ${i+1}" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
             ${DAY_NAMES.map((d,j)=>`<option value="${j}" ${j===r.dayOfWeek?'selected':''}>${d}</option>`).join('')}
           </select>
           <span style="font-size:10px;color:var(--text-dim);text-align:center;">Every week</span>`}
-      <input type="time" value="${r.startTime}" data-action-change="availRow:${i}:startTime:@value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
-      <input type="time" value="${r.endTime}" data-action-change="availRow:${i}:endTime:@value" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
-      <input type="number" value="${r.slotDuration}" min="10" max="120" title="Slot minutes" data-action-change="availRow:${i}:slotDuration:@num" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+      <input type="time" value="${r.startTime}" data-action-change="availRow:${i}:startTime:@value" aria-label="Start time, block ${i+1}" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+      <input type="time" value="${r.endTime}" data-action-change="availRow:${i}:endTime:@value" aria-label="End time, block ${i+1}" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
+      <input type="number" value="${r.slotDuration}" min="10" max="120" title="Slot minutes" aria-label="Slot duration in minutes, block ${i+1}" data-action-change="availRow:${i}:slotDuration:@num" style="padding:8px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);color:var(--text)">
       <div style="display:flex;gap:6px;align-items:center">
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--text-muted);">
           <input type="checkbox" ${r.active?'checked':''} data-action-change="availRow:${i}:active:@checked" style="width:16px;height:16px;accent-color:var(--blue)">
@@ -2411,7 +2411,7 @@ function renderAvailSlotPreview(){
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:${isToday?'var(--blue)':'var(--text-muted)'};">${DAY_SHORT[dayOfWeek]}</div>
         <div style="font-size:13px;font-weight:800;color:${isToday?'var(--blue)':'var(--text)'};">${d.getDate()}</div>
       </div>
-      <div style="padding:4px 6px;max-height:160px;overflow-y:auto;">`;
+      <div tabindex="0" role="region" aria-label="${DAY_SHORT[dayOfWeek]} ${d.getDate()} available slots" style="padding:4px 6px;max-height:160px;overflow-y:auto;">`;
     if(!daySlots.length){
       html+='<div style="text-align:center;padding:10px 2px;font-size:9px;color:var(--text-dim);">—</div>';
     } else {

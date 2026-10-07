@@ -5,6 +5,12 @@ function rNotesEditJson(json){let n;try{n=JSON.parse(json);}catch(e){return;}rNo
 function apptWeekNav(delta){_apptWeekOffset = delta===0?0:_apptWeekOffset+delta;renderApptCalendar();}
 function docCalNav(delta){calMonth+=delta;if(calMonth<0){calMonth=11;calYear--;}if(calMonth>11){calMonth=0;calYear++;}renderDocCal();}
 function addDefaultAvailRow(){_availRows.push({dayOfWeek:1,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true});renderAvailRows();}
+function addDateAvailRow(){
+  // One-off clinic day: defaults to tomorrow so the date picker starts close.
+  const t=new Date(Date.now()+86400000);const ds=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  _availRows.push({date:ds,startTime:'09:00',endTime:'12:00',slotDuration:30,active:true});
+  renderAvailRows();
+}
 function selectICDVal(code){const item=ICD_DB.find(i=>i.code===code);if(item)selectICD(code,item.label);closeOverlay('icd-lookup-modal');}
 function calDayNav(hasLog,d,mrn){if(String(hasLog)==="1")showCalLogDetail(d);else openRecord(mrn);}
 function removeBatchRow(idx){if(typeof idx==="number"){_batchRows.splice(idx,1);renderBatchRows();}else{removeBatchRowImpl(idx);}}
@@ -121,12 +127,41 @@ document.addEventListener('DOMContentLoaded',()=>{
     const mx=parseInt(el.getAttribute('maxlength'),10);if(mx>0)el.addEventListener('input',()=>sanitizeInput(el,mx));
   });
   // Desktop mode: enable Create Account button without OTP verification
-  if(window.app?.isElectron){const b=document.getElementById('btn-create-account');if(b){b.disabled=false;b.style.opacity='1';}const h=document.getElementById('rg-create-hint');if(h)h.textContent='';const v=document.getElementById('rg-verify-send');if(v)v.style.display='none';const vi=document.getElementById('rg-verify-input');if(vi)vi.style.display='none';const badge=document.getElementById('rg-verify-badge');if(badge){badge.textContent='Desktop Mode';badge.style.background='rgba(16,185,129,.1)';badge.style.color='var(--green)';}const vd=document.getElementById('rg-verify-done');if(vd)vd.style.display='none';}});
+  if(window.app?.isElectron){const b=document.getElementById('btn-create-account');if(b){b.disabled=false;b.style.opacity='1';}const h=document.getElementById('rg-create-hint');if(h)h.textContent='';const v=document.getElementById('rg-verify-send');if(v)v.style.display='none';const vi=document.getElementById('rg-verify-input');if(vi)vi.style.display='none';const badge=document.getElementById('rg-verify-badge');if(badge){badge.textContent='Desktop Mode';badge.style.background='rgba(16,185,129,.1)';badge.style.color='var(--ok-text)';}const vd=document.getElementById('rg-verify-done');if(vd)vd.style.display='none';}});
+// ── Connection indicator: show WHICH server this app is talking to ──
+// Desktop apps proxy to either the local clinic Server or the cloud;
+// surfacing it answers "where is my data going?" without dev tools.
+(async()=>{
+  try{
+    const ind=document.getElementById('conn-indicator');
+    if(!ind)return;
+    let url=null;
+    if(window.app?.getServerUrl){url=await window.app.getServerUrl();}
+    else{const r=await fetch('/health',{method:'GET'});const h=await r.json();url='(browser) '+location.origin;}
+    if(!url)return;
+    let label,cls;
+    if(/duckdns\.org/i.test(url)){label='☁️ Connected to VELTRUVIA Cloud ('+url.replace(/^https?:\/\//,'')+')';cls='var(--ok-text)';}
+    else if(/127\.0\.0\.1|localhost/i.test(url)){label='💻 Connected to local clinic Server ('+url.replace(/^https?:\/\//,'')+')';cls='var(--amber-text)';}
+    else{label='🏥 Connected to: '+url.replace(/^https?:\/\//,'');cls='var(--blue)';}
+    ind.textContent=label;ind.style.color=cls;ind.style.display='block';
+  }catch(e){/* indicator is best-effort */}
+})();
 function v(id){const el=document.getElementById(id);return el?(el.value||'').trim():'';}
-function flash(msg){const d=document.createElement('div');d.style.cssText='position:fixed;top:16px;right:16px;background:var(--green);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:var(--shadow-lg);';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
+function flash(msg){const d=document.createElement('div');d.style.cssText='position:fixed;top:16px;right:16px;background:#047857;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:var(--shadow-lg);';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
 
 // ── Server Sync Push ──
-async function pushToServer(changes){try{await api('/sync',{method:'PUT',body:JSON.stringify({changes})})}catch(e){console.warn('[sync] push failed:',e.message)}}
+// Returns true when the server accepted the changes, false when it could not
+// be reached. Callers that show a success message to the user MUST use this
+// result — a toast that says "saved" after a failed push is a lie.
+async function pushToServer(changes){
+  try{await api('/sync',{method:'PUT',body:JSON.stringify({changes})});return true}
+  catch(e){
+    console.warn('[sync] push failed:',e.message);
+    if(window.AppDialog&&AppDialog.toast)AppDialog.toast('📴 Server unreachable — saved on this computer, will sync when connection returns');
+    else flash('⚠️ Server unreachable — saved locally only');
+    return false;
+  }
+}
 
 // ── Auth ──
 function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('a-login').style.display=tab==='login'?'block':'none';document.getElementById('a-register').style.display=tab==='register'?'block':'none';
@@ -136,14 +171,17 @@ function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.c
     document.getElementById('rg-verify-send').style.display='block';
     document.getElementById('rg-verify-input').style.display='none';
     document.getElementById('rg-verify-done').style.display='none';
-    document.getElementById('rg-otp-dev').style.display='none';
     document.getElementById('btn-send-otp').disabled=false;
     document.getElementById('btn-send-otp').textContent='📧 Send Verification Code';
+    const rb=document.getElementById('btn-resend-otp');
+    if(rb){rb.disabled=false;rb.textContent='📧 Send Code Again';}
+    if(_otpCooldownTimer){clearInterval(_otpCooldownTimer);_otpCooldownTimer=null;}
     document.getElementById('btn-create-account').disabled=true;
     document.getElementById('rg-create-hint').textContent='Verify your email above first';
     const badge=document.getElementById('rg-verify-badge');
-    badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--orange)';
+    badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--amber-text)';
     document.getElementById('rg-otp').value='';
+    const rs=document.getElementById('rg-resend-status');if(rs)rs.textContent='';
   }}
 function showMsg(id,msg,type='err'){const el=document.getElementById(id);if(!el)return;el.innerHTML=msg;el.className='msg '+type;el.style.display='block';if(type==='err')setTimeout(()=>{if(el)el.style.display='none';},5000);}
 function clearRegMsg(){['reg-msg','reg-ok'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
@@ -174,25 +212,55 @@ function checkPassStrength(pass){
 // ═══ EMAIL OTP VERIFICATION ═══
 let _regVerificationToken=null;
 
+let _otpSendBusy=false;
+let _otpLastSend=0;
+let _otpCooldownTimer=null;
+
+function _otpSetButtons(disabled,label){
+  const b1=document.getElementById('btn-send-otp');
+  const b2=document.getElementById('btn-resend-otp');
+  if(b1){b1.disabled=disabled;if(label)b1.textContent=label;}
+  if(b2){b2.disabled=disabled;if(label)b2.textContent=label;}
+}
+
+// Live countdown on the Resend button so the wait is visible, not a hang.
+function _otpStartCountdown(sec){
+  if(_otpCooldownTimer)clearInterval(_otpCooldownTimer);
+  const tick=()=>{
+    if(sec<=0){clearInterval(_otpCooldownTimer);_otpCooldownTimer=null;_otpSetButtons(false,'📧 Send Code Again');const rs=document.getElementById('rg-resend-status');if(rs)rs.textContent='';return;}
+    _otpSetButtons(true,'📧 Resend in '+sec+'s');sec--;
+  };
+  tick();_otpCooldownTimer=setInterval(tick,1000);
+}
+
 async function sendRegOtp(){
   const email=v('rg-email').toLowerCase().trim();
   if(!email||!email.includes('@')){showMsg('reg-msg','Enter your email address first.');return;}
-  const btn=document.getElementById('btn-send-otp');
-  btn.disabled=true;btn.textContent='Sending…';
+  if(_otpSendBusy)return;
+  // 30s visible cooldown between sends (server allows 5 per email per 10 min)
+  const since=Date.now()-_otpLastSend;
+  if(since<30000){
+    showMsg('reg-msg','Code already sent to '+email+' — check the inbox and Spam folder. You can resend in '+Math.ceil((30000-since)/1000)+'s.','ok');
+    _otpStartCountdown(Math.ceil((30000-since)/1000));
+    return;
+  }
+  _otpSendBusy=true;_otpLastSend=Date.now();
+  _otpSetButtons(true,'Sending…');
   try{
-    const r=await api('/auth/otp/send',{method:'POST',body:JSON.stringify({email,purpose:'register'})});
+    await api('/auth/otp/send',{method:'POST',body:JSON.stringify({email,purpose:'register'})});
     document.getElementById('rg-verify-send').style.display='none';
     document.getElementById('rg-verify-input').style.display='block';
-    // Show dev OTP if returned
-    if(r.otp){
-      const devEl=document.getElementById('rg-otp-dev');
-      devEl.style.display='block';
-      devEl.innerHTML=`🔑 <strong>Dev Mode:</strong> Your code is <span style="font-weight:800;font-family:var(--mono);font-size:16px;letter-spacing:3px">${r.otp}</span>`;
-    }
     document.getElementById('rg-otp').focus();
+    showMsg('reg-msg','📧 Code sent to '+email+' — check the inbox and Spam folder.','ok');
+    const rs=document.getElementById('rg-resend-status');
+    if(rs)rs.textContent='✓ Sent!';
+    _otpStartCountdown(30);
   }catch(e){
     showMsg('reg-msg',e.message);
-    btn.disabled=false;btn.textContent='📧 Send Verification Code';
+    _otpLastSend=0;
+    _otpSetButtons(false,'📧 Send Code Again');
+  }finally{
+    _otpSendBusy=false;
   }
 }
 
@@ -207,7 +275,7 @@ async function verifyRegOtp(){
       document.getElementById('rg-verify-input').style.display='none';
       document.getElementById('rg-verify-done').style.display='block';
       const badge=document.getElementById('rg-verify-badge');
-      badge.textContent='Verified ✓';badge.style.background='rgba(16,185,129,.1)';badge.style.color='var(--green)';
+      badge.textContent='Verified ✓';badge.style.background='rgba(16,185,129,.1)';badge.style.color='var(--ok-text)';
       // Enable create account button
       document.getElementById('btn-create-account').disabled=false;
       document.getElementById('rg-create-hint').textContent='';
@@ -250,7 +318,7 @@ async function createAccount(){
       document.getElementById('btn-send-otp').textContent='📧 Send Verification Code';
       document.getElementById('btn-create-account').disabled=true;
       const badge=document.getElementById('rg-verify-badge');
-      badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--orange)';
+      badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--amber-text)';
       return;
     }
     // Server unreachable — save locally for offline mode
@@ -324,6 +392,9 @@ function genLabUser(name){
 }
 
 async function doLogin(){
+  const loginBtn=document.querySelector('[data-action="doLogin"]');
+  if(window.Busy&&Busy.isBusy(loginBtn))return;
+  const run=async()=>{
   const email=v('li-email').toLowerCase().trim(),pass=v('li-pass'),totp=v('li-totp');
   if(!email||!pass){showMsg('login-msg','Enter email and password.');return;}
   try{
@@ -334,6 +405,9 @@ async function doLogin(){
       currentDoc={docId:r.user.id,email:r.user.email,name:r.user.name,spec:r.user.meta?.specialty||'',institution:r.user.meta?.institution||'',role:r.user.role};
       // Pull all doctor data from server into localStorage
       try{const sync=await api('/sync');if(sync&&sync.keys){for(const[k,entry]of Object.entries(sync.keys)){if(entry&&entry.v!==undefined)LS.set(k,entry.v)}}}catch(e){/* sync pull failed, continue with local data */}
+      // Persist “stay signed in” for the desktop software too (was only
+      // saved on the offline fallback path, so restarts always asked again).
+      try{const cb=document.getElementById('stay-signed-in-doc');if(cb&&cb.checked&&window.VxSession)VxSession.remember({kind:'doctor',email:r.user.email,name:r.user.name||''});else if(window.VxSession)VxSession.forget();}catch(e){}
       document.getElementById('auth-screen').style.display='none';
       document.getElementById('app').style.display='flex';
       document.getElementById('doc-name').textContent=r.user.name;
@@ -362,6 +436,7 @@ async function doLogin(){
   const ok=await verifyPassword(pass,doc.pass);
   if(!ok){showMsg('login-msg','Wrong password.');return;}
   currentDoc=doc;
+  try{const cb=document.getElementById('stay-signed-in-doc');if(cb&&cb.checked&&window.VxSession)VxSession.remember({kind:'doctor',email:doc.email||email,name:doc.name||''});else if(window.VxSession)VxSession.forget();}catch(e){}
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   document.getElementById('doc-name').textContent=doc.name;
@@ -369,20 +444,22 @@ async function doLogin(){
   document.getElementById('doc-av').textContent=doc.name.charAt(0);
   document.getElementById('greet-text').textContent='Welcome back, '+doc.name.split(' ')[0];
   refreshAll();
+  };
+  if(window.Busy)Busy.btn(loginBtn,run);else run();
 }
 
 function doLogout(){
   // Revoke session server-side
   api('/auth/logout',{method:'POST'}).catch(()=>{});
+  if(window.VxSession)VxSession.forget();
   currentDoc=null;selectedMRN=null;
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('app').style.display='none';
 }
-// ── Session timeout: auto-logout after 30 minutes of inactivity ──
-let _idleTimer=null;
-function resetIdleTimer(){clearTimeout(_idleTimer);_idleTimer=setTimeout(()=>{AppDialog.alert('Session expired due to inactivity.');doLogout();},30*60*1000);}
-['mousemove','mousedown','keydown','scroll','touchstart'].forEach(evt=>document.addEventListener(evt,resetIdleTimer,{passive:true}));
-resetIdleTimer();
+// ── Stay signed in ────────────────────────────────────────────────
+// No client-side idle logout for the doctor desktop either — sessions are
+// long-lived server-side (30 days, sliding refresh) and VxSession restores
+// the last login on boot.
 // ── Session security: validate session on tab visibility change ──
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&currentDoc){api('/auth/login',{method:'POST',body:JSON.stringify({email:currentDoc.email,password:''})}).catch(()=>{});}
@@ -455,7 +532,7 @@ function renderPatList(){
   if(!pats.length){el.innerHTML='<div class="empty-card">No patients found.</div>';return;}
   el.innerHTML=pats.map(p=>{
     const ds=p.diseaseStatus||'Stable';
-    const dsColors={Active:'var(--blue)',Stable:'var(--cyan)',Remission:'var(--green)',Progression:'var(--red)',Relapse:'var(--orange)',Deceased:'var(--text-dim)'};
+    const dsColors={Active:'var(--blue)',Stable:'var(--cyan)',Remission:'var(--ok-text)',Progression:'var(--red)',Relapse:'var(--amber-text)',Deceased:'var(--text-dim)'};
     return `<div class="patient-row" data-action="openRecord:${escAttr(p.mrn)}">
       <div style="flex:1;"><div class="pat-name">${esc(p.name)}</div><div class="pat-mrn">${p.mrn}</div><div class="pat-diag">${esc(p.diag||'—')}</div></div>
       <span class="badge" style="background:${dsColors[ds]||'var(--text-dim)'}22;color:${dsColors[ds]||'var(--text-dim)'};">${ds}</span>
@@ -493,6 +570,109 @@ async function createPatient(){
   document.getElementById('ap-creds-pass').textContent=pass;
   refreshAll();
   flash('Patient created: '+name);
+}
+
+// ── Lost credentials: rotate the patient's portal password ──
+// The server generates + hashes the new password (plaintext is shown to the
+// doctor exactly once, like registration) and updates the shared login store.
+async function resetPatientPassword(mrn){
+  mrn=mrn||selectedMRN;
+  if(!mrn)return;
+  const ok=await AppDialog.confirm('Generate a new portal password for '+mrn+'?\nThe current password stops working immediately.',{title:'🔑 Reset Patient Password',danger:true,okLabel:'Generate New Password'});
+  if(!ok)return;
+  try{
+    const r=await api('/sync/reset-patient-password',{method:'POST',body:JSON.stringify({mrn})});
+    if(r&&r.ok&&r.password){
+      // Keep the local + kv record copies consistent with the login store.
+      try{
+        const p=LS.get('pat_'+mrn);
+        if(p){p.pass=await makePasswordHash(r.password);delete p.passPlain;LS.set('pat_'+mrn,p);pushToServer({['pat_'+mrn]:p});}
+      }catch(e){/* store is authoritative for login — record sync is best-effort */}
+      AppDialog.alert('🔑 New password for '+mrn+':\n\n'+r.password+'\n\nCopy it now — it is shown only this once.\nThe previous password no longer works.',{title:'Password Reset Complete'});
+    }else{
+      AppDialog.alert((r&&r.error)||'Password reset failed — please try again.');
+    }
+  }catch(e){
+    AppDialog.alert('Password reset failed: '+(e.message||'server unreachable'));
+  }
+}
+
+// ── Onboarding handout: copy credentials / print welcome card ──
+async function copyPatientCreds(){
+  const mrn=document.getElementById('ap-creds-mrn').textContent.trim();
+  const pass=document.getElementById('ap-creds-pass').textContent.trim();
+  const base=(window.location&&window.location.origin&&window.location.origin.indexOf('http')===0)?window.location.origin:'https://veltruvia.duckdns.org';
+  const txt='VELTRUVIA Patient login\nMRN: '+mrn+'\nPassword: '+pass+'\nServer: '+base;
+  try{await navigator.clipboard.writeText(txt);flash('Credentials copied to clipboard');}
+  catch(e){
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');flash('Credentials copied to clipboard');}
+    catch(e2){AppDialog.alert('Copy failed — please select the values manually.');}
+    document.body.removeChild(ta);
+  }
+}
+
+function patientWelcomeCardHtml(mrn,pass,name){
+  const base=(window.location&&window.location.origin&&window.location.origin.indexOf('http')===0)?window.location.origin:'https://veltruvia.duckdns.org';
+  let qrSvg='';
+  try{const qr=window.qrcode(0,'M');qr.addData(base+'/download.html');qr.make();qrSvg=qr.createSvgTag({cellSize:2,margin:4,scalable:true});}catch(e){qrSvg='';}
+  // Rendered on a full A4 sheet (see _REPORT_CSS .page) with the hand-out
+  // drawn as a cut-out CARD centered on it — it prints as an actual card to
+  // cut along the dashed border, and looks like one on screen too.
+  return `<div class="page" style="display:flex;flex-direction:column;justify-content:center;">
+  <div class="vx-cut">✂ ─────  cut along the dashed border  ─────</div>
+  <div class="vx-card">
+    <div class="vx-card-head">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <img src="/icons/brand/veltruvia-patient.jpg" alt="" style="width:42px;height:42px;border-radius:11px;object-fit:cover;border:1.5px solid rgba(255,255,255,.5);">
+        <div>
+          <div class="vc-title">VELTRUVIA Patient</div>
+          <div class="vc-sub">Neuro-Oncology EMR · Patient Access Card</div>
+        </div>
+      </div>
+      <div style="text-align:right;font-size:9.5px;line-height:1.6;opacity:.92;">
+        ${new Date().toLocaleDateString()}<br>Dr. ${esc(currentDoc?.name||'')}
+      </div>
+    </div>
+    <div class="vx-card-body">
+      <div style="flex:1.35;">
+        <p style="font-size:11.5px;line-height:1.6;margin:0 0 5mm;color:#1f2937;">Hello${name?' <b>'+esc(name)+'</b>':''}, welcome. This card has everything you need to start using the VELTRUVIA patient app on your phone — log symptoms, message your care team, and share results securely.</p>
+        <div class="vx-cred">
+          <div style="display:flex;gap:8mm;flex-wrap:wrap;">
+            <div><div class="vc-lbl">Patient ID (MRN)</div><div class="vc-val">${esc(mrn)}</div></div>
+            <div><div class="vc-lbl">Password</div><div class="vc-val">${esc(pass)}</div></div>
+          </div>
+        </div>
+        <div class="vx-steps">
+          <b>Getting started</b><br>
+          1. Scan the QR code with your phone camera<br>
+          2. Tap <b>Patient app</b> and install it (allow "install unknown apps" if asked)<br>
+          3. Open the app and sign in with the ID and password above<br>
+          4. iPhone? Skip the install — open the link in Safari and choose <b>Add to Home Screen</b><br>
+          <span style="color:#b91c1c;font-weight:600;">Keep this card private. It gives access to your medical record.</span>
+        </div>
+      </div>
+      <div style="flex:1;text-align:center;display:flex;flex-direction:column;justify-content:center;">
+        <div style="border:1.4px dashed #8ea3c0;border-radius:12px;padding:5mm;background:#fff;">
+          <div style="width:34mm;height:34mm;margin:0 auto;">${qrSvg}</div>
+          <div style="font-size:9.5px;color:#334155;margin-top:4mm;font-weight:600;">Scan → app downloads</div>
+          <div style="font-size:8.5px;color:#7a8699;">${base.replace('https://','')}/download.html</div>
+        </div>
+      </div>
+    </div>
+    <div class="vx-card-foot">
+      <span>VELTRUVIA · v2.5.0</span>
+      <span>Contains protected health information — handle per clinic policy.</span>
+    </div>
+  </div>
+</div>`;
+}
+
+function printPatientWelcomeCard(){
+  const mrn=document.getElementById('ap-creds-mrn').textContent.trim();
+  const pass=document.getElementById('ap-creds-pass').textContent.trim();
+  const p=LS.get('pat_'+mrn);
+  _openReport('Patient Welcome Card — '+mrn, patientWelcomeCardHtml(mrn,pass,(p&&p.name)||''));
 }
 
 // ── Overview ──
@@ -611,6 +791,24 @@ async function sendDocMsg(){if(!selectedChatMRN||!currentDoc)return;const inp=do
 
 // ── Auto-check login ──
 window.addEventListener('DOMContentLoaded',()=>{
-  const docs=LS.keys('doc_').filter(k=>!k.startsWith('doc_email'));
-  // Don't auto-login, show auth screen
+  // Stay signed in: reopen straight into the doctor's account when they
+  // previously logged in with “Stay signed in” (VxSession restore — never a
+  // password retry, so lockout counters are untouched).
+  try{
+    if(!window.VxSession)return;
+    const who=VxSession.restore();
+    if(!who||who.kind!=='doctor'||!who.email)return;
+    const docId=LS.get('doc_email_'+who.email.replace(/[^a-z0-9]/g,'_'));
+    const doc=docId?LS.get('doc_'+docId):null;
+    if(doc){
+      currentDoc=doc;
+      document.getElementById('auth-screen').style.display='none';
+      document.getElementById('app').style.display='flex';
+      document.getElementById('doc-name').textContent=doc.name;
+      document.getElementById('doc-role').textContent=doc.spec||'';
+      document.getElementById('doc-av').textContent=doc.name.charAt(0);
+      document.getElementById('greet-text').textContent='Welcome back, '+doc.name.split(' ')[0];
+      refreshAll();
+    }
+  }catch(e){/* never block manual login over restore */}
 });

@@ -1,6 +1,6 @@
 {
   "name": "veltruvia-suite",
-  "version": "2.3.0",
+  "version": "2.5.0",
   "private": true,
   "type": "module",
   "description": "VELTRUVIA neuro-oncology EMR desktop suite — quality gate, verification, and docs",
@@ -18,7 +18,9 @@
     "precommit": "npm run check && npm run test && npm run verify"
   },
   "dependencies": {
-    "png-to-ico": "^3.0.2",
-    "sharp": "^0.35.5"
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2"
   }
 }

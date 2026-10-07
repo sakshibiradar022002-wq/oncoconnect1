@@ -18,6 +18,7 @@ import { smsConfigured, sendSms } from '../sms.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { notifySubject } from '../push.js';
 import { validateLabSubmission } from '../validators/labResults.js';
+import { effectiveAvailabilityRows } from '../lib/availability.js';
 
 // Fire-and-forget doctor notifications for incoming alert / lab-result keys.
 function pushDoctorForChanges(ownerId, changes) {
@@ -289,7 +290,10 @@ function patientOwnsKey(k, mrn) {
   // date/suffix-scoped families: log_<mrn>_<date>, medlog_<mrn>_<date>,
   // factbr_<mrn>...
   return k.startsWith('log_' + mrn + '_') || k.startsWith('medlog_' + mrn + '_')
-    || k.startsWith('factbr_' + mrn);
+    || k.startsWith('factbr_' + mrn)
+    // Medicines the patient records themselves ("Add Prescription" tab)
+    // or their refill requests, keyed per patient.
+    || k === 'selfrx_' + mrn || k === 'selfrefill_' + mrn;
 }
 
 // MRN-scoped access control for the shared JSON-store endpoints.
@@ -678,11 +682,15 @@ This code expires in 30 minutes. If you didn't request this, contact your doctor
   // 2) Try SMS if email didn't work and patient has a phone and SMS is configured
   if (deliveryMethod === 'doctor' && pat.phone && await smsConfigured()) {
     try {
-      await sendSms(pat.phone,
+      // sendSms RETURNS {sent:false} (does not throw) when Twilio rejects or is
+      // mid-config — only claim SMS delivery when it actually sent.
+      const smsResult = await sendSms(pat.phone,
         `VELTRUVIA: Your password change code is ${otp}. Enter it in the Patient App to approve. Expires in 30 min.`
       );
-      deliveryMethod = 'sms';
-      deliveryDetail = pat.phone;
+      if (smsResult && smsResult.sent) {
+        deliveryMethod = 'sms';
+        deliveryDetail = pat.phone;
+      }
     } catch (e) { /* SMS failed — fallback to doctor */ }
   }
 
@@ -828,34 +836,24 @@ syncRouter.post('/patient/password-change-approve', authenticate, requireRole('k
   res.json({ ok: true, message: 'Password change approved. Your doctor has been notified and can retrieve the new credentials.' });
 }));
 
-// ── Shared Patient Store (JSON file fallback for cross-app data sharing) ──
+// ── Shared stores (ENCRYPTED at rest — v2.5) ──────────────────────────
 // sql.js is in-memory per process — Doctor and Patient can't share the same
-// in-memory DB. This JSON-file store lets the Doctor write patient data to
-// disk and the Patient/Lab read it directly, bypassing sql.js entirely.
-import { readFileSync as _readFileSync, writeFileSync as _writeFileSync, existsSync as _existsSync, mkdirSync as _mkdirSync } from 'node:fs';
-import { join as _join, dirname as _dirname } from 'node:path';
+// in-memory DB. These JSON-file stores let the apps share data on disk, and
+// as of v2.5 every one of them is AES-256-GCM encrypted (they previously
+// held PHI as plaintext JSON). Legacy plaintext files are migrated on first
+// read and deleted; new files are <name>.enc.json.
+import { createEncryptedStore } from '../lib/json-stores.js';
 
-const PATIENT_STORE_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'patient-store.json');
-try { _mkdirSync(_dirname(PATIENT_STORE_PATH), { recursive: true }); } catch {}
+const patientStore = createEncryptedStore('patient-store.json', { label: 'patient-store' });
+const logStore = createEncryptedStore('logs-store.json', { label: 'log-store' });
+const msgStore = createEncryptedStore('messages-store.json', { label: 'msg-store' });
+const apptStore = createEncryptedStore('appointments-store.json', { label: 'appt-store' });
+const availStore = createEncryptedStore('availability-store.json', { label: 'avail-store' });
+const thRoomsStore = createEncryptedStore('telehealth-rooms.json', { label: 'th-rooms' });
+const thSignalsStore = createEncryptedStore('telehealth-signals.json', { label: 'th-signals' });
 
-function readPatientStore() {
-  try {
-    if (_existsSync(PATIENT_STORE_PATH)) {
-      return JSON.parse(_readFileSync(PATIENT_STORE_PATH, 'utf-8'));
-    }
-  } catch {}
-  return {};
-}
-
-function writePatientStore(data) {
-  try {
-    _writeFileSync(PATIENT_STORE_PATH, JSON.stringify(data, null, 2), 'utf-8');
-    return true;
-  } catch (e) {
-    console.error('[patient-store] write failed:', e.message);
-    return false;
-  }
-}
+function readPatientStore() { return patientStore.read(); }
+function writePatientStore(data) { return patientStore.write(data); }
 
 // ── Zod schemas for shared store endpoints ──
 const savePatientSchema = z.object({
@@ -881,7 +879,9 @@ const saveLogSchema = z.object({
 const sendMessageSchema = z.object({
   mrn: z.string().min(1).max(40).transform(s => s.trim().toUpperCase()),
   docId: z.string().min(1).max(64),
-  role: z.enum(['doctor', 'patient']),
+  // NOTE: role is no longer accepted from the client — it is derived from
+  // the authenticated session in the route handler (a client-supplied role
+  // let any caller spoof 'doctor' messages into a patient's chat).
   text: z.string().min(1).max(5000),
 });
 const saveAppointmentSchema = z.object({
@@ -891,21 +891,29 @@ const saveAppointmentSchema = z.object({
 const updateAppointmentSchema = z.object({
   mrn: z.string().min(1).max(40).transform(s => s.trim().toUpperCase()),
   index: z.number().int().min(0),
-  status: z.string().min(1).max(50),
+  // Enum guard: arbitrary strings (max 50) used to flow straight into the
+  // shared store and the patient app's status-color map.
+  status: z.enum(['Scheduled', 'Requested', 'Confirmed', 'Declined', 'Cancelled', 'cancelled', 'Completed', 'completed', 'Confirmed ', 'pending', 'confirmed']),
 });
 const saveAvailabilitySchema = z.object({
   docId: z.string().min(1).max(64),
   slots: z.array(z.object({
-    dayOfWeek: z.number().int().min(0).max(6),
+    // Weekly rows carry dayOfWeek; one-off rows carry a specific date.
+    dayOfWeek: z.number().int().min(0).max(6).optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     startTime: z.string().regex(/^\d{2}:\d{2}$/),
     endTime: z.string().regex(/^\d{2}:\d{2}$/),
     slotDuration: z.number().int().min(5).max(120).optional(),
     active: z.boolean().optional(),
-  })).max(50),
+  })).max(50).refine(
+    slots => slots.every(s => s.date || Number.isInteger(s.dayOfWeek)),
+    { message: 'Each slot needs either a dayOfWeek (weekly) or a date (one-off)' }
+  ),
 });
 
-// Doctor: save patient to shared JSON store (authenticated — writes credentials)
-syncRouter.post('/save-patient', authenticate, validate(savePatientSchema), asyncHandler(async (req, res) => {
+// Doctor: save patient to shared JSON store (doctor/admin only — writes credentials,
+// so patients/labs must never be able to call it)
+syncRouter.post('/save-patient', authenticate, requireRole('doctor', 'admin'), validate(savePatientSchema), asyncHandler(async (req, res) => {
   const { mrn, patient } = req.valid;
   const store = readPatientStore();
   store[mrn] = { ...patient, mrn, _ownerId: req.auth?.subjectId || patient.docId || 'local', _savedAt: new Date().toISOString() };
@@ -1002,18 +1010,9 @@ syncRouter.post('/lab-store-login', loginLimiter, validate(labStoreLoginSchema),
   res.status(401).json({ error: 'Invalid lab credentials' });
 }));
 
-// ═══ Shared Log Store ════════════════════════════════════════════════
-const LOG_STORE_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'logs-store.json');
-try { _mkdirSync(_dirname(LOG_STORE_PATH), { recursive: true }); } catch {}
-
-function readLogStore() {
-  try { if (_existsSync(LOG_STORE_PATH)) return JSON.parse(_readFileSync(LOG_STORE_PATH, 'utf-8')); } catch {}
-  return {};
-}
-function writeLogStore(data) {
-  try { _writeFileSync(LOG_STORE_PATH, JSON.stringify(data, null, 2), 'utf-8'); return true; }
-  catch (e) { console.error('[log-store] write failed:', e.message); return false; }
-}
+// ═══ Shared Log Store (encrypted — see createEncryptedStore above) ═══
+function readLogStore() { return logStore.read(); }
+function writeLogStore(data) { return logStore.write(data); }
 
 // Patient: save daily log to shared store
 syncRouter.post('/save-log', authenticate, validate(saveLogSchema), asyncHandler(async (req, res) => {
@@ -1022,7 +1021,7 @@ syncRouter.post('/save-log', authenticate, validate(saveLogSchema), asyncHandler
   const store = readLogStore();
   if (!store[mrn]) store[mrn] = {};
   store[mrn][date] = { ...log, savedAt: new Date().toISOString() };
-  writeLogStore(store);
+  if (!writeLogStore(store)) return res.status(500).json({ ok: false, error: 'Could not save log — server storage write failed. Try again.' });
   res.json({ ok: true });
 }));
 
@@ -1036,29 +1035,105 @@ syncRouter.get('/get-logs/:mrn', authenticate, asyncHandler(async (req, res) => 
   res.json({ ok: true, logs });
 }));
 
-// ═══ Shared Message Store ═════════════════════════════════════════════
-const MSG_STORE_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'messages-store.json');
-try { _mkdirSync(_dirname(MSG_STORE_PATH), { recursive: true }); } catch {}
-
-function readMsgStore() {
-  try { if (_existsSync(MSG_STORE_PATH)) return JSON.parse(_readFileSync(MSG_STORE_PATH, 'utf-8')); } catch {}
-  return {};
-}
-function writeMsgStore(data) {
-  try { _writeFileSync(MSG_STORE_PATH, JSON.stringify(data, null, 2), 'utf-8'); return true; }
-  catch (e) { console.error('[msg-store] write failed:', e.message); return false; }
-}
+// ═══ Shared Message Store (encrypted) ═════════════════════════════════
+function readMsgStore() { return msgStore.read(); }
+function writeMsgStore(data) { return msgStore.write(data); }
 
 // Send a message (doctor or patient)
 syncRouter.post('/send-message', authenticate, validate(sendMessageSchema), asyncHandler(async (req, res) => {
-  const { mrn, docId, role, text } = req.valid;
+  const { mrn, docId, text } = req.valid;
   if (!(await requireMrnAccess(req, res, mrn))) return;
+  // Derive the sender role from the SESSION, never from the request body —
+  // the previous client-supplied role let any caller impersonate the other
+  // side of the conversation.
+  const role = req.auth.role === 'kv-patient' ? 'patient' : 'doctor';
   const store = readMsgStore();
   const key = docId + '_' + mrn;
   if (!store[key]) store[key] = [];
   store[key].push({ role, text, timestamp: Date.now() });
-  writeMsgStore(store);
+  if (!writeMsgStore(store)) return res.status(500).json({ ok: false, error: 'Could not save message — server storage write failed. Try again.' });
   res.json({ ok: true });
+}));
+
+// ── Doctor: register a lab account in the shared login store ──
+// The Lab app's FIRST login path (lab-store-login) checks this store; without
+// it a freshly created lab can only log in via the kv fallback. Password is
+// received once over TLS, stored hashed, never persisted in plaintext.
+const saveLabSchema = z.object({
+  labId: z.string().min(1).max(64),
+  username: z.string().min(1).max(40).transform(s => s.trim().toLowerCase()),
+  name: z.string().min(1).max(120),
+  password: z.string().min(8).max(200),
+});
+syncRouter.post('/save-lab', authenticate, requireRole('doctor', 'admin'), validate(saveLabSchema), asyncHandler(async (req, res) => {
+  const { labId, username, name, password } = req.valid;
+  const store = readPatientStore();
+  const key = 'lab_' + username;
+  const existing = store[key];
+  // Username hijack guard: a doctor may overwrite only their own lab accounts.
+  if (existing && req.auth.role !== 'admin' && String(existing.docId || '') !== req.auth.subjectId) {
+    return res.status(409).json({ error: 'That username is already taken' });
+  }
+  store[key] = {
+    labId, username, name,
+    docId: req.auth.subjectId,
+    password: hashUiPasswordV2(password),
+    _ownerId: req.auth.subjectId,
+    _savedAt: new Date().toISOString(),
+  };
+  if (!writePatientStore(store)) return res.status(500).json({ error: 'Failed to save lab account' });
+  await writeAudit({ actorId: req.auth.subjectId, actorRole: 'doctor', action: 'lab_store.save', targetId: username, ip: req.ip }).catch(() => {});
+  res.json({ ok: true });
+}));
+
+// ── Doctor: rotate a patient's portal password (lost one-time credentials) ──
+// Generates a new password server-side, updates the shared login store AND the
+// doctor's kv copy, and returns the plaintext exactly once for the doctor to
+// hand over. Owner-scoped: doctors may only reset their own patients.
+syncRouter.post('/reset-patient-password', authenticate, requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
+  const mrn = String(req.body?.mrn || '').trim().toUpperCase();
+  if (!mrn || mrn.length > 40) return res.status(400).json({ error: 'mrn required' });
+
+  // Plaintext charset mirrors the doctor app's genPass(): no chars that need
+  // escaping when read aloud or handwritten.
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*+-=?';
+  const arr = randomBytes(16);
+  let pass = '';
+  for (const b of arr) pass += chars[b % chars.length];
+  const newHash = hashUiPasswordV2(pass);
+
+  // 1. Shared login store (what store-login / patient-login verify against)
+  const store = readPatientStore();
+  const rec = store[mrn];
+  if (!rec) return res.status(404).json({ error: 'Patient not found in login store' });
+  // Ownership: doctors may only reset their own patients; admins are global.
+  if (req.auth.role !== 'admin') {
+    const owner = String(rec.docId || rec._ownerId || '');
+    if (owner && owner !== req.auth.subjectId) {
+      return res.status(403).json({ error: 'Not your patient' });
+    }
+  }
+  store[mrn] = { ...rec, pass: newHash };
+  delete store[mrn].passPlain;
+  if (!writePatientStore(store)) return res.status(500).json({ error: 'Could not update login store' });
+
+  // 2. Doctor's encrypted kv copy, if present (keeps record + store consistent)
+  try {
+    const kvKey = 'pat_' + mrn;
+    const rows = await db.prepare('SELECT v_enc FROM kv_store WHERE owner_id = ? AND k = ?')
+      .all(req.auth.subjectId, kvKey);
+    if (rows.length) {
+      const rec2 = decryptPHI(rows[0].v_enc);
+      rec2.pass = newHash;
+      delete rec2.passPlain;
+      await upsertKey(req.auth.subjectId, kvKey, rec2, new Date().toISOString());
+    }
+  } catch { /* kv copy is optional — store above is authoritative for login */ }
+
+  await writeAudit({ actorId: req.auth.subjectId, actorRole: 'doctor', action: 'patient_store.password_reset', targetId: mrn, ip: req.ip }).catch(() => {});
+
+  // Shown exactly once, like registration — never stored in plaintext anywhere.
+  res.json({ ok: true, mrn, password: pass });
 }));
 
 // Get messages for a doctor-patient conversation
@@ -1071,27 +1146,30 @@ syncRouter.get('/get-messages/:docId/:mrn', authenticate, asyncHandler(async (re
   res.json({ ok: true, msgs });
 }));
 
-// ═══ Shared Appointments Store ═══════════════════════════════════════
-const APPT_STORE_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'appointments-store.json');
-try { _mkdirSync(_dirname(APPT_STORE_PATH), { recursive: true }); } catch {}
-
-function readApptStore() {
-  try { if (_existsSync(APPT_STORE_PATH)) return JSON.parse(_readFileSync(APPT_STORE_PATH, 'utf-8')); } catch {}
-  return {};
-}
-function writeApptStore(data) {
-  try { _writeFileSync(APPT_STORE_PATH, JSON.stringify(data, null, 2), 'utf-8'); return true; }
-  catch (e) { console.error('[appt-store] write failed:', e.message); return false; }
-}
+// ═══ Shared Appointments Store (encrypted) ═══════════════════════════
+function readApptStore() { return apptStore.read(); }
+function writeApptStore(data) { return apptStore.write(data); }
 
 // Save appointment (doctor or patient)
 syncRouter.post('/save-appointment', authenticate, validate(saveAppointmentSchema), asyncHandler(async (req, res) => {
   const { mrn, appointment } = req.valid;
   if (!(await requireMrnAccess(req, res, mrn))) return;
+  // Double-booking guard (v2.5): the store previously accepted ANY slot,
+  // bypassing the check /api/schedule/book enforces — two patients booking
+  // the same time both saw "saved ✓". Declined/cancelled entries free the
+  // slot again.
+  const a = appointment || {};
+  if (a.date && a.time) {
+    const store0 = readApptStore();
+    const clash = Object.values(store0).some(appts => Array.isArray(appts) && appts.some(x =>
+      x && x.date === a.date && x.time === a.time &&
+      !/declined|cancel/i.test(String(x.status || ''))));
+    if (clash) return res.status(409).json({ ok: false, error: 'That time was just taken — please pick another slot.' });
+  }
   const store = readApptStore();
   if (!store[mrn]) store[mrn] = [];
   store[mrn].push({ ...appointment, savedAt: new Date().toISOString() });
-  writeApptStore(store);
+  if (!writeApptStore(store)) return res.status(500).json({ ok: false, error: 'Could not save appointment — server storage write failed. Try again.' });
   res.json({ ok: true });
 }));
 
@@ -1101,7 +1179,10 @@ syncRouter.post('/update-appointment', authenticate, validate(updateAppointmentS
   if (!(await requireMrnAccess(req, res, mrn))) return;
   const store = readApptStore();
   const appts = store[mrn] || [];
-  if (appts[index]) { appts[index].status = status; appts[index].respondedAt = new Date().toISOString(); writeApptStore(store); }
+  if (!appts[index]) return res.status(404).json({ ok: false, error: 'Appointment not found — it may have already been removed.' });
+  appts[index].status = status;
+  appts[index].respondedAt = new Date().toISOString();
+  if (!writeApptStore(store)) return res.status(500).json({ ok: false, error: 'Could not save status — server storage write failed. Try again.' });
   res.json({ ok: true });
 }));
 
@@ -1115,25 +1196,17 @@ syncRouter.get('/get-appointments/:mrn', authenticate, asyncHandler(async (req, 
   res.json({ ok: true, appointments: appts });
 }));
 
-// ═══ Shared Availability Store ═══════════════════════════════════════
-const AVAIL_STORE_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'availability-store.json');
-try { _mkdirSync(_dirname(AVAIL_STORE_PATH), { recursive: true }); } catch {}
-
-function readAvailStore() {
-  try { if (_existsSync(AVAIL_STORE_PATH)) return JSON.parse(_readFileSync(AVAIL_STORE_PATH, 'utf-8')); } catch {}
-  return {};
-}
-function writeAvailStore(data) {
-  try { _writeFileSync(AVAIL_STORE_PATH, JSON.stringify(data, null, 2), 'utf-8'); return true; }
-  catch (e) { console.error('[avail-store] write failed:', e.message); return false; }
-}
+// ═══ Shared Availability Store (encrypted) ═══════════════════════════
+function readAvailStore() { return availStore.read(); }
+function writeAvailStore(data) { return availStore.write(data); }
 
 // Save doctor availability (doctor/admin only)
 syncRouter.post('/save-availability', authenticate, requireRole('doctor', 'admin'), validate(saveAvailabilitySchema), asyncHandler(async (req, res) => {
   const { docId, slots } = req.valid;
   const store = readAvailStore();
   store[docId] = slots.map(s => ({
-    dayOfWeek: s.dayOfWeek, startTime: s.startTime, endTime: s.endTime,
+    ...(s.date ? { date: s.date } : { dayOfWeek: s.dayOfWeek }),
+    startTime: s.startTime, endTime: s.endTime,
     slotDuration: s.slotDuration || 30, active: s.active !== false,
     savedAt: new Date().toISOString()
   }));
@@ -1150,147 +1223,74 @@ syncRouter.get('/get-availability/:docId', asyncHandler(async (req, res) => {
   res.json({ ok: true, availability: slots });
 }));
 
-// Generate bookable slots for next N days (mirrors scheduling.js logic without auth)
-syncRouter.get('/get-slots/:docId', asyncHandler(async (req, res) => {
-  const { docId } = req.params;
-  const days = parseInt(req.query.days || '30', 10);
-  const store = readAvailStore();
-  let avail = (store[docId] || []).filter(s => s.active !== false);
-  // If no availability for this docId, try all doctors' availability as fallback
-  if (!avail.length) {
-    for (const [key, entries] of Object.entries(store)) {
-      if (key === docId) continue;
-      const active = (entries || []).filter(s => s.active !== false);
-      if (active.length) { avail = active; break; }
-    }
-  }
-  // If still empty, seed default Mon-Fri 9-12, 14-17 availability so the
-  // system works out-of-the-box before the doctor saves a schedule.
-  if (!avail.length) {
-    avail = [
-      { dayOfWeek: 1, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 1, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 2, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 2, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 3, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 4, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 4, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 5, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 5, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-    ];
-  }
-  if (!avail.length) return res.json({ ok: true, slots: {} });
-  // Also check existing appointments from appointment store
-  const apptStore = readApptStore();
-  const existingAppts = [];
-  Object.values(apptStore).forEach(appts => {
-    if (!Array.isArray(appts)) return;
-    appts.forEach(a => {
-      if (a.date && a.status !== 'Declined') existingAppts.push(a);
-    });
-  });
-  const today = new Date();
-  const slotsByDate = {};
-  for (let i = 0; i < days; i++) {
-    const d = new Date(today); d.setDate(today.getDate() + i);
-    const dateStr = d.toISOString().slice(0, 10);
-    const dayOfWeek = d.getDay();
-    const daySlots = [];
-    avail.filter(r => r.dayOfWeek === dayOfWeek).forEach(r => {
-      const [sh, sm] = (r.startTime || '09:00').split(':').map(Number);
-      const [eh, em] = (r.endTime || '17:00').split(':').map(Number);
-      const dur = r.slotDuration || 30;
-      let mins = sh * 60 + sm;
-      const endMins = eh * 60 + em;
-      while (mins + dur <= endMins) {
-        const h = String(Math.floor(mins / 60)).padStart(2, '0');
-        const m = String(mins % 60).padStart(2, '0');
-        const timeStr = h + ':' + m;
-        const endMins2 = mins + dur;
-        const eh2 = String(Math.floor(endMins2 / 60)).padStart(2, '0');
-        const em2 = String(endMins2 % 60).padStart(2, '0');
-        const endTimeStr = eh2 + ':' + em2;
-        // Check conflict
-        const taken = existingAppts.some(e => e.date === dateStr && e.time === timeStr);
-        if (!taken) daySlots.push({ time: timeStr, endTime: endTimeStr });
-        mins += dur;
-      }
-    });
-    if (daySlots.length) slotsByDate[dateStr] = daySlots;
-  }
-  res.json({ ok: true, slots: slotsByDate });
-}));
-
-// Generate bookable slots from ANY doctor (used when patient _docId is null)
-syncRouter.get('/get-slots-all', asyncHandler(async (req, res) => {
-  const days = parseInt(req.query.days || '30', 10);
-  const store = readAvailStore();
-  // Collect all active availability entries from all doctors
-  let avail = [];
-  for (const entries of Object.values(store)) {
-    const active = (entries || []).filter(s => s.active !== false);
-    if (active.length) { avail = active; break; }
-  }
-  // Seed defaults if nothing configured at all
-  if (!avail.length) {
-    avail = [
-      { dayOfWeek: 1, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 1, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 2, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 2, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 3, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 4, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 4, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-      { dayOfWeek: 5, startTime: '09:00', endTime: '12:00', slotDuration: 30, active: true },
-      { dayOfWeek: 5, startTime: '14:00', endTime: '17:00', slotDuration: 30, active: true },
-    ];
-  }
+// Expand availability into concrete bookable slots for the next N days —
+// shared by /get-slots/:docId and /get-slots-all. Availability resolves per
+// DATE through lib/availability.js (DB → store → defaults; weekly + one-off
+// date rows). Already-booked times are excluded from BOTH the shared
+// appointment store and the doctor-calendar DB so the picker never offers a
+// slot the booker will refuse.
+async function buildSlotCalendar(ownerId, days) {
   const apptStore = readApptStore();
   const existingAppts = [];
   Object.values(apptStore).forEach(appts => {
     if (!Array.isArray(appts)) return;
     appts.forEach(a => { if (a.date && a.status !== 'Declined') existingAppts.push(a); });
   });
+  const dbTaken = new Set(
+    (await db.prepare("SELECT date, start_time FROM appointments WHERE status NOT IN ('cancelled')").all())
+      .map(r => r.date + '|' + r.start_time)
+  );
   const today = new Date();
   const slotsByDate = {};
   for (let i = 0; i < days; i++) {
     const d = new Date(today); d.setDate(today.getDate() + i);
     const dateStr = d.toISOString().slice(0, 10);
-    const dayOfWeek = d.getDay();
+    const avail = await effectiveAvailabilityRows(ownerId || 'any', dateStr);
     const daySlots = [];
-    avail.filter(r => r.dayOfWeek === dayOfWeek).forEach(r => {
-      const [sh, sm] = (r.startTime || '09:00').split(':').map(Number);
-      const [eh, em] = (r.endTime || '17:00').split(':').map(Number);
-      const dur = r.slotDuration || 30;
+    for (const r of avail) {
+      const [sh, sm] = (r.start_time || '09:00').split(':').map(Number);
+      const [eh, em] = (r.end_time || '17:00').split(':').map(Number);
+      const dur = r.slot_duration || 30;
       let mins = sh * 60 + sm;
       const endMins = eh * 60 + em;
       while (mins + dur <= endMins) {
-        const h = String(Math.floor(mins / 60)).padStart(2, '0');
-        const m = String(mins % 60).padStart(2, '0');
-        const timeStr = h + ':' + m;
+        const timeStr = String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
         const endMins2 = mins + dur;
-        const eh2 = String(Math.floor(endMins2 / 60)).padStart(2, '0');
-        const em2 = String(endMins2 % 60).padStart(2, '0');
-        const endTimeStr = eh2 + ':' + em2;
-        const taken = existingAppts.some(e => e.date === dateStr && e.time === timeStr);
+        const endTimeStr = String(Math.floor(endMins2 / 60)).padStart(2, '0') + ':' + String(endMins2 % 60).padStart(2, '0');
+        const taken = existingAppts.some(e => e.date === dateStr && e.time === timeStr) || dbTaken.has(dateStr + '|' + timeStr);
         if (!taken) daySlots.push({ time: timeStr, endTime: endTimeStr });
         mins += dur;
       }
-    });
-    if (daySlots.length) slotsByDate[dateStr] = daySlots;
+    }
+    if (daySlots.length) {
+      daySlots.sort((a, b) => a.time.localeCompare(b.time));
+      slotsByDate[dateStr] = daySlots;
+    }
   }
-  res.json({ ok: true, slots: slotsByDate });
+  return slotsByDate;
+}
+
+// Generate bookable slots for next N days (no auth — the picker is public,
+// but rate-limited: unauthenticated schedule enumeration previously had no
+// throttle at all).
+const slotsLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many schedule requests' } });
+syncRouter.get('/get-slots/:docId', slotsLimiter, asyncHandler(async (req, res) => {
+  const { docId } = req.params;
+  const days = Math.min(parseInt(req.query.days || '30', 10) || 30, 60);
+  res.json({ ok: true, slots: await buildSlotCalendar(docId, days) });
 }));
 
-// ═══ Shared Telehealth (Video Calls) ════════════════════════════════
-// File-based stores (shared across all desktop apps on same machine)
-const TH_ROOM_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'telehealth-rooms.json');
-const TH_SIGNAL_PATH = _join(_dirname(process.env.DB_PATH || '.'), 'telehealth-signals.json');
-try { _mkdirSync(_dirname(TH_ROOM_PATH), { recursive: true }); } catch {}
-function readThRooms() { try { if (_existsSync(TH_ROOM_PATH)) return JSON.parse(_readFileSync(TH_ROOM_PATH, 'utf-8')); } catch {} return {}; }
-function writeThRooms(d) { try { _writeFileSync(TH_ROOM_PATH, JSON.stringify(d, null, 2), 'utf-8'); } catch {} }
-function readThSignals() { try { if (_existsSync(TH_SIGNAL_PATH)) return JSON.parse(_readFileSync(TH_SIGNAL_PATH, 'utf-8')); } catch {} return {}; }
-function writeThSignals(d) { try { _writeFileSync(TH_SIGNAL_PATH, JSON.stringify(d, null, 2), 'utf-8'); } catch {} }
+// Generate bookable slots from ANY doctor (used when patient _docId is null)
+syncRouter.get('/get-slots-all', slotsLimiter, asyncHandler(async (req, res) => {
+  const days = Math.min(parseInt(req.query.days || '30', 10) || 30, 60);
+  res.json({ ok: true, slots: await buildSlotCalendar(null, days) });
+}));
+
+// ═══ Shared Telehealth (Video Calls) — encrypted stores ═════════════
+function readThRooms() { return thRoomsStore.read(); }
+function writeThRooms(d) { thRoomsStore.write(d); }
+function readThSignals() { return thSignalsStore.read(); }
+function writeThSignals(d) { thSignalsStore.write(d); }
 
 function genRoomCode() {
   // Crypto-random: 6 chars from a 32-char unambiguous alphabet (uniform — 256 % 32 == 0).

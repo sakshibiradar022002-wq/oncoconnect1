@@ -14,7 +14,6 @@ export async function createSession(res, { subjectId, subjectType, role }) {
   const jti = randomToken(16);
   const now = new Date();
   const expires = new Date(now.getTime() + config.sessionTtlMinutes * 60 * 1000);
-
   // Opportunistic cleanup so the table doesn't grow forever.
   await db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(now.toISOString());
 
@@ -26,7 +25,7 @@ export async function createSession(res, { subjectId, subjectType, role }) {
   const token = jwt.sign(
     { sub: subjectId, type: subjectType, role, jti },
     config.jwtSecret,
-    { expiresIn: `${config.sessionTtlMinutes}m` }
+    { expiresIn: `${config.sessionTtlMinutes}m`, algorithm: 'HS256' }
   );
 
   // NOTE: `partitioned: true` (CHIPS) is deliberately NOT set. The CHIPS
@@ -57,7 +56,16 @@ export function clearSessionCookie(res) {
 }
 
 // ── Verify on each request ────────────────────────────────────────
-const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes idle timeout
+// No idle-timeout revoke: “stay logged in” is the product promise for the
+// Patient/Lab apps and the desktop software. Session lifetime is bounded by
+// SESSION_TTL_MIN (default 30 days) — a fresh JWT is issued long before
+// expiry thanks to the sliding refresh below.
+
+// Sliding refresh: when a session is past ⅔ of its lifetime, mint a fresh
+// JWT (and extend the DB row) so an actively-used app never sees a 401.
+const REFRESH_THRESHOLD_MS = 20 * 24 * 60 * 60 * 1000; // 20 of 30 days
+const REFRESH_COOLDOWN_MS = 60 * 60 * 1000; // at most once/hour per session
+const recentRefresh = new Map(); // jti → last refresh ts (in-memory only)
 
 export async function authenticate(req, res, next) {
   // Cookie first (desktop apps + browser UI), then Authorization: Bearer
@@ -68,7 +76,9 @@ export async function authenticate(req, res, next) {
 
   let payload;
   try {
-    payload = jwt.verify(token, config.jwtSecret);
+    // Algorithm pinned: without this, an attacker-crafted token could name a
+    // different algorithm (e.g. 'none' family tricks in older libs).
+    payload = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'] });
   } catch {
     return res.status(401).json({ error: 'Invalid or expired session' });
   }
@@ -82,16 +92,40 @@ export async function authenticate(req, res, next) {
     return res.status(401).json({ error: 'Session expired' });
   }
 
-  // Idle timeout: revoke if no activity for 30 minutes
-  if (session.last_activity) {
-    const lastActive = new Date(session.last_activity).getTime();
-    if (Date.now() - lastActive > IDLE_TIMEOUT_MS) {
-      await db.prepare('UPDATE sessions SET revoked = 1 WHERE id = ?').run(payload.jti);
-      return res.status(401).json({ error: 'Session expired due to inactivity' });
+  // Sliding refresh keeps active users signed in indefinitely (see above).
+  const created = new Date(session.created_at).getTime();
+  if (Date.now() - created > REFRESH_THRESHOLD_MS
+      && Date.now() - (recentRefresh.get(payload.jti) || 0) > REFRESH_COOLDOWN_MS) {
+    const now = new Date();
+    const expires = new Date(now.getTime() + config.sessionTtlMinutes * 60 * 1000);
+    const fresh = jwt.sign(
+      { sub: payload.sub, type: payload.type, role: payload.role, jti: payload.jti },
+      config.jwtSecret,
+      { expiresIn: `${config.sessionTtlMinutes}m`, algorithm: 'HS256' }
+    );
+    await db.prepare('UPDATE sessions SET expires_at = ?, last_activity = ? WHERE id = ?')
+      .run(expires.toISOString(), now.toISOString(), payload.jti).catch(() => {});
+    recentRefresh.set(payload.jti, Date.now());
+    if (recentRefresh.size > 4096) recentRefresh.clear();
+    // Cookie clients pick the new value up automatically; native apps can't
+    // take cookies — hand the fresh token back in a response header so
+    // mobile-api.js swaps it in (same jti, extended expiry). Without this,
+    // mobile users hit a hard 401 after 30 days no matter how often they
+    // used the app.
+    if (String(req.headers['x-veltruvia-native'] || '') === '1') {
+      res.setHeader('X-Veltruvia-Refreshed-Token', fresh);
     }
+    res.cookie(COOKIE_NAME, fresh, {
+      httpOnly: true,
+      secure: config.isProd,
+      sameSite: 'strict',
+      maxAge: config.sessionTtlMinutes * 60 * 1000,
+      path: '/',
+      priority: 'high',
+    });
   }
 
-  // Update last activity timestamp
+  // Touch last_activity (bookkeeping only — no longer used for revocation).
   await db.prepare('UPDATE sessions SET last_activity = ? WHERE id = ?')
     .run(new Date().toISOString(), payload.jti).catch(() => {});
 

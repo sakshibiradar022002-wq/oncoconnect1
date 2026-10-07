@@ -225,7 +225,7 @@ window.openSheet=function(id){
     const btn=document.createElement('button');
     btn.id='log-photo-btn';
     btn.className='big-btn';
-    btn.style.cssText='background:linear-gradient(135deg,#6d28d9,#8b5cf6);color:#fff;margin-top:8px;';
+    btn.style.cssText='background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff;margin-top:8px;';
     btn.textContent='📷 Add Photo (Wound/Side Effect)';
     btn.onclick=addPhotoToLog;
     form.appendChild(btn);

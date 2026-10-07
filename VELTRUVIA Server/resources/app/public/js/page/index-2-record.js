@@ -19,18 +19,18 @@ function buildRecordTabs(p){
   c.innerHTML=`
   <!-- ══ TAB 1: IDENTITY ══ -->
   <div id="rt-identity" class="rtab active">
-    <div style="background:linear-gradient(135deg,var(--blue),var(--blue2));border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
-      <div style="color:#fff;"><div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">MRN</div><div style="font-weight:700;font-size:13px;font-family:var(--mono);">${p.mrn}</div></div>
+    <div style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+      <div style="color:#fff;"><div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">MRN</div><div style="font-weight:700;font-size:13px;font-family:var(--mono);">${p.mrn}</div></div>
       <div style="width:1px;background:rgba(255,255,255,.2);align-self:stretch;"></div>
-      <div style="color:#fff;"><div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Age / Gender</div><div style="font-weight:700;font-size:13px;">${p.age||'—'} / ${p.gender||'—'}</div></div>
+      <div style="color:#fff;"><div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Age / Gender</div><div style="font-weight:700;font-size:13px;">${p.age||'—'} / ${p.gender||'—'}</div></div>
       <div style="width:1px;background:rgba(255,255,255,.2);align-self:stretch;"></div>
-      <div style="color:#fff;"><div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Diagnosis</div><div style="font-weight:700;font-size:13px;">${esc(p.diag||'—')}</div></div>
+      <div style="color:#fff;"><div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Diagnosis</div><div style="font-weight:700;font-size:13px;">${esc(p.diag||'—')}</div></div>
       <div style="width:1px;background:rgba(255,255,255,.2);align-self:stretch;"></div>
-      <div style="color:#fff;"><div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">ECOG</div><div style="font-weight:700;font-size:13px;">${p.ecog||'—'}</div></div>
+      <div style="color:#fff;"><div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">ECOG</div><div style="font-weight:700;font-size:13px;">${p.ecog||'—'}</div></div>
       <div style="width:1px;background:rgba(255,255,255,.2);align-self:stretch;"></div>
-      <div style="color:#fff;"><div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Phase</div><div style="font-weight:700;font-size:13px;">${p.phase||'—'}</div></div>
+      <div style="color:#fff;"><div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Phase</div><div style="font-weight:700;font-size:13px;">${p.phase||'—'}</div></div>
       <div style="width:1px;background:rgba(255,255,255,.2);align-self:stretch;"></div>
-      <div style="color:#fff;"><div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Disease Status</div><div style="font-weight:700;font-size:13px;">${p.diseaseStatus||'Stable'}</div></div>
+      <div style="color:#fff;"><div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Disease Status</div><div style="font-weight:700;font-size:13px;">${p.diseaseStatus||'Stable'}</div></div>
     </div>
     <div id="r-allergy-drug-warn" style="display:none;background:rgba(220,38,38,.07);border:1.5px solid rgba(220,38,38,.25);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--red);"></div>
     <div class="rt-section">

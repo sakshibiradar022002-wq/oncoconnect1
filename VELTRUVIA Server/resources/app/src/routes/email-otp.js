@@ -235,7 +235,7 @@ function buildOtpEmailHtml(otp, purpose) {
 <head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#f0f4fa;font-family:system-ui,-apple-system,sans-serif">
   <div style="max-width:480px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
-    <div style="background:linear-gradient(135deg,#1d4ed8,#2563eb,#3b82f6);padding:32px;text-align:center">
+    <div style="background:linear-gradient(135deg,#1d4ed8,#2563eb);padding:32px;text-align:center">
       <div style="font-size:32px;margin-bottom:8px">🧬</div>
       <div style="color:#fff;font-size:20px;font-weight:800">VELTRUVIA</div>
       <div style="color:rgba(255,255,255,.8);font-size:13px;margin-top:4px">Email Verification</div>

@@ -6,13 +6,50 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { db, writeAudit } from '../db/index.js';
 import { encryptPHI, decryptPHI, randomToken } from '../crypto.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { notifySubject } from '../push.js';
+import { effectiveAvailabilityRows } from '../lib/availability.js';
 
 export const scheduleRouter = Router();
+
+// ── Shared appointment store (ENCRYPTED — v2.5) ─────────────────────
+// The patient slot picker reads /api/sync/get-slots*, which resolves
+// availability through src/lib/availability.js — the SAME chain used here.
+// (/schedule/book used to validate only against the doctor_availability DB
+// table, so store-seeded patients got 400s the picker never warned about.)
+// appointments-store.json previously held PHI in plaintext; the encrypted
+// store migrates the legacy file transparently on first read.
+import { createEncryptedStore } from '../lib/json-stores.js';
+const apptStoreEnc = createEncryptedStore('appointments-store.json', { label: 'appt-store' });
+
+function readJsonStore(path) {
+  // Legacy path kept for compatibility; the canonical store is encrypted.
+  try { if (existsSync(path)) return JSON.parse(readFileSync(path, 'utf-8')); } catch {}
+  return {};
+}
+
+function readApptStoreShared() {
+  return apptStoreEnc.read();
+}
+
+// Bookings land in BOTH stores (patient app saves to the shared store, doctor
+// calendar uses the DB) — a slot taken in either must not be bookable again.
+function sharedStoreSlotTaken(dateStr, startTime) {
+  const store = readApptStoreShared();
+  for (const appts of Object.values(store)) {
+    if (!Array.isArray(appts)) continue;
+    for (const a of appts) {
+      if (a && a.date === dateStr && a.time === startTime &&
+          !/declined|cancel/i.test(String(a.status || ''))) return true;
+    }
+  }
+  return false;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────
 function dateRange(days = 30) {
@@ -72,12 +109,18 @@ scheduleRouter.get('/availability', authenticate, requireRole('doctor', 'admin')
 // ── Set/replace my availability schedule ───────────────────────────
 const availSchema = z.object({
   slots: z.array(z.object({
-    dayOfWeek: z.number().min(0).max(6),
+    // Weekly recurring rows carry dayOfWeek; one-off rows carry a date
+    // (e.g. an extra clinic on a Sunday). Exactly one of the two.
+    dayOfWeek: z.number().min(0).max(6).optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     startTime: z.string().regex(/^\d{2}:\d{2}$/),
     endTime: z.string().regex(/^\d{2}:\d{2}$/),
     slotDuration: z.number().min(10).max(120).optional().default(30),
     appointmentTypes: z.array(z.string()).optional(),
-  })),
+  })).refine(
+    slots => slots.every(s => s.date || Number.isInteger(s.dayOfWeek)),
+    { message: 'Each slot needs either a dayOfWeek (weekly) or a date (one-off)' }
+  ),
 });
 
 scheduleRouter.put('/availability', authenticate, requireRole('doctor', 'admin'),
@@ -98,13 +141,17 @@ scheduleRouter.put('/availability', authenticate, requireRole('doctor', 'admin')
     `);
 
     for (const s of slots) {
-      await ins.run(
-        randomToken(16), req.auth.subjectId,
-        s.dayOfWeek, s.startTime, s.endTime,
-        s.slotDuration || 30,
-        s.appointmentTypes ? JSON.stringify(s.appointmentTypes) : null,
-        now
-      );
+      if (!s.date) {
+        await ins.run(
+          randomToken(16), req.auth.subjectId,
+          s.dayOfWeek, s.startTime, s.endTime,
+          s.slotDuration || 30,
+          s.appointmentTypes ? JSON.stringify(s.appointmentTypes) : null,
+          now
+        );
+      }
+      // One-off date rows live only in the shared store (the DB table is
+      // weekly-recurring) — saved there by /api/sync/save-availability.
     }
 
     await writeAudit({
@@ -358,11 +405,11 @@ scheduleRouter.post('/book', authenticate, requireRole('kv-patient'), patientSco
     const { date, startTime, type, notes } = req.valid;
     const now = new Date().toISOString();
 
-    // Find the matching availability to compute end_time
-    const d = new Date(date + 'T00:00:00');
-    const avail = await db.prepare(
-      'SELECT * FROM doctor_availability WHERE doctor_id = ? AND day_of_week = ? AND active = 1'
-    ).all(ownerId, d.getDay());
+    // Find the matching availability to compute end_time. Resolves through
+    // the same chain the patient slot picker uses (DB → shared store →
+    // defaults, weekly + date-specific), so any slot the picker offered can
+    // actually be booked.
+    const avail = await effectiveAvailabilityRows(ownerId, date);
 
     let matched = null;
     for (const a of avail) {
@@ -375,7 +422,7 @@ scheduleRouter.post('/book', authenticate, requireRole('kv-patient'), patientSco
       return res.status(400).json({ error: 'This time slot is not available' });
     }
 
-    // Check for conflicts
+    // Check for conflicts in the DB calendar…
     const conflict = await db.prepare(`
       SELECT id FROM appointments
       WHERE doctor_id = ? AND date = ? AND status NOT IN ('cancelled')
@@ -383,6 +430,10 @@ scheduleRouter.post('/book', authenticate, requireRole('kv-patient'), patientSco
     `).get(ownerId, date, startTime, matched.endTime);
 
     if (conflict) {
+      return res.status(409).json({ error: 'This slot was just taken. Please choose another.' });
+    }
+    // …and in the shared appointment store the patient app writes to.
+    if (sharedStoreSlotTaken(date, startTime)) {
       return res.status(409).json({ error: 'This slot was just taken. Please choose another.' });
     }
 

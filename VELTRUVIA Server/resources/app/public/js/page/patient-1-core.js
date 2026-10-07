@@ -940,7 +940,7 @@ function renderTreatmentPlan(){
   h+='</div>';
   // Next appointment
   const appts=(LS.get('appts_'+p.mrn)||[]).filter(a=>new Date(a.date)>=new Date()&&a.status!=='Declined').sort((a,b)=>new Date(a.date)-new Date(b.date));
-  if(appts.length){const n=appts[0];h+=`<div style="background:linear-gradient(135deg,var(--green),var(--blue));border-radius:12px;padding:16px;color:#fff;margin-bottom:12px"><div style="font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Next Appointment</div><div style="font-weight:700;font-size:15px">${new Date(n.date).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div><div style="font-size:13px;opacity:.8;margin-top:2px">${n.time||''} · ${n.type||'Follow-up'}</div></div>`}
+  if(appts.length){const n=appts[0];h+=`<div style="background:linear-gradient(135deg,#065f46,#047857);border-radius:12px;padding:16px;color:#fff;margin-bottom:12px"><div style="font-size:10px;opacity:.9;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Next Appointment</div><div style="font-weight:700;font-size:15px">${new Date(n.date).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div><div style="font-size:13px;opacity:.9;margin-top:2px">${n.time||''} · ${n.type||'Follow-up'}</div></div>`}
   document.getElementById('treatment-content').innerHTML=h;
 }
 
@@ -1059,7 +1059,7 @@ function renderProfile(){
   }
   h+='<button class="big-btn nav-btn-style" data-action="exportMyData" style="margin-top:12px">⬇ Export My Data</button>';
   // Push notifications
-  h+='<button class="big-btn" style="background:linear-gradient(135deg,#6d28d9,#8b5cf6);color:#fff;margin-top:12px" data-action="subscribeToPush">🔔 Enable Appointment Reminders</button>';
+  h+='<button class="big-btn" style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff;margin-top:12px" data-action="subscribeToPush">🔔 Enable Appointment Reminders</button>';
   // Storage bar
   let total=0;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith('ccenc_')||k.startsWith('cc_')))total+=(localStorage.getItem(k)||'').length}
   const pct=Math.min(100,Math.round(total/5242880*100));

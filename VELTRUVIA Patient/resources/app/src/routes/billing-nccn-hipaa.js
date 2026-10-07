@@ -540,7 +540,7 @@ router.post('/hipaa/phi-log', asyncHandler(async (req, res) => {
 
 router.get('/hipaa/phi-log/:patientMrn', asyncHandler(async (req, res) => {
     const { limit = 50 } = req.query;
-  res.json(await db.prepare('SELECT * FROM phi_access_log WHERE patient_mrn = ? ORDER BY timestamp DESC LIMIT ?').all(req.params.mrn, +limit));
+  res.json(await db.prepare('SELECT * FROM phi_access_log WHERE patient_mrn = ? ORDER BY timestamp DESC LIMIT ?').all(req.params.patientMrn, +limit));
 }));
 
 // --- Data Retention Policies ---

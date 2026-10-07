@@ -20,7 +20,7 @@
 <div id="error-banner" role="alert" aria-live="assertive"></div>
 
 <!-- ═══ AUTH SCREEN ═══ -->
-<div id="auth-screen">
+<main id="auth-screen" aria-label="VELTRUVIA Doc sign in">
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon"><img src="/icons/brand/veltruvia-doc.jpg" alt="VELTRUVIA Doc" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>
@@ -60,7 +60,7 @@
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
             <span style="font-size:18px">📧</span>
             <div style="font-weight:700;font-size:13px;color:var(--text)">Email Verification</div>
-            <span id="rg-verify-badge" style="margin-left:auto;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px;background:rgba(245,158,11,.1);color:var(--orange)">Required</span>
+            <span id="rg-verify-badge" style="margin-left:auto;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px;background:rgba(245,158,11,.1);color:var(--amber-text)">Required</span>
           </div>
           <div id="rg-verify-send">
             <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">We'll send a 6-digit code to verify your email address.</div>
@@ -86,7 +86,7 @@
     <div id="conn-indicator" style="margin-top:10px;text-align:center;font-size:11px;color:var(--text-dim);display:none;"></div>
     <div style="margin-top:16px;text-align:center;font-size:11px;color:var(--text-dim);">🔒 Data stored locally on this device</div>
   </div>
-</div>
+</main>
 
 <!-- ═══ MAIN APP ═══ -->
 <div id="app" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
@@ -98,7 +98,7 @@
         <div><div style="font-weight:800;font-size:13px;color:var(--text);">VELTRUVIA</div><div style="font-size:9px;color:var(--text-dim);font-family:var(--mono);">SOFTWARE</div></div>
       </div>
       <div class="sidebar-scroll">
-      <button class="nav-item" data-action="openPatientSearch"><span class="ni">🔍</span>Search patients <span style="margin-left:auto;font-size:10px;opacity:.6;font-family:var(--mono);">Ctrl K</span></button>
+      <button class="nav-item" data-action="openPatientSearch"><span class="ni">🔍</span>Search patients <span style="margin-left:auto;font-size:10px;color:var(--text-muted);font-family:var(--mono);">Ctrl K</span></button>
 
       <div class="sidebar-section">Overview</div>
       <button class="nav-item active" data-action="showPanel:overview,@this"><span class="ni">📊</span>Dashboard</button>
@@ -174,7 +174,7 @@
         <div class="card">
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <input class="search-bar" id="pat-search" style="flex:1;min-width:200px;" placeholder="Search by name, MRN, or diagnosis…" data-action-input="renderPatList">
-            <select id="pat-phase-filter" data-action-change="renderPatList" style="padding:10px 12px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:13px;background:var(--surface);color:var(--text);"><option value="">All phases</option><option>Diagnosis</option><option>Pre-Treatment</option><option>Treatment Phase</option><option>Post-Treatment</option><option>Monitoring</option><option>Palliative</option></select>
+            <select id="pat-phase-filter" aria-label="Filter patients by treatment phase" data-action-change="renderPatList" style="padding:10px 12px;border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:13px;background:var(--surface);color:var(--text);"><option value="">All phases</option><option>Diagnosis</option><option>Pre-Treatment</option><option>Treatment Phase</option><option>Post-Treatment</option><option>Monitoring</option><option>Palliative</option></select>
           </div>
           <div id="pat-list"></div>
         </div>
@@ -183,7 +183,7 @@
       <!-- CALENDAR -->
       <div class="panel" id="panel-calendars">
         <div class="page-header"><div><div class="page-title">Health Calendar</div><div class="page-sub">Monitor daily symptom logs</div></div></div>
-        <div class="card"><div class="fg" style="max-width:280px;margin-bottom:0;"><label>Select Patient</label><select id="cal-sel" data-action-change="renderDocCal"><option value="">— Choose a patient —</option></select></div></div>
+        <div class="card"><div class="fg" style="max-width:280px;margin-bottom:0;"><label for="cal-sel">Select Patient</label><select id="cal-sel" data-action-change="renderDocCal"><option value="">— Choose a patient —</option></select></div></div>
         <div id="cal-view"></div>
       </div>
 
@@ -272,7 +272,7 @@
           </div>
           <div class="card">
             <div class="card-title" style="margin-bottom:12px">⚠️ Patient Allergy Check</div>
-            <div class="fg"><label>Select Patient</label><select id="cds-patient" data-action-change="loadPatientAllergies"><option value="">— Select —</option></select></div>
+            <div class="fg"><label for="cds-patient">Select Patient</label><select id="cds-patient" data-action-change="loadPatientAllergies"><option value="">— Select —</option></select></div>
             <div id="cds-allergy-list"></div>
             <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
               <div class="card-title" style="margin-bottom:8px;font-size:12px">Add Allergy</div>
@@ -280,7 +280,7 @@
                 <div class="fg" style="margin:0"><label>Drug Name</label><input id="cds-allergy-drug" placeholder="e.g. penicillin"></div>
                 <div class="fg" style="margin:0"><label>Reaction</label><input id="cds-allergy-rxn" placeholder="e.g. rash, anaphylaxis"></div>
               </div>
-              <div class="fg"><label>Severity</label><select id="cds-allergy-sev"><option value="mild">Mild</option><option value="moderate" selected>Moderate</option><option value="severe">Severe</option><option value="anaphylaxis">Anaphylaxis</option></select></div>
+              <div class="fg"><label for="cds-allergy-sev">Severity</label><select id="cds-allergy-sev"><option value="mild">Mild</option><option value="moderate" selected>Moderate</option><option value="severe">Severe</option><option value="anaphylaxis">Anaphylaxis</option></select></div>
               <button class="btn btn-primary btn-sm" data-action="addAllergy">+ Add Allergy</button>
             </div>
           </div>
@@ -307,20 +307,20 @@
         <div class="g2" style="margin-bottom:20px">
           <div class="card">
             <div class="card-title" style="margin-bottom:12px">✍️ New Prescription</div>
-            <div class="fg"><label>Patient</label><select id="rx-patient"><option value="">— Select —</option></select></div>
+            <div class="fg"><label for="rx-patient">Patient</label><select id="rx-patient"><option value="">— Select —</option></select></div>
             <div class="fg"><label>Medication *</label><input id="rx-med" placeholder="e.g. Temozolomide"></div>
             <div class="fg"><label>Generic Name</label><input id="rx-generic" placeholder="Optional generic name"></div>
             <div class="g2">
               <div class="fg" style="margin:0"><label>Dosage *</label><input id="rx-dose" placeholder="e.g. 150 mg/m²"></div>
-              <div class="fg" style="margin:0"><label>Frequency *</label><select id="rx-freq"><option>QD</option><option>BID</option><option>TID</option><option>QID</option><option>QAM</option><option>QHS</option><option>PRN</option><option>Q6H</option><option>Q8H</option><option>Monthly</option><option>Cycle Day 1-5</option></select></div>
+              <div class="fg" style="margin:0"><label for="rx-freq">Frequency *</label><select id="rx-freq"><option>QD</option><option>BID</option><option>TID</option><option>QID</option><option>QAM</option><option>QHS</option><option>PRN</option><option>Q6H</option><option>Q8H</option><option>Monthly</option><option>Cycle Day 1-5</option></select></div>
             </div>
             <div class="g2">
-              <div class="fg" style="margin:0"><label>Route</label><select id="rx-route"><option value="oral">Oral</option><option value="iv">IV</option><option value="im">IM</option><option value="subcutaneous">Subcutaneous</option><option value="intrathecal">Intrathecal</option><option value="topical">Topical</option></select></div>
+              <div class="fg" style="margin:0"><label for="rx-route">Route</label><select id="rx-route"><option value="oral">Oral</option><option value="iv">IV</option><option value="im">IM</option><option value="subcutaneous">Subcutaneous</option><option value="intrathecal">Intrathecal</option><option value="topical">Topical</option></select></div>
               <div class="fg" style="margin:0"><label>Duration</label><input id="rx-dur" placeholder="e.g. 30 days"></div>
             </div>
             <div class="g2">
               <div class="fg" style="margin:0"><label>Quantity</label><input id="rx-qty" type="number" placeholder="# pills"></div>
-              <div class="fg" style="margin:0"><label>Refills</label><input id="rx-refills" type="number" value="0" min="0" max="12"></div>
+              <div class="fg" style="margin:0"><label for="rx-refills">Refills</label><input id="rx-refills" type="number" value="0" min="0" max="12"></div>
             </div>
             <div class="fg"><label>Pharmacy</label><input id="rx-pharmacy" placeholder="Pharmacy name/address"></div>
             <div class="fg"><label>Special Instructions</label><textarea id="rx-instructions" rows="2" placeholder="e.g. Take with food, avoid sunlight"></textarea></div>
@@ -399,8 +399,8 @@
         <div class="page-header"><div><div class="page-title">📋 Audit Trail</div><div class="page-sub">HIPAA-compliant activity log</div></div></div>
         <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
           <div class="fg" style="margin:0;flex:1;min-width:200px;"><label>Patient MRN</label><input id="audit-mrn" placeholder="Search patient MRN..."></div>
-          <div class="fg" style="margin:0;min-width:150px;"><label>Category</label><select id="audit-cat"><option value="">All</option><option value="prescription">Prescriptions</option><option value="allergy">Allergies</option><option value="clinical_note">Clinical Notes</option><option value="referral">Referrals</option><option value="imaging">Documents</option><option value="lab">Labs</option></select></div>
-          <div class="fg" style="margin:0;min-width:100px;"><label>Days</label><select id="audit-days" data-action-change="renderAuditPanel"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option><option value="365">1 year</option></select></div>
+          <div class="fg" style="margin:0;min-width:150px;"><label for="audit-cat">Category</label><select id="audit-cat"><option value="">All</option><option value="prescription">Prescriptions</option><option value="allergy">Allergies</option><option value="clinical_note">Clinical Notes</option><option value="referral">Referrals</option><option value="imaging">Documents</option><option value="lab">Labs</option></select></div>
+          <div class="fg" style="margin:0;min-width:100px;"><label for="audit-days">Days</label><select id="audit-days" data-action-change="renderAuditPanel"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option><option value="365">1 year</option></select></div>
           <button class="btn btn-primary btn-sm" data-action="renderAuditPanel" style="margin-top:18px;">🔍 Search</button>
         </div>
         <div class="card">
@@ -456,7 +456,7 @@
             <div><div class="card-title">🏥 FHIR R4 Export</div><div style="font-size:11.5px;color:var(--text-muted);">HL7 FHIR R4 patient bundles</div></div>
           </div>
           <div class="g2" style="margin-bottom:12px;">
-            <div class="fg" style="margin:0;"><label>Select patient</label><select id="fhir-pat-sel"><option value="">— Choose —</option></select></div>
+            <div class="fg" style="margin:0;"><label for="fhir-pat-sel">Select patient</label><select id="fhir-pat-sel"><option value="">— Choose —</option></select></div>
             <div class="fg" style="margin:0;"><label>FHIR Server URL (optional)</label><input id="fhir-server-url" placeholder="https://your-fhir-server.com/fhir"></div>
           </div>
           <div style="display:flex;gap:8px;">
@@ -493,7 +493,7 @@
         <div class="g2" style="margin-bottom:18px;">
           <div class="card" style="margin-bottom:0;">
             <div class="card-title" style="margin-bottom:10px;">📋 Recipients</div>
-            <div class="fg" style="margin:0;"><label>Send to</label>
+            <div class="fg" style="margin:0;"><label for="bc-to">Send to</label>
               <select id="bc-to" data-action-change="loadBroadcastContacts" style="width:100%;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;color:var(--text);font-family:inherit;font-size:13px;">
                 <option value="all">All (Doctors + Patients)</option>
                 <option value="doctors">Doctors only</option>
@@ -576,15 +576,15 @@
             <div id="settings-roles-list"></div>
             <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
               <div class="card-title" style="font-size:12px;margin-bottom:8px;">Add Custom Role</div>
-              <div class="g2"><div class="fg" style="margin:0;"><label>Role Name</label><input id="new-role-name" placeholder="e.g. Pharmacist"></div></div>
+              <div class="g2"><div class="fg" style="margin:0;"><label for="new-role-name">Role Name</label><input id="new-role-name" placeholder="e.g. Pharmacist"></div></div>
               <button class="btn btn-primary btn-sm" style="margin-top:8px;" data-action="addCustomRole">+ Add Role</button>
             </div>
           </div>
           <div class="settings-section">
             <h3>⏱ Session Management</h3>
             <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">HIPAA requires automatic session timeout after inactivity.</div>
-            <div class="fg"><label>Session Timeout (minutes)</label><input type="number" id="session-timeout" value="30" min="5" max="120"></div>
-            <div class="fg"><label>Max Failed Login Attempts</label><input type="number" id="max-login-attempts" value="5" min="3" max="10"></div>
+            <div class="fg"><label for="session-timeout">Session Timeout (minutes)</label><input type="number" id="session-timeout" value="30" min="5" max="120"></div>
+            <div class="fg"><label for="max-login-attempts">Max Failed Login Attempts</label><input type="number" id="max-login-attempts" value="5" min="3" max="10"></div>
             <button class="btn btn-primary btn-sm" style="margin-top:8px;">💾 Save Policies</button>
           </div>
         </div>
@@ -604,12 +604,12 @@
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Age/sex-aware normal bands used by delta-check &amp; result flagging. Edits are audit-logged.</div>
           <div id="settings-ranges-list" style="max-height:280px;overflow:auto;"></div>
           <div class="g2" style="margin-top:12px;">
-            <div class="fg" style="margin:0;"><label>Analyte</label><input id="rng-bio" placeholder="e.g. Creatinine"></div>
-            <div class="fg" style="margin:0;"><label>Unit</label><input id="rng-unit" placeholder="mg/dL"></div>
-            <div class="fg" style="margin:0;"><label>Sex</label><select id="rng-sex"><option value="any">Any</option><option value="male">Male</option><option value="female">Female</option></select></div>
-            <div class="fg" style="margin:0;"><label>Min</label><input type="number" id="rng-min" step="any"></div>
-            <div class="fg" style="margin:0;"><label>Max</label><input type="number" id="rng-max" step="any"></div>
-            <div class="fg" style="margin:0;"><label>Age ≥</label><input type="number" id="rng-agemin" value="0" min="0" max="120"></div>
+            <div class="fg" style="margin:0;"><label for="rng-bio">Analyte</label><input id="rng-bio" placeholder="e.g. Creatinine"></div>
+            <div class="fg" style="margin:0;"><label for="rng-unit">Unit</label><input id="rng-unit" placeholder="mg/dL"></div>
+            <div class="fg" style="margin:0;"><label for="rng-sex">Sex</label><select id="rng-sex"><option value="any">Any</option><option value="male">Male</option><option value="female">Female</option></select></div>
+            <div class="fg" style="margin:0;"><label for="rng-min">Min</label><input type="number" id="rng-min" step="any"></div>
+            <div class="fg" style="margin:0;"><label for="rng-max">Max</label><input type="number" id="rng-max" step="any"></div>
+            <div class="fg" style="margin:0;"><label for="rng-agemin">Age ≥</label><input type="number" id="rng-agemin" value="0" min="0" max="120"></div>
           </div>
           <button class="btn btn-primary btn-sm" style="margin-top:8px;" data-action="rngAdd">+ Add / Update Range</button>
         </div>
@@ -617,8 +617,8 @@
           <h3>🔗 FHIR R4 Server</h3>
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Configure external FHIR server for data exchange.</div>
           <div class="g2">
-            <div class="fg" style="margin:0;"><label>FHIR Server Base URL</label><input id="fhir-server-base" placeholder="https://hapi.fhir.org/baseR4"></div>
-            <div class="fg" style="margin:0;"><label>API Key (optional)</label><input id="fhir-api-key" placeholder="Bearer token or API key" type="password"></div>
+            <div class="fg" style="margin:0;"><label for="fhir-server-base">FHIR Server Base URL</label><input id="fhir-server-base" placeholder="https://hapi.fhir.org/baseR4"></div>
+            <div class="fg" style="margin:0;"><label for="fhir-api-key">API Key (optional)</label><input id="fhir-api-key" placeholder="Bearer token or API key" type="password"></div>
           </div>
           <button class="btn btn-primary btn-sm" style="margin-top:8px;">💾 Save FHIR Config</button>
         </div>
@@ -768,7 +768,7 @@
 <script src="js/actions.js"></script>
 <script src="js/vendor/qrcode-generator.js"></script>
 <script src="sync-client.js"></script>
-<script src="js/ui.js"></script>
+<script src="js/ui.js?v=20261006a"></script>
 <script src="js/secure-store.js"></script>
 <script src="js/utils.js?v=20261001a"></script>
 <script src="js/telehealth-ws.js"></script>
@@ -785,7 +785,7 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- SCRIPT BLOCK 3 — New Features                              -->
 <!-- ═══════════════════════════════════════════════════════════ -->
-<script src="js/page/index-3-reports.js?v=20261002b"></script>
+<script src="js/page/index-3-reports.js?v=20261006a"></script>
 
 <!-- Standalone mode: hide portal switcher when loaded from a separate app -->
 <script src="js/page/index-4-standalone.js"></script>

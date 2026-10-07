@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const mx=parseInt(el.getAttribute('maxlength'),10);if(mx>0)el.addEventListener('input',()=>sanitizeInput(el,mx));
   });
   // Desktop mode: enable Create Account button without OTP verification
-  if(window.app?.isElectron){const b=document.getElementById('btn-create-account');if(b){b.disabled=false;b.style.opacity='1';}const h=document.getElementById('rg-create-hint');if(h)h.textContent='';const v=document.getElementById('rg-verify-send');if(v)v.style.display='none';const vi=document.getElementById('rg-verify-input');if(vi)vi.style.display='none';const badge=document.getElementById('rg-verify-badge');if(badge){badge.textContent='Desktop Mode';badge.style.background='rgba(16,185,129,.1)';badge.style.color='var(--green)';}const vd=document.getElementById('rg-verify-done');if(vd)vd.style.display='none';}});
+  if(window.app?.isElectron){const b=document.getElementById('btn-create-account');if(b){b.disabled=false;b.style.opacity='1';}const h=document.getElementById('rg-create-hint');if(h)h.textContent='';const v=document.getElementById('rg-verify-send');if(v)v.style.display='none';const vi=document.getElementById('rg-verify-input');if(vi)vi.style.display='none';const badge=document.getElementById('rg-verify-badge');if(badge){badge.textContent='Desktop Mode';badge.style.background='rgba(16,185,129,.1)';badge.style.color='var(--ok-text)';}const vd=document.getElementById('rg-verify-done');if(vd)vd.style.display='none';}});
 // ── Connection indicator: show WHICH server this app is talking to ──
 // Desktop apps proxy to either the local clinic Server or the cloud;
 // surfacing it answers "where is my data going?" without dev tools.
@@ -140,14 +140,14 @@ document.addEventListener('DOMContentLoaded',()=>{
     else{const r=await fetch('/health',{method:'GET'});const h=await r.json();url='(browser) '+location.origin;}
     if(!url)return;
     let label,cls;
-    if(/duckdns\.org/i.test(url)){label='☁️ Connected to VELTRUVIA Cloud ('+url.replace(/^https?:\/\//,'')+')';cls='var(--green)';}
-    else if(/127\.0\.0\.1|localhost/i.test(url)){label='💻 Connected to local clinic Server ('+url.replace(/^https?:\/\//,'')+')';cls='var(--orange)';}
+    if(/duckdns\.org/i.test(url)){label='☁️ Connected to VELTRUVIA Cloud ('+url.replace(/^https?:\/\//,'')+')';cls='var(--ok-text)';}
+    else if(/127\.0\.0\.1|localhost/i.test(url)){label='💻 Connected to local clinic Server ('+url.replace(/^https?:\/\//,'')+')';cls='var(--amber-text)';}
     else{label='🏥 Connected to: '+url.replace(/^https?:\/\//,'');cls='var(--blue)';}
     ind.textContent=label;ind.style.color=cls;ind.style.display='block';
   }catch(e){/* indicator is best-effort */}
 })();
 function v(id){const el=document.getElementById(id);return el?(el.value||'').trim():'';}
-function flash(msg){const d=document.createElement('div');d.style.cssText='position:fixed;top:16px;right:16px;background:var(--green);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:var(--shadow-lg);';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
+function flash(msg){const d=document.createElement('div');d.style.cssText='position:fixed;top:16px;right:16px;background:#047857;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:var(--shadow-lg);';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
 
 // ── Server Sync Push ──
 // Returns true when the server accepted the changes, false when it could not
@@ -179,7 +179,7 @@ function switchATab(tab,btn){document.querySelectorAll('.ts-btn').forEach(b=>b.c
     document.getElementById('btn-create-account').disabled=true;
     document.getElementById('rg-create-hint').textContent='Verify your email above first';
     const badge=document.getElementById('rg-verify-badge');
-    badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--orange)';
+    badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--amber-text)';
     document.getElementById('rg-otp').value='';
     const rs=document.getElementById('rg-resend-status');if(rs)rs.textContent='';
   }}
@@ -275,7 +275,7 @@ async function verifyRegOtp(){
       document.getElementById('rg-verify-input').style.display='none';
       document.getElementById('rg-verify-done').style.display='block';
       const badge=document.getElementById('rg-verify-badge');
-      badge.textContent='Verified ✓';badge.style.background='rgba(16,185,129,.1)';badge.style.color='var(--green)';
+      badge.textContent='Verified ✓';badge.style.background='rgba(16,185,129,.1)';badge.style.color='var(--ok-text)';
       // Enable create account button
       document.getElementById('btn-create-account').disabled=false;
       document.getElementById('rg-create-hint').textContent='';
@@ -318,7 +318,7 @@ async function createAccount(){
       document.getElementById('btn-send-otp').textContent='📧 Send Verification Code';
       document.getElementById('btn-create-account').disabled=true;
       const badge=document.getElementById('rg-verify-badge');
-      badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--orange)';
+      badge.textContent='Required';badge.style.background='rgba(245,158,11,.1)';badge.style.color='var(--amber-text)';
       return;
     }
     // Server unreachable — save locally for offline mode
@@ -532,7 +532,7 @@ function renderPatList(){
   if(!pats.length){el.innerHTML='<div class="empty-card">No patients found.</div>';return;}
   el.innerHTML=pats.map(p=>{
     const ds=p.diseaseStatus||'Stable';
-    const dsColors={Active:'var(--blue)',Stable:'var(--cyan)',Remission:'var(--green)',Progression:'var(--red)',Relapse:'var(--orange)',Deceased:'var(--text-dim)'};
+    const dsColors={Active:'var(--blue)',Stable:'var(--cyan)',Remission:'var(--ok-text)',Progression:'var(--red)',Relapse:'var(--amber-text)',Deceased:'var(--text-dim)'};
     return `<div class="patient-row" data-action="openRecord:${escAttr(p.mrn)}">
       <div style="flex:1;"><div class="pat-name">${esc(p.name)}</div><div class="pat-mrn">${p.mrn}</div><div class="pat-diag">${esc(p.diag||'—')}</div></div>
       <span class="badge" style="background:${dsColors[ds]||'var(--text-dim)'}22;color:${dsColors[ds]||'var(--text-dim)'};">${ds}</span>

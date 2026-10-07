@@ -218,3 +218,115 @@ test("sql-injection-looking payload is handled safely (no 5xx)", async () => {
   const r = await api('POST', '/api/auth/login', { email: "x' OR 1=1 --", password: 'whatever123' });
   assert.ok(r.status < 500, `status ${r.status}`);
 });
+
+// ── Clinical safety: CDS routes over real HTTP ───────────────────
+// These gate patient-safety decisions (allergy blocking, dose limits,
+// interaction warnings) — they must be auth-gated, role-gated, validated,
+// and must actually fire on known-dangerous inputs.
+
+test('CDS safety routes are not public (401 without session)', async () => {
+  for (const [path, body] of [
+    ['/api/cds/allergy-check', { patientMrn: '12345', medications: ['amoxicillin'] }],
+    ['/api/cds/dosage-check', { medication: 'temozolomide', dosage: '300 mg/m²', frequency: 'daily' }],
+    ['/api/cds/interactions', { medications: ['a', 'b'] }],
+  ]) {
+    const r = await api('POST', path, body);
+    assert.equal(r.status, 401, `${path} must require authentication`);
+  }
+});
+
+test('CDS safety routes reject patient sessions (403 role gate)', async () => {
+  const li = await api('POST', '/api/sync/patient-login', { mrn: '12345', password: 'testpat123' });
+  assert.equal(li.status, 200, 'demo patient login: ' + JSON.stringify(li.data));
+  const patientCookie = cookieOf(li.setCookie);
+  for (const [path, body] of [
+    ['/api/cds/allergy-check', { patientMrn: '12345', medications: ['amoxicillin'] }],
+    ['/api/cds/dosage-check', { medication: 'temozolomide', dosage: '150 mg/m²', frequency: 'daily' }],
+  ]) {
+    const r = await api('POST', path, body, patientCookie);
+    assert.equal(r.status, 403, `${path} must not be usable by patient sessions`);
+  }
+});
+
+test('allergy gate: recorded allergy blocks the drug and its cross-reactive family', async () => {
+  const add = await api('POST', '/api/cds/allergies', {
+    mrn: 'CDS001', drugName: 'penicillin', reaction: 'Anaphylaxis', severity: 'anaphylaxis',
+  }, adminCookie);
+  assert.equal(add.status, 201, JSON.stringify(add.data));
+
+  // Direct match on the recorded allergen
+  const direct = await api('POST', '/api/cds/allergy-check',
+    { patientMrn: 'CDS001', medications: ['penicillin'] }, adminCookie);
+  assert.equal(direct.status, 200);
+  assert.ok(direct.data.alerts.length >= 1, 'direct allergen must alert');
+  assert.equal(direct.data.alerts[0].severity, 'anaphylaxis');
+  assert.match(direct.data.alerts[0].message, /ALLERGY/i);
+
+  // Cross-reactive family member (penicillin → amoxicillin)
+  const cross = await api('POST', '/api/cds/allergy-check',
+    { patientMrn: 'CDS001', medications: ['amoxicillin'] }, adminCookie);
+  assert.equal(cross.status, 200);
+  assert.ok(cross.data.alerts.some(a => a.crossReactivity === 'penicillin'),
+    'cross-reactivity alert expected: ' + JSON.stringify(cross.data.alerts));
+
+  // Unrelated drug on the same patient passes clean (no false positive)
+  const clean = await api('POST', '/api/cds/allergy-check',
+    { patientMrn: 'CDS001', medications: ['ondansetron'] }, adminCookie);
+  assert.equal(clean.status, 200);
+  assert.equal(clean.data.alerts.length, 0, 'no false-positive allergy alert');
+});
+
+test('dosing warning: temozolomide above max daily dose raises a severe alert', async () => {
+  const r = await api('POST', '/api/cds/dosage-check', {
+    medication: 'temozolomide', dosage: '300 mg/m²', frequency: 'daily',
+  }, adminCookie);
+  assert.equal(r.status, 200);
+  const severe = (r.data.alerts || []).filter(a => a.severity === 'severe');
+  assert.ok(severe.length >= 1, 'overdose must alert: ' + JSON.stringify(r.data));
+  assert.match(severe[0].message, /exceeds maximum daily dose/i);
+  assert.ok(r.data.reference, 'reference range returned for the drug');
+});
+
+test('dosing warning: therapeutic temozolomide dose raises no severe alert', async () => {
+  const r = await api('POST', '/api/cds/dosage-check', {
+    medication: 'temozolomide', dosage: '150 mg/m²', frequency: 'QD × 5 days', patientWeight: 70,
+  }, adminCookie);
+  assert.equal(r.status, 200);
+  assert.equal((r.data.alerts || []).filter(a => a.severity === 'severe').length, 0,
+    'no severe alert at therapeutic dose: ' + JSON.stringify(r.data.alerts));
+});
+
+test('severe interaction (temozolomide + valproic acid) surfaces over HTTP', async () => {
+  const r = await api('POST', '/api/cds/interactions',
+    { medications: ['temozolomide', 'valproic acid'] }, adminCookie);
+  assert.equal(r.status, 200);
+  assert.ok(r.data.interactions.length > 0, 'known severe pair must be detected');
+  assert.equal(r.data.interactions[0].severity, 'severe');
+});
+
+test('CDS input validation rejects malformed payloads with 400 (never 5xx)', async () => {
+  for (const [path, body] of [
+    ['/api/cds/allergy-check', {}],
+    ['/api/cds/dosage-check', { medication: 'temozolomide' }],
+    ['/api/cds/interactions', { medications: ['only-one-med'] }],
+    ['/api/cds/interactions', { medications: [] }],
+  ]) {
+    const r = await api('POST', path, body, adminCookie);
+    assert.equal(r.status, 400, `${path} ${JSON.stringify(body)} → ${r.status}`);
+    assert.equal(r.data?.error, 'Validation failed');
+  }
+});
+
+// ── Regression: GET /hipaa/phi-log/:patientMrn returned 500 because the
+// handler read req.params.mrn (undefined) instead of the declared param.
+// Found by the 2026-10-05 live route sweep; keep it locked.
+test('phi-log write → read round-trip works (regression: req.params name)', async () => {
+  const mrn = 'PHILOG' + Date.now().toString(36).toUpperCase();
+  const w = await api('POST', '/api/hipaa/phi-log',
+    { patientMrn: mrn, action: 'view', section: 'test' }, adminCookie);
+  assert.equal(w.status, 200, JSON.stringify(w.data));
+  const r = await api('GET', `/api/hipaa/phi-log/${mrn}`, null, adminCookie);
+  assert.equal(r.status, 200, 'read must not 500: ' + JSON.stringify(r.data));
+  assert.ok(Array.isArray(r.data), 'returns an array');
+  assert.ok(r.data.some(e => e.patient_mrn === mrn), 'returned the written row');
+});
