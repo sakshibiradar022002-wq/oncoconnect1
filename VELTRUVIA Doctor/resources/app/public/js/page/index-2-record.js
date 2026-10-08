@@ -11,7 +11,7 @@ function openRecord(mrn){
   document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('active'));
   document.querySelector('.rnav-item').classList.add('active');
   document.getElementById('rt-identity').classList.add('active');
-  setTimeout(()=>{rCalcBP();rCalcBMI();rCalcAge();rCalcSpO2();rCalcTemp();calcEQD2();renderAllergyTags();renderLabsTable();renderMedList();renderRecordLogs(mrn);loadTrendsTab(mrn);renderRecordAppts(mrn);renderQuickSummary();checkDrugAllergyWarning();rCalcEGFR();renderMDTNotes(mrn);renderImagingReports(mrn);renderDrugInteractionBanner(mrn);renderRecordClinicalSupport(mrn);importLabSubs(mrn);rRxLoadAllergySummary();rRxLoadServerPrescriptions();rNotesLoad();rChemoLoad();rRefLoad();rDocsLoad();rOutLoad();loadNCCNTab(mrn);loadPatientBilling(mrn);},50);
+  setTimeout(()=>{rCalcBP();rCalcBMI();rCalcAge();rCalcSpO2();rCalcTemp();calcEQD2();renderAllergyTags();renderLabsTable();renderMedList();renderRecordLogs(mrn);loadTrendsTab(mrn);renderRecordAppts(mrn);renderQuickSummary();checkDrugAllergyWarning();rCalcEGFR();renderMDTNotes(mrn);renderImagingReports(mrn);renderDrugInteractionBanner(mrn);renderRecordClinicalSupport(mrn);importLabSubs(mrn);renderLabReqs(mrn);rRxLoadAllergySummary();rRxLoadServerPrescriptions();rNotesLoad();rChemoLoad();rRefLoad();rDocsLoad();rOutLoad();loadNCCNTab(mrn);loadPatientBilling(mrn);},50);
 }
 
 function buildRecordTabs(p){
@@ -296,6 +296,22 @@ function buildRecordTabs(p){
     </div>
     <div id="r-labs-empty" style="text-align:center;padding:32px;color:var(--text-dim);font-size:12.5px;border:1px dashed var(--border);border-radius:8px;display:none;">No lab results. Click "+ Add Result" to start.</div>
     <table class="lab-table" id="r-labs-table"><thead><tr><th>Date</th><th>Test</th><th>Value</th><th>Ref Range</th><th>Status</th><th></th></tr></thead><tbody id="r-labs-body"></tbody></table>
+    <!-- Lab Requests: ask a lab for a report by a date; delivered reports land in the table above -->
+    <div style="margin-top:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="rt-title" style="margin:0;padding:0;border:none;">Lab Requests</div>
+        <button class="btn btn-primary btn-sm" data-action="showLabReqForm">+ Request Report</button>
+      </div>
+      <div id="r-lab-req-form" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div class="fg" style="margin:0;"><label>Test / Panel needed</label><input id="r-lreq-test" placeholder="e.g. CBC + LFT"></div>
+          <div class="fg" style="margin:0;"><label>Select Lab</label><select id="r-lreq-lab"><option value="">— Select —</option></select></div>
+          <div class="fg" style="margin:0;"><label>Report needed by</label><input type="date" id="r-lreq-due"></div>
+        </div>
+        <div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm" data-action="hideLabReqForm">Cancel</button><button class="btn btn-primary btn-sm" data-action="sendLabReqFromRecord">Send to Lab</button></div>
+      </div>
+      <div id="r-lab-reqs"></div>
+    </div>
   </div>
 
   <!-- ══ TAB 6: PRESCRIPTIONS (Merged E-Prescribing & Medication Management) ══ -->
@@ -913,6 +929,67 @@ async function importLabSubs(mrn){
 async function filterLabTests(q){const dd=document.getElementById('lab-test-dropdown');if(!dd)return;const matches=q?LAB_TESTS.filter(t=>t.name.toLowerCase().includes(q.toLowerCase())||t.group.toLowerCase().includes(q.toLowerCase())):LAB_TESTS.slice(0,20);const grouped={};matches.forEach(t=>{if(!grouped[t.group])grouped[t.group]=[];grouped[t.group].push(t.name);});dd.innerHTML=Object.entries(grouped).map(([g,tests])=>{let h='<div style="padding:4px 10px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;">'+g+'</div>';tests.forEach(t=>{h+='<div style="padding:6px 10px;font-size:12px;cursor:pointer;color:var(--text);" data-action-mousedown="selectval:r-lab-test">'+t+'</div>';});return h;}).join('');dd.style.display=matches.length?'block':'none';}
 function showLabTestDropdown(){filterLabTests(document.getElementById('r-lab-test')?.value||'');}
 function hideLabTestDropdown(){const dd=document.getElementById('lab-test-dropdown');if(dd)dd.style.display='none';}
+
+// ── Lab Requests (per-patient): ask a lab for a report by a date ──
+// Stores requests in pat_tokens_<docId> (same channel the Labs panel uses)
+// tagged with mrn so the Lab portal sees them as tasks and the patient
+// profile can show status. Delivered reports appear in the labs table via
+// importLabSubs.
+function showLabReqForm(){const f=document.getElementById('r-lab-req-form');if(!f)return;f.style.display='block';populateLabReqDropdowns();}
+function hideLabReqForm(){const f=document.getElementById('r-lab-req-form');if(f)f.style.display='none';}
+function populateLabReqDropdowns(){
+  const sel=document.getElementById('r-lreq-lab');if(!sel)return;
+  const labs=LS.keys('lab_'+(currentDoc?.docId||'')+'_').map(k=>LS.get(k)).filter(Boolean);
+  sel.innerHTML='<option value="">— Select —</option>'+labs.map(l=>`<option value="${escAttr(l.labId)}">${esc(l.name)}</option>`).join('');
+  const due=document.getElementById('r-lreq-due');
+  if(due&&!due.value){const d=new Date(Date.now()+7*864e5);due.value=d.toISOString().slice(0,10);}
+}
+async function sendLabReqFromRecord(){
+  const test=v('r-lreq-test'),labId=v('r-lreq-lab'),due=v('r-lreq-due');
+  if(!test||!labId||!due){AppDialog.alert('Fill test, lab and needed-by date.');return;}
+  if(!selectedMRN){AppDialog.alert('No patient selected.');return;}
+  const p=LS.get('pat_'+selectedMRN);
+  const labs=LS.keys('lab_'+(currentDoc?.docId||'')+'_').map(k=>LS.get(k)).filter(Boolean);
+  const lab=labs.find(l=>l.labId===labId);
+  const tokens=LS.get('pat_tokens_'+(currentDoc?.docId||''))||[];
+  tokens.push({taskId:'TK-'+Date.now().toString(36),mrn:selectedMRN,patName:p?.name||'',labId,labName:lab?.name||'',desc:test,priority:'Routine',dueDate:due,docId:currentDoc?.docId||'',docName:currentDoc?.name||'',createdAt:Date.now(),status:'Pending Upload',used:false,origin:'patient-profile'});
+  LS.set('pat_tokens_'+(currentDoc?.docId||''),tokens);
+  const ok=await pushToServer({['pat_tokens_'+(currentDoc?.docId||'')]:tokens});
+  flash(ok?'Report request sent to '+ (lab?.name||'lab') +' ✓':'⚠️ Request saved locally — the lab will receive it when the server connection returns');
+  hideLabReqForm();
+  renderLabReqs(selectedMRN);
+}
+function renderLabReqs(mrn){
+  const el=document.getElementById('r-lab-reqs');if(!el)return;
+  const tokens=(LS.get('pat_tokens_'+(currentDoc?.docId||''))||[]).filter(t=>t.mrn===mrn&&t.status!=='Cancelled').sort((a,b)=>new Date(b.dueDate)-new Date(a.dueDate));
+  const subs=((LS.get('lab_subs_'+(currentDoc?.docId||'')))||[]).filter(s=>s&&s.mrn===mrn);
+  const answered=new Set(subs.map(s=>s.taskId).filter(Boolean));
+  if(!tokens.length&&!subs.length){el.innerHTML='<div class="empty-card" style="margin:0">No lab requests for this patient yet. Click "+ Request Report" to ask a lab.</div>';return;}
+  el.innerHTML=tokens.map(t=>{
+    const done=answered.has(t.taskId)||t.used;
+    const diff=Math.ceil((new Date(t.dueDate)-new Date())/(1000*60*60*24));
+    let dueTxt='',col='var(--text-dim)';
+    if(done){dueTxt='✓ Report received';col='var(--ok-text)';}
+    else if(diff<0){dueTxt='🔴 Overdue by '+Math.abs(diff)+' day(s)';col='var(--red)';}
+    else if(diff===0){dueTxt='🔴 Needed today';col='var(--red)';}
+    else{dueTxt='📅 Needed by '+t.dueDate+' ('+diff+'d)';}
+    const prioCol={STAT:'var(--red)',Urgent:'var(--orange)',Routine:'var(--green)'}[t.priority]||'var(--text-dim)';
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${done?'var(--ok-text)':col};border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div style="min-width:0;">
+        <div style="font-weight:600;font-size:12.5px;">${esc(t.desc)}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">🔬 ${esc(t.labName||'—')} · ${dueTxt}</div>
+      </div>
+      <span class="badge" style="background:${prioCol}22;color:${prioCol};flex-shrink:0;">${done?'Received':t.priority}</span>
+    </div>`;
+  }).join('')+
+  subs.filter(s=>!s.taskId).slice(-8).reverse().map(s=>`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--ok-text);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+    <div style="min-width:0;">
+      <div style="font-weight:600;font-size:12.5px;">${esc(s.test||'Lab result')}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">🔬 ${esc(s.labName||'—')} · ${esc(s.date||'')} · unlinked upload</div>
+    </div>
+    <span class="badge" style="background:var(--ok-text)22;color:var(--ok-text);flex-shrink:0;">Received</span>
+  </div>`).join('');
+}
 
 const LAB_TESTS=[
 {group:'Haematology',name:'CBC'},{group:'Haematology',name:'Haemoglobin'},{group:'Haematology',name:'WBC'},{group:'Haematology',name:'Platelets'},{group:'Haematology',name:'ANC'},{group:'Haematology',name:'HCT'},

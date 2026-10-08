@@ -516,6 +516,7 @@ function showRTab(id,btn){
   document.getElementById(id).classList.add('active');
   if(btn)btn.classList.add('active');
   if(id==='rt-creds'&&selectedMRN)loadPendingPasswordRequests(selectedMRN);
+  if(id==='rt-labs'&&selectedMRN&&typeof renderLabReqs==='function')renderLabReqs(selectedMRN);
 }
 
 // ── Patient Management ──

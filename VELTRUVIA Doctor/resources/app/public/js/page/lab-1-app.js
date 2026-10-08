@@ -336,6 +336,23 @@ function renderUpload(){
     h+=`<div class="empty-state" style="padding:32px"><div class="empty-icon">📤</div><div class="empty-title">No pending tasks</div><div class="empty-sub">Tasks assigned by your doctor will appear here. You can also use the batch upload above.</div></div>`;
   }else{
     h+=`<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">${tokens.length} task(s) available for upload</div>`;
+    // Report Requests — what doctors asked for and by when. One tap fills the form.
+    const sorted=tokens.slice().sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
+    h+=`<div style="margin-bottom:12px">`+sorted.map(t=>{
+      const diff=Math.ceil((new Date(t.dueDate)-new Date())/(1000*60*60*24));
+      let dueTxt='📅 Due '+t.dueDate,dueCol='var(--text-dim)';
+      if(diff<0){dueTxt='🔴 Overdue by '+Math.abs(diff)+'d';dueCol='var(--red)';}
+      else if(diff===0){dueTxt='🔴 Due today';dueCol='var(--red)';}
+      else if(diff<=2){dueTxt='⚠ Due in '+diff+'d';dueCol='var(--orange)';}
+      const pc={STAT:'var(--red)',Urgent:'var(--orange)',Routine:'var(--green)'}[t.priority]||'var(--text-dim)';
+      return `<div class="info-card" style="padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;border-left:3px solid ${pc};">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:12.5px">${esc(t.desc)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">👤 ${esc(t.patName||'—')} · MRN <span style="font-family:var(--mono)">${esc(t.mrn||'—')}</span> · <span style="color:${dueCol}">${dueTxt}</span></div>
+        </div>
+        <button class="btn-sm btn-purple" style="font-size:11px;padding:6px 12px" data-action="startUpload:${escAttr(t.taskId)},${escAttr(t.mrn)}">Fill →</button>
+      </div>`;
+    }).join('')+`</div>`;
   }
   h+=`<div class="info-card" style="border-top:3px solid var(--purple)">
     <input type="hidden" id="ul-taskid" value="">
@@ -361,9 +378,11 @@ async function submitUpload(){
     if(tok)tok.used=true;
     LS.set('pat_tokens_'+_docId,tokens);
   }
-  // Save submission
+  // Save submission — keep taskId/mrn/patName so the report is linked to the
+  // exact lab request (patient profile Lab Requests list + doctor labs table).
+  const tok=taskId?tokens.find(t=>t.taskId===taskId):null;
   const subs=LS.get('lab_subs_'+_docId)||[];
-  subs.push({labId:currentLab.labId,labName:currentLab.name,mrn,test,date,results:res,notes,taskId,submittedAt:Date.now()});
+  subs.push({labId:currentLab.labId,labName:currentLab.name,mrn,test,date,results:res,notes,taskId:taskId||null,patName:tok?tok.patName:undefined,dueDate:tok?tok.dueDate:undefined,submittedAt:Date.now()});
   LS.set('lab_subs_'+_docId,subs);
   // Push to server so the doctor's record picks the result up — and report
   // honestly which happened. "Submitted" must mean the doctor can see it.
