@@ -38,6 +38,18 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 #app-shell{display:none;flex-direction:column;height:100%;max-width:430px;margin:0 auto;background:var(--bg)}
 .screen{display:none;flex:1;flex-direction:column;overflow-y:auto;overflow-x:hidden;padding:18px 18px 90px}.screen.active{display:flex}
 .page-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:16px;letter-spacing:-.3px}
+
+/* ═══ WELCOME CARD (v2.5.1) — same pattern as Doctor/Lab portals ═══ */
+.welcome-card{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:linear-gradient(135deg,var(--green2),var(--green));border:1px solid var(--border2);border-radius:18px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow-card),0 6px 24px rgba(5,150,105,.25);color:#fff}
+.welcome-left{display:flex;align-items:center;gap:12px;min-width:0}
+.welcome-avatar{width:46px;height:46px;border-radius:14px;overflow:hidden;background:rgba(255,255,255,.12);flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.welcome-title{font-size:17px;font-weight:800;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.welcome-sub{font-size:11.5px;color:rgba(255,255,255,.88);margin-top:2px}
+.welcome-right{display:flex;gap:16px}
+.welcome-stat{text-align:center;min-width:48px}
+.welcome-stat-num{font-size:20px;font-weight:800;line-height:1}
+.welcome-stat-label{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.85);margin-top:4px}
+@media(max-width:360px){.welcome-card{flex-direction:column;align-items:flex-start;gap:10px;padding:14px}}
 .bottom-nav{display:flex;background:var(--surface);border-top:1px solid var(--border);padding-bottom:calc(8px + var(--safe-bot));flex-shrink:0;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:100}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px 2px;cursor:pointer;border:none;background:transparent;color:var(--text-dim);transition:color .15s}.nav-btn.active{color:var(--green)}
 .nav-icon{font-size:20px;margin-bottom:2px}.nav-label{font-size:9px;font-weight:700}

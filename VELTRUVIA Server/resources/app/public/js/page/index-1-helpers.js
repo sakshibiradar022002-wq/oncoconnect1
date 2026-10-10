@@ -680,7 +680,8 @@ function printPatientWelcomeCard(){
 function refreshOverview(){
   const pats=getMyPatients();
   document.getElementById('st-total').textContent=pats.length;
-  document.getElementById('st-active').textContent=pats.filter(p=>p.phase==='Treatment Phase').length;
+  const activeCount=pats.filter(p=>p.phase==='Treatment Phase').length;
+  document.getElementById('st-active').textContent=activeCount;
   const today=new Date().toISOString().slice(0,10);
   let logCount=0;pats.forEach(p=>{if(LS.get('log_'+p.mrn+'_'+today))logCount++;});
   document.getElementById('st-logs').textContent=logCount;
@@ -688,6 +689,23 @@ function refreshOverview(){
   let pendingAppts=0;
   pats.forEach(p=>{const appts=LS.get('appts_'+p.mrn)||[];pendingAppts+=appts.filter(a=>a.status==='Scheduled'||a.status==='Requested').length;});
   document.getElementById('st-msgs').textContent=pendingAppts;
+  // v2.5.1: welcome card — greets the doctor by name with glanceable stats.
+  try{
+    const wc=document.getElementById('doc-welcome-card');
+    if(wc){
+      wc.style.display='flex';
+      const fn=(currentDoc?.name||'').split(' ').filter(w=>!/^(dr\.?|prof\.?)$/i.test(w))[0]||'Doctor';
+      const hr=new Date().getHours();
+      const daypart=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+      const tEl=wc.querySelector('.welcome-title');
+      if(tEl)tEl.textContent=`${daypart}, Dr. ${fn}`;
+      const sEl=wc.querySelector('.welcome-sub');
+      if(sEl)sEl.textContent=pendingAppts?`${pendingAppts} appointment${pendingAppts===1?'':'s'} awaiting confirmation · ${logCount} log${logCount===1?'':'s'} today`:(logCount?`${logCount} symptom log${logCount===1?'':'s'} today — all appointments confirmed`:'Neuro-oncology command center');
+      document.getElementById('wc-total').textContent=pats.length;
+      document.getElementById('wc-active').textContent=activeCount;
+      document.getElementById('wc-appts').textContent=pendingAppts;
+    }
+  }catch(e){}
   // Recent patients
   const recent=[...pats].sort((a,b)=>(b.updatedAt||b.created||0)-(a.updatedAt||a.created||0)).slice(0,5);
   document.getElementById('ov-patients').innerHTML=recent.length?recent.map(p=>`<div class="patient-row" data-action="openRecord:${escAttr(p.mrn)}"><div style="flex:1;"><div class="pat-name">${esc(p.name)}</div><div class="pat-mrn">${p.mrn} · ${esc(p.diag||'—')}</div></div></div>`).join(''):'<div class="empty-card">No patients yet.</div>';

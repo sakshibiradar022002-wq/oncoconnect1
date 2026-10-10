@@ -62,6 +62,21 @@
   </div>
   <div class="screen active" id="screen-symptoms">
     <div class="page-title">📅 Symptom Tracker</div>
+    <!-- v2.5.1: Patient welcome card — same pattern as Doctor/Lab portals. -->
+    <div class="welcome-card" id="pat-welcome-card" style="display:none">
+      <div class="welcome-left">
+        <div class="welcome-avatar"><img src="/icons/brand/veltruvia-patient.jpg" alt="" style="width:100%;height:100%;object-fit:cover"></div>
+        <div>
+          <div class="welcome-title">Hello 👋</div>
+          <div class="welcome-sub">Stay on top of your symptoms</div>
+        </div>
+      </div>
+      <div class="welcome-right">
+        <div class="welcome-stat"><div class="welcome-stat-num" id="wc-logs">0</div><div class="welcome-stat-label">Logs</div></div>
+        <div class="welcome-stat"><div class="welcome-stat-num" id="wc-meds">0</div><div class="welcome-stat-label">Meds</div></div>
+        <div class="welcome-stat"><div class="welcome-stat-num" id="wc-appts">0</div><div class="welcome-stat-label">Appts</div></div>
+      </div>
+    </div>
     <div class="info-card" style="display:flex;align-items:center;justify-content:space-between">
       <div><div style="font-weight:700" id="cal-greeting">Hello 👋</div><div style="font-size:12px;color:var(--text-muted)" id="cal-phase"></div></div>
       <div id="cal-today-badge" style="background:var(--blue-pale);color:var(--blue);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700"></div>

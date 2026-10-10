@@ -129,6 +129,27 @@ function finishPatientLogin(pat, viaServer){
   document.getElementById('cal-phase').textContent=(pat.phase||'Treatment')+(pat.diag?' · '+pat.diag:'');
   document.getElementById('cal-today-badge').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   renderCalendar();
+  // v2.5.1: welcome card — greets the patient by name with glanceable stats.
+  try{
+    const wc=document.getElementById('pat-welcome-card');
+    if(wc){
+      wc.style.display='flex';
+      const fn=(pat.name||'').split(' ')[0]||'';
+      const hr=new Date().getHours();
+      const daypart=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+      const tEl=wc.querySelector('.welcome-title');
+      if(tEl)tEl.textContent=fn?`${daypart}, ${fn}`:'Hello 👋';
+      const sEl=wc.querySelector('.welcome-sub');
+      if(sEl)sEl.textContent=(pat.phase||'Treatment')+(pat.diag?' · '+pat.diag:' · Stay on top of your symptoms');
+      // counts: symptom logs total, active meds, scheduled/queued appointments
+      let logCount=0;try{const p=pat.mrn;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k==='log_'+p+'_'+new Date().toISOString().slice(0,8)+'%'||k.startsWith('log_'+p+'_')))logCount++;}}catch(e){}
+      let medCount=0;try{const ra=_remindAll();medCount=Object.keys(ra).filter(id=>ra[id].enabled).length;}catch(e){}
+      let apptCount=0;try{const ap=LS.get('appts_'+pat.mrn)||[];apptCount=ap.filter(a=>a.status==='Scheduled'||a.status==='Requested').length;}catch(e){}
+      const n1=document.getElementById('wc-logs');if(n1)n1.textContent=logCount;
+      const n2=document.getElementById('wc-meds');if(n2)n2.textContent=medCount;
+      const n3=document.getElementById('wc-appts');if(n3)n3.textContent=apptCount;
+    }
+  }catch(e){}
   checkPendingPCR();
   try{setupMedReminders();}catch(e){}   // v2.5: (re)build reminders + device alarms on every login
   const b=document.getElementById('conn-banner');
