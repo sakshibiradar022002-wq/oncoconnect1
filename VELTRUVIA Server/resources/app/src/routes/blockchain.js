@@ -8,6 +8,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/validate.js';
 import { getBlockchainStats, verifyBlockchainRecord } from '../blockchain/audit.js';
+import blockchain from '../blockchain/index.js';
 
 export const blockchainRouter = Router();
 
@@ -26,6 +27,26 @@ blockchainRouter.get('/status', asyncHandler(async (req, res) => {
       ? 'Blockchain audit trail is active' 
       : 'Blockchain not connected - start Hardhat node'
   });
+}));
+
+/**
+ * GET /api/blockchain/blocks?limit=N
+ * v2.5.2 — public, read-only ledger introspection for the /verify.html
+ * tamper-evidence page. Returns only non-sensitive hash/chain metadata:
+ * no record payloads, no actor ids, no timestamps beyond minute precision.
+ */
+blockchainRouter.get('/blocks', asyncHandler(async (req, res) => {
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+  const chain = await blockchain.snapshot();
+  const blocks = chain.slice(-limit).map(b => ({
+    index: b.index,
+    timestamp: typeof b.timestamp === 'string' ? b.timestamp.slice(0, 16) : b.timestamp, // minute precision only
+    type: (b.data && (b.data.type === 'genesis' ? 'genesis' : 'audit')) || 'audit',
+    action: b.data && typeof b.data.action === 'string' ? b.data.action : null,
+    previousHash: b.previousHash,
+    hash: b.hash,
+  }));
+  res.json({ ok: true, totalBlocks: chain.length, blocks });
 }));
 
 /**

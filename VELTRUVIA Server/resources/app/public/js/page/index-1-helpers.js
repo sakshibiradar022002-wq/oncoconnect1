@@ -709,6 +709,27 @@ function refreshOverview(){
   // Recent patients
   const recent=[...pats].sort((a,b)=>(b.updatedAt||b.created||0)-(a.updatedAt||a.created||0)).slice(0,5);
   document.getElementById('ov-patients').innerHTML=recent.length?recent.map(p=>`<div class="patient-row" data-action="openRecord:${escAttr(p.mrn)}"><div style="flex:1;"><div class="pat-name">${esc(p.name)}</div><div class="pat-mrn">${p.mrn} · ${esc(p.diag||'—')}</div></div></div>`).join(''):'<div class="empty-card">No patients yet.</div>';
+  // v2.5.2: adherence badges (async, must run AFTER the rows exist in DOM).
+  fetchAdherenceBadges(recent);
+}
+
+// v2.5.2: adherence badge per recent patient (7-day med-confirmation rate).
+// Fire-and-forget async: badges appear as each fetch resolves — never blocks
+// the synchronous overview render.
+async function fetchAdherenceBadges(recent){
+  for(const p of recent){
+    try{
+      const r=await api('/features/adherence/'+encodeURIComponent(p.mrn)+'?days=7');
+      const rate=(r&&r.ok&&r.stats)?r.stats.adherenceRate:null;
+      const el=document.querySelector(`[data-action="openRecord:${escAttr(p.mrn)}"] .pat-mrn`);
+      if(el&&rate!==null){
+        // Only paint the badge once (re-check guard: a badge already present)
+        if(el.innerHTML.includes('% adherence'))continue;
+        const col=rate>=80?'var(--green)':rate>=50?'var(--orange)':'var(--red)';
+        el.innerHTML+=' · <span style="font-weight:700;color:'+col+'" id="adh-'+p.mrn+'">💊 '+rate+'% adherence</span>';
+      }
+    }catch(e){/* offline or no adherence data — badge silently skipped */}
+  }
 }
 
 function refreshStorageInfo(){

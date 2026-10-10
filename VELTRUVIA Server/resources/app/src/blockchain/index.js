@@ -331,6 +331,18 @@ class BlockchainAudit {
   /**
    * Get blockchain audit statistics
    */
+  /**
+   * v2.5.2: read-only snapshot of the current file chain, for public
+   * verification (/api/blockchain/blocks). Mirrors readChain() but expands
+   * the fallback to in-memory data — safe: callers only read.
+   */
+  async snapshot() {
+    this._ensureBackend();
+    const chain = readChain();
+    if (chain && chain.length) return chain;
+    return [];
+  }
+
   async getStats() {
     this._ensureBackend();
     if (!this.connected) {

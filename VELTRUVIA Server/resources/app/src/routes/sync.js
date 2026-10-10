@@ -17,8 +17,28 @@ import { mailConfigured, sendMail } from '../mail.js';
 import { smsConfigured, sendSms } from '../sms.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { notifySubject } from '../push.js';
-import { validateLabSubmission } from '../validators/labResults.js';
+import { validateLabSubmission, validateLabResult } from '../validators/labResults.js';
 import { effectiveAvailabilityRows } from '../lib/availability.js';
+
+// v2.5.2: real per-result criticality for lab pushes. Returns the critical
+// results found in a lab_subs_ payload (each { test, value, direction }).
+function criticalLabResults(subs) {
+  const critical = [];
+  for (const s of (Array.isArray(subs) ? subs : [])) {
+    const results = Array.isArray(s?.results) ? s.results : [];
+    for (const r of results) {
+      if (!r || !r.test) continue;
+      const num = parseFloat(r.value);
+      if (isNaN(num)) continue;
+      const v = validateLabResult(r.test, num);
+      // validateLabResult puts the CRITICAL LOW/HIGH text into warning.
+      if (v && v.valid && v.warning && /CRITICAL (LOW|HIGH)/.test(v.warning)) {
+        critical.push({ test: r.test, value: num, direction: /CRITICAL LOW/.test(v.warning) ? 'low' : 'high' });
+      }
+    }
+  }
+  return critical;
+}
 
 // Fire-and-forget doctor notifications for incoming alert / lab-result keys.
 function pushDoctorForChanges(ownerId, changes) {
@@ -31,7 +51,23 @@ function pushDoctorForChanges(ownerId, changes) {
         url: '/',
       }).catch(() => {});
     } else if (k.startsWith('lab_subs_')) {
-      notifySubject(ownerId, { title: 'New lab result', body: 'A lab uploaded new results. Tap to review.', url: '/' }).catch(() => {});
+      // v2.5.2: if any result is critically out of range, push an URGENT
+      // notification naming the patient, test and value — otherwise fall back
+      // to the generic 'new lab result' ping.
+      const subs = v && typeof v === 'object' && !Array.isArray(v) ? v : null;
+      const crit = criticalLabResults(subs);
+      if (crit.length) {
+        const first = crit[0];
+        const patients = [...new Set(subs.map(s => s?.patName || s?.mrn).filter(Boolean))];
+        const who = patients.length ? patients[0] : 'a patient';
+        notifySubject(ownerId, {
+          title: '🚨 CRITICAL lab value',
+          body: `${who}: ${first.test} ${first.value} is critically ${first.direction} (${crit.length} critical value${crit.length === 1 ? '' : 's'} in this batch). Requires review.`,
+          url: '/',
+        }).catch(() => {});
+      } else {
+        notifySubject(ownerId, { title: 'New lab result', body: 'A lab uploaded new results. Tap to review.', url: '/' }).catch(() => {});
+      }
     }
   }
 }

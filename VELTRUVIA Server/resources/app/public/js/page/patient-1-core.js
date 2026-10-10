@@ -704,6 +704,79 @@ function rxPrintPaper(){
     if(window._vxReportOverlay){_vxReportOverlay('Prescription — '+(pat.name||pat.mrn),`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Prescription</title><style>${_RX_PRINT_CSS}</style></head><body>${html}</body></html>`,{});}
   })();
 }
+// ═══ MEDICATION ADHERENCE (v2.5.2) — the loop closes: doctor prescribes →
+// patient confirms each dose (Taken ✓ / Skipped) → doctor sees adherence %.
+// Today's confirmations only; the doctor's dashboard aggregates the rest.
+const _ADH_KEY_PREFIX = 'adherence_'; // medlog-style local cache, per med
+function _rxAdhId(rx){return String(rx.id||rx.medication).slice(0,48);}
+function _todayStr(){return new Date().toISOString().slice(0,10);}
+async function loadAdherenceToday(){
+  try{
+    const r=await api('/features/adherence/'+encodeURIComponent(currentPat.mrn)+'?days=1');
+    const entries=(r&&r.ok&&r.entries)||[];
+    const today=_todayStr();
+    const state={};
+    for(const e of entries){
+      if(e.scheduled_date!==today)continue;
+      const key=_rxAdhId({id:e.prescription_id,medication:e.medication});
+      state[key]={status:e.status,times:(state[key]?.times||[]).concat(e.scheduled_time||'')};
+    }
+    return state;
+  }catch(e){return {}}
+}
+function adherenceButtonsHtml(rx){
+  // Derive today's doses from the timing pattern (e.g. 0-1-0) or dosage text.
+  const m=String(rx.timing||'').match(/^(\d)-(\d)-(\d)$/);
+  let doses=[];
+  if(m){const labels=['Morning','Afternoon','Night'];doses=labels.filter((_,i)=>+m[i+1]>0).map(l=>({label:l,times:_doseTimesFor(labels.indexOf(l),rx)}));}
+  else doses=[{label:'Daily',times:_doseTimesFor(-1,rx)}];
+  if(!doses.length)doses=[{label:'Daily',times:['']}];
+  const today=_todayStr();
+  const id=_rxAdhId(rx);
+  const st=(window.__adherenceToday&&window.__adherenceToday[id])||{};
+  const pill=(doseSlot)=>{
+    // doseSlot: {label}; look up per-slot status in local cache keyed
+    // medid_time. We store one row per dose time; for now the UI confirms
+    // per-medication-day and, when timing has multiple slots, per slot.
+    const slotState=(st&&st.slots&&st.slots[doseSlot.label])||null;
+    if(slotState==='taken')return `<span style="padding:8px 14px;border-radius:8px;background:rgba(5,150,105,.12);color:var(--green);font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px">✓ Taken<span style="font-size:10px;font-weight:500">${esc(doseSlot.label)}</span></span>`;
+    if(slotState==='skipped')return `<span style="padding:8px 14px;border-radius:8px;background:rgba(251,191,36,.12);color:var(--orange);font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px">– Skipped<span style="font-size:10px;font-weight:500">${esc(doseSlot.label)}</span></span>`;
+    return `<button data-action="confirmDose:${id}:${escAttr(doseSlot.label)}:taken" style="padding:8px 12px;border-radius:8px;border:1px solid var(--green);background:var(--green);color:#04170f;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">✓ Taken</button>
+            <button data-action="confirmDose:${id}:${escAttr(doseSlot.label)}:skipped" style="padding:8px 12px;border-radius:8px;border:1px solid var(--orange);background:rgba(251,191,36,.10);color:var(--orange);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Skipped</button>`;
+  };
+  return `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px">⏰ Today's doses — confirm to track adherence</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${doses.map(pill).join('')}</div>
+  </div>`;
+}
+// Turn the 0-1-0 timing index into a concrete clock time (best-effort — the
+// doctor may also write whenToTake text we can't parse into exact times).
+function _doseTimesFor(slotIdx,rx){
+  // morning≈09:00, afternoon≈14:00, night≈21:00 unless whenToTake gives more.
+  const map={0:'09:00',1:'14:00',2:'21:00'};
+  if(slotIdx<0)return rx.whenToTake?'':map[2];
+  return map[slotIdx]||'';
+}
+async function confirmDose(id,slotLabel,status){
+  if(!currentPat)return;
+  // id is _rxAdhId(rx) — recover the medication name from the rendered list
+  // (we pass it through the button data-action in a second field).
+  try{
+    const r=await api('/features/adherence',{method:'POST',body:JSON.stringify({
+      patientMrn:currentPat.mrn,
+      medication:window.__adherenceMedNames?.[id]||id,
+      scheduledDate:_todayStr(),
+      scheduledTime:_doseTimesFor(['Morning','Afternoon','Night'].indexOf(slotLabel),{})||'',
+      status,
+      notes:slotLabel?slotLabel+' dose':undefined,
+    })});
+    if(r&&r.ok){
+      showToast(status==='taken'?'✓ Dose confirmed — your doctor can see this':'Dose marked skipped');
+      window.__adherenceToday=await loadAdherenceToday();
+      renderPatientRx();
+    }
+  }catch(e){showToast('Could not confirm right now: '+e.message)}
+}
 async function renderPatientRx(){
   const el=document.getElementById('rx-list');
   const tabs=`<div class="rx-tabs">
@@ -716,6 +789,11 @@ async function renderPatientRx(){
     const serverRx=(r&&r.ok&&r.prescriptions)?r.prescriptions:[];
     let selfRx=[];try{selfRx=LS.get('selfrx_'+currentPat.mrn)||[];}catch(e){}
     const all=[...serverRx,...selfRx];
+    // v2.5.2: once active meds exist, load today's adherence state so the
+    // Taken/Skipped buttons reflect what the patient already confirmed.
+    try{window.__adherenceToday=await loadAdherenceToday();}catch(e){window.__adherenceToday={};}
+    // id → medication-name map for confirmDose POSTs.
+    try{window.__adherenceMedNames=Object.fromEntries(all.map(rx=>[_rxAdhId(rx),rx.medication]));}catch(e){}
     if(!all.length){el.innerHTML=tabs+'<div class="empty-card">No prescriptions on file.<br><span style="font-size:11px;color:var(--text-dim)">Tap “➕ Add Prescription” to record a medicine you take.</span></div>';return}
     const statusIcon={active:'✅',completed:'✔️',cancelled:'❌',expired:'⏰','pending-refill':'🔄','self':'📝'};
     const statusColor={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--blue)',self:'var(--blue)'};
@@ -738,6 +816,7 @@ async function renderPatientRx(){
           ${rx.refills?`<span><b>Refills:</b> ${rx.refills} left</span>`:''}
         </div>
         ${rx.instructions?`<div style="margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-muted)">📋 ${esc(rx.instructions)}</div>`:''}
+        ${(rx.status==='active')?adherenceButtonsHtml(rx):''}
         <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
           ${(!rx.selfAdded&&rx.status==='active')?`<button data-action="requestRefill:${rx.id}" style="padding:8px 14px;border-radius:8px;border:1px solid var(--green);background:rgba(5,150,105,.06);color:var(--green);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">🔄 Request Refill</button>`:''}
           ${rx.selfAdded?`<button data-action="selfRxDelete:${rx.id}" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Remove</button>`:''}

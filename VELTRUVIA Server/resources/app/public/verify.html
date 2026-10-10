@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VELTRUVIA — Chain Verifier</title>
+  <link rel="icon" type="image/png" href="/icons/server-192.png">
+  <link href="/fonts/fonts.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080d1a; --surface: #0f1729; --border: #1e2d4a;
+      --text: #e2e8f0; --text-muted: #8494b2;
+      --blue: #2563eb; --green: #34d399; --red: #dc2626; --purple: #8b5cf6;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px 18px 60px; }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    h1 img { width: 34px; height: 34px; border-radius: 10px; }
+    .sub { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 22px 0; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+    .stat .num { font-size: 26px; font-weight: 800; }
+    .stat .lbl { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+    .verdict { border-radius: 14px; padding: 22px; margin: 20px 0; display: flex; align-items: center; gap: 16px; font-weight: 700; font-size: 16px; }
+    .verdict.ok { background: rgba(52,211,153,.08); border: 1px solid rgba(52,211,153,.35); color: var(--green); }
+    .verdict.bad { background: rgba(220,38,38,.08); border: 1px solid rgba(220,38,38,.35); color: var(--red); }
+    .verdict .big { font-size: 34px; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+    th { background: rgba(37,99,235,.08); color: var(--text-muted); font-size: 10px; letter-spacing: .8px; text-transform: uppercase; text-align: left; padding: 10px 12px; }
+    td { padding: 9px 12px; border-top: 1px solid var(--border); font-size: 12px; vertical-align: top; }
+    td.hash { font-family: ui-monospace, monospace; word-break: break-all; color: var(--purple); font-size: 10.5px; }
+    td.prev { font-family: ui-monospace, monospace; word-break: break-all; color: var(--text-muted); font-size: 10.5px; }
+    td.idx { font-family: ui-monospace, monospace; color: var(--blue); font-weight: 700; }
+    .type { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(139,92,246,.10); color: var(--purple); }
+    .type.genesis { background: rgba(37,99,235,.10); color: var(--blue); }
+    .row-ok { color: var(--green); font-weight: 700; font-size: 12px; }
+    .refresh-note { color: var(--text-muted); font-size: 11px; margin-top: 14px; text-align: center; }
+    @media(max-width: 640px) { th:nth-child(4), td.prev { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1><img src="/icons/brand/veltruvia-server.jpg" alt="">Chain Verifier</h1>
+    <p class="sub">Public, read-only proof that the VELTRUVIA audit ledger is intact. Every medical-record change is hashed into a block whose hash covers the previous block — so editing history in the middle breaks every hash after it.</p>
+
+    <div class="verdict" id="verdict"><span class="big">⏳</span><span id="verdict-text">Verifying chain…</span></div>
+
+    <div class="stats">
+      <div class="stat"><div class="num" id="st-blocks">—</div><div class="lbl">Blocks</div></div>
+      <div class="stat"><div class="num" id="st-links">—</div><div class="lbl">Links verified</div></div>
+      <div class="stat"><div class="num" id="st-backend">—</div><div class="lbl">Backend</div></div>
+      <div class="stat"><div class="num" id="st-time">—</div><div class="lbl">Checked at</div></div>
+    </div>
+
+    <table id="tbl" style="display:none">
+      <thead><tr><th>#</th><th>When</th><th>Kind</th><th>Previous hash (SHA-256)</th><th>Block hash (SHA-256)</th><th>Link</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <p class="refresh-note">Reads <code>/api/blockchain/blocks</code> and <code>/api/blockchain/status</code>. Nothing sensitive is exposed — only hashes and chain metadata. Auto-refreshes every 10s.</p>
+  </div>
+
+  <script>
+    function shortHash(h) { return !h ? '—' : (h.length > 18 ? h.slice(0, 8) + '…' + h.slice(-6) : h); }
+
+    async function verify() {
+      try {
+        const [blocksRes, statusRes] = await Promise.all([
+          fetch('/api/blockchain/blocks?limit=200'),
+          fetch('/api/blockchain/status').catch(() => null),
+        ]);
+        const data = await blocksRes.json();
+        const blocks = data.blocks || [];
+        let links = 0, broken = 0;
+        let rows = '';
+        for (let i = 0; i < blocks.length; i++) {
+          const b = blocks[i], prev = blocks[i - 1];
+          let linkOk = null;
+          if (prev) { linkOk = (b.previousHash === prev.hash); if (linkOk) links++; else broken++; }
+          else links++;
+          const linkCell = b.type === 'genesis'
+            ? '<span style="color:var(--text-muted)">genesis</span>'
+            : (i === 0 ? '<span style="color:var(--text-muted)">truncated view</span>'
+                       : (linkOk ? '<span class="row-ok">✓ intact</span>' : '<span style="color:var(--red);font-weight:700">✗ BROKEN</span>'));
+          rows += '<tr><td class="idx">' + b.index + '</td><td>' + (b.timestamp || '—') + '</td>'
+            + '<td><span class="type ' + (b.type === 'genesis' ? 'genesis' : '') + '">' + b.type + (b.action ? ' · ' + b.action : '') + '</span></td>'
+            + '<td class="prev" title="' + (b.previousHash || '') + '">' + shortHash(b.previousHash) + '</td>'
+            + '<td class="hash" title="' + (b.hash || '') + '">' + shortHash(b.hash) + '</td>'
+            + '<td>' + linkCell + '</td></tr>';
+        }
+        // Backend info
+        let backend = '—';
+        try { if (statusRes && statusRes.ok) { const s = (await statusRes.json()).blockchain; backend = (s && s.backend) || (s && s.network) || '—'; } } catch {}
+        document.getElementById('st-blocks').textContent = data.totalBlocks ?? blocks.length;
+        document.getElementById('st-links').textContent = links;
+        document.getElementById('st-backend').textContent = backend;
+        document.getElementById('st-time').textContent = new Date().toLocaleTimeString();
+
+        const v = document.getElementById('verdict');
+        if (!blocks.length) {
+          v.className = 'verdict bad';
+          document.getElementById('verdict-text').textContent = 'No chain data found — is the server running?';
+        } else if (broken === 0) {
+          v.className = 'verdict ok';
+          document.getElementById('verdict-text').textContent = '✓ LEDGER INTACT — all ' + links + ' inter-block links verified';
+        } else {
+          v.className = 'verdict bad';
+          document.getElementById('verdict-text').textContent = '✗ TAMPERING DETECTED — ' + broken + ' broken link(s)';
+        }
+        document.getElementById('tbl').style.display = '';
+        document.getElementById('tbody').innerHTML = rows;
+      } catch (e) {
+        document.getElementById('verdict').className = 'verdict bad';
+        document.getElementById('verdict-text').textContent = 'Failed to reach the server: ' + e.message;
+      }
+    }
+    verify();
+    setInterval(verify, 10000);
+  </script>
+</body>
+</html>
