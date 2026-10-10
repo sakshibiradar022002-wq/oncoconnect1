@@ -100,6 +100,17 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--purple-glow);
 .nav-btn.active{color:var(--purple)}
 .nav-icon{font-size:20px;margin-bottom:2px}.nav-label{font-size:9px;font-weight:700}
 
+/* ═══ WELCOME CARD (v2.5.1) ═══ */
+.welcome-card{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:linear-gradient(135deg,var(--purple-deep),var(--purple2));border:1px solid var(--border2);border-radius:18px;padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow-card),0 6px 24px rgba(124,58,234,.25);color:#fff}
+.welcome-left{display:flex;align-items:center;gap:12px;min-width:0}
+.welcome-avatar{width:52px;height:52px;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.12);flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.welcome-title{font-size:18px;font-weight:800;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.welcome-sub{font-size:12px;color:rgba(255,255,255,.85);margin-top:2px}
+.welcome-right{display:flex;gap:14px}
+.welcome-stat{text-align:center;min-width:56px}
+.welcome-stat-num{font-size:20px;font-weight:800;line-height:1}
+.welcome-stat-label{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.8);margin-top:4px}
+
 /* ═══ STAT CARDS ═══ */
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .stat-card{background:var(--card-gradient);border:1px solid var(--border);border-radius:16px;padding:16px;position:relative;overflow:hidden;box-shadow:var(--shadow-card);transition:all .3s cubic-bezier(.4,0,.2,1)}
@@ -201,9 +212,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--purple-glow);
 .nav-ico{font-size:16px;width:20px;text-align:center;flex-shrink:0}
 @media(min-width:769px){.sidebar-nav{display:flex}}
 
-/* ═══ RESPONSIVE ═══ */
-
-/* ── Tablet (481px - 768px) ── */
+/* ═══ RESPONSIVE ═══ *//* ── Tablet (481px - 768px) ── */
 @media(min-width:481px){
   .bottom-nav{border-radius:16px 16px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.2);max-width:100%}
   .screen{padding:20px 24px 90px}
@@ -216,6 +225,10 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--purple-glow);
   .info-card{padding:18px}
   .task-footer{gap:12px}
   .task-header{gap:12px}
+  /* v2.5.1: welcome card scales gracefully on tablet */
+  .welcome-card{padding:20px 24px}
+  .welcome-title{font-size:20px}
+  .welcome-stat-num{font-size:22px}
 }
 
 /* ── Desktop (769px+) ── */
@@ -236,7 +249,7 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--purple-glow);
   .bottom-nav{display:none!important}
   
   /* Main content area */
-  .screen{padding:28px 36px 28px!important;overflow-y:auto;flex:1}
+  .screen{padding:28px 36px 40px!important;overflow-y:auto;flex:1}
   .screen.active{display:flex}
   
   /* Stats grid: 4 columns */
@@ -271,6 +284,14 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--purple-glow);
   
   /* Settings multi-column */
   #screen-settings .info-card{margin-bottom:16px}
+
+  /* v2.5.1: welcome card is a horizontal hero on desktop */
+  .welcome-card{padding:24px 28px;border-radius:20px}
+  .welcome-avatar{width:64px;height:64px;border-radius:18px}
+  .welcome-title{font-size:22px}
+  .welcome-sub{font-size:13px}
+  .welcome-right{gap:24px}
+  .welcome-stat-num{font-size:26px}
 }
 
 /* ── Large Desktop (1200px+) ── */
@@ -307,6 +328,12 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--purple-glow);
   .irow{flex-direction:column;gap:2px}
   .ikey{min-width:auto}
   .search-bar{font-size:13px;padding:10px 12px}
+  /* v2.5.1: welcome card stacks cleanly on phones */
+  .welcome-card{flex-direction:column;align-items:flex-start;gap:12px;padding:16px}
+  .welcome-right{width:100%;justify-content:space-between;gap:8px}
+  .welcome-stat{min-width:0;flex:1}
+  .welcome-title{font-size:16px;white-space:normal}
+  .welcome-avatar{width:44px;height:44px;border-radius:14px}
 }
 
 /* ── Small phones ── */
@@ -321,6 +348,13 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--purple-glow);
   .page-title{font-size:16px}
   .topbar{padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top,0px))}
   .screen{padding:12px 12px 80px}
+  /* v2.5.1: welcome card stays compact down to tiny screens */
+  .welcome-card{padding:12px;gap:10px}
+  .welcome-title{font-size:14px}
+  .welcome-sub{font-size:10.5px}
+  .welcome-stat-num{font-size:16px}
+  .welcome-stat-label{font-size:8px}
+  .welcome-avatar{width:36px;height:36px;border-radius:12px}
 }
 
 /* ── Touch improvements ── */
