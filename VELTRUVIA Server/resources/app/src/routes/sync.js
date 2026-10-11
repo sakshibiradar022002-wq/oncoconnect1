@@ -72,6 +72,39 @@ function pushDoctorForChanges(ownerId, changes) {
   }
 }
 
+// v2.6: mirror each MRN-tagged lab report into that patient's own keyspace
+// (lab_subs_<mrn>) and push them a notification. The submission row already
+// carries mrn/test/date/results/notes; the patient's next /sync/patient pull
+// picks the key up naturally because patientOwnsKey allows lab_subs_<mrn>.
+async function deliverLabResultsToPatients(ownerId, docId, subs) {
+  if (!Array.isArray(subs)) return;
+  const byMrn = {};
+  for (const s of subs) {
+    const mrn = String(s?.mrn || '').trim().toUpperCase();
+    if (!mrn) continue;
+    // Only deliver for patients that actually exist under this doctor's keyspace.
+    const row = await db.prepare('SELECT v_enc FROM kv_store WHERE owner_id = ? AND k = ?').get(ownerId, 'pat_' + mrn);
+    if (!row) continue;
+    (byMrn[mrn] = byMrn[mrn] || []).push(s);
+  }
+  for (const [mrn, items] of Object.entries(byMrn)) {
+    const k = 'lab_subs_' + mrn;
+    const patientKey = await db.prepare('SELECT v_enc FROM kv_store WHERE owner_id = ? AND k = ?').get(ownerId, k);
+    let existing = [];
+    try { const prev = patientKey ? decryptPHI(patientKey.v_enc) : null; if (Array.isArray(prev)) existing = prev; } catch { /* start fresh on corrupt row */ }
+    // Don't duplicate: match on the submission timestamp if present.
+    const seen = new Set(existing.map(x => x.submittedAt));
+    const fresh = items.filter(x => !seen.has(x.submittedAt));
+    if (!fresh.length) continue;
+    await upsertKey(ownerId, k, existing.concat(fresh), new Date().toISOString());
+    notifySubject(ownerId + '::' + mrn, {
+      title: '🧪 Lab report available',
+      body: `${fresh[0].test || 'Your report'} was uploaded to your profile${fresh.length > 1 ? ` (+${fresh.length - 1} more)` : ''}. Tap to view.`,
+      url: '/patient.html',
+    }).catch(() => {});
+  }
+}
+
 export const syncRouter = Router();
 
 const MAX_KEYS_PER_PUSH = 500;
@@ -616,6 +649,14 @@ syncRouter.put('/lab', authenticate, requireRole('kv-lab'), labScope, validate(p
 
   const count = await applyChanges(ownerId, changes, k => allowed.has(k));
   pushDoctorForChanges(ownerId, changes);
+  // v2.6: deliver each MRN-tagged report straight into that patient's own
+  // keyspace (lab_subs_<mrn> — already patient-owned) and push them a
+  // notification, so "send report to MRN" means the patient's profile shows
+  // it immediately, not after the doctor forwards it by hand.
+  const submission = Array.isArray(changes[`lab_subs_${docId}`]) ? changes[`lab_subs_${docId}`] : null;
+  if (submission) {
+    try { await deliverLabResultsToPatients(ownerId, docId, submission); } catch (e) { console.error('[sync] lab result delivery failed:', e.message); }
+  }
   await writeAudit({
     actorId: labId,
     actorRole: 'kv-lab',

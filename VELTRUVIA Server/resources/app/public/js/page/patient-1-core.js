@@ -482,11 +482,17 @@ function renderSlotDate(){
     empty.style.display='block';info.style.display='none';return
   }
   empty.style.display='none';
-  el.innerHTML=slots.map(s=>`<button data-action="selectSlot:${ds},${s.time},${s.endTime},${s.duration}" style="padding:10px 8px;border-radius:10px;background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center">${s.time}</button>`).join('');
+  // v2.6: visible selection state — slots start BLUE (available), the picked
+  // one turns GRAY so the patient can see exactly what they are about to book.
+  el.innerHTML=slots.map(s=>{
+    const sel=_selectedSlot&&_selectedSlot.date===ds&&_selectedSlot.time===s.time;
+    const bg=sel?'var(--text-dim)':'var(--blue)';
+    return `<button data-action="selectSlot:${ds},${s.time},${s.endTime},${s.duration}" style="padding:10px 8px;border-radius:10px;background:${bg};border:1.5px solid ${sel?'var(--text-dim)':'transparent'};color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center">${s.time}</button>`;}).join('');
 }
 
 function selectSlot(date,time,endTime,dur){
   _selectedSlot={date,time,endTime,duration:parseInt(dur)};
+  renderSlotDate(); // repaint so the chosen slot shows gray immediately
   document.getElementById('slot-selected-info').style.display='block';
   const d=new Date(date+'T00:00:00');
   document.getElementById('slot-selected-details').innerHTML=`<div style="margin-bottom:6px"><span style="color:var(--green);font-weight:700">📅 ${d.toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric'})}</span></div><div><span style="color:var(--blue);font-weight:700">⏰ ${time} — ${endTime}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">Duration: ${dur} min</div>`;
@@ -778,12 +784,14 @@ async function confirmDose(id,slotLabel,status){
   }catch(e){showToast('Could not confirm right now: '+e.message)}
 }
 async function renderPatientRx(){
+  // v2.6: medications come from the doctor. The self-"Add Prescription" tab
+  // is gone — patients confirm doses and request refills, they don't create
+  // treatment records.
   const el=document.getElementById('rx-list');
+  _rxTab='list';
   const tabs=`<div class="rx-tabs">
-    <button class="rx-tab ${_rxTab==='list'?'active':''}" data-action="rRxPatientTab:list">💊 My Prescriptions</button>
-    <button class="rx-tab ${_rxTab==='add'?'active':''}" data-action="rRxPatientTab:add">➕ Add Prescription</button>
+    <button class="rx-tab active" data-action="rRxPatientTab:list">💊 My Prescriptions</button>
   </div>`;
-  if(_rxTab==='add'){el.innerHTML=tabs+rxAddFormHtml();return}
   try{
     const r=await api('/rx/my');
     const serverRx=(r&&r.ok&&r.prescriptions)?r.prescriptions:[];
@@ -794,7 +802,7 @@ async function renderPatientRx(){
     try{window.__adherenceToday=await loadAdherenceToday();}catch(e){window.__adherenceToday={};}
     // id → medication-name map for confirmDose POSTs.
     try{window.__adherenceMedNames=Object.fromEntries(all.map(rx=>[_rxAdhId(rx),rx.medication]));}catch(e){}
-    if(!all.length){el.innerHTML=tabs+'<div class="empty-card">No prescriptions on file.<br><span style="font-size:11px;color:var(--text-dim)">Tap “➕ Add Prescription” to record a medicine you take.</span></div>';return}
+    if(!all.length){el.innerHTML=tabs+'<div class="empty-card">No prescriptions on file.<br><span style="font-size:11px;color:var(--text-dim)">Medicines prescribed by your doctor will appear here.</span></div>';return}
     const statusIcon={active:'✅',completed:'✔️',cancelled:'❌',expired:'⏰','pending-refill':'🔄','self':'📝'};
     const statusColor={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--blue)',self:'var(--blue)'};
     const timingChips=(t)=>{const m=String(t||'').match(/^(\d)-(\d)-(\d)$/);if(!m)return '';const mk=(v,l)=>`<span class="rx-chip" style="background:${+v?'rgba(5,150,105,.12)':'rgba(100,116,139,.08)'};color:${+v?'var(--green)':'var(--text-dim)'}">${l} ${esc(v)}</span>`;return `<div style="display:flex;gap:4px;margin-top:6px">${mk(m[1],'M')}${mk(m[2],'A')}${mk(m[3],'N')}</div>`;};
@@ -1038,6 +1046,15 @@ function renderTreatmentPlan(){
   if(p.idh1&&p.idh1!=='Pending')h+=`<div class="irow"><span class="ikey">IDH1</span><span class="ival">${p.idh1}</span></div>`;
   if(p.mgmt&&p.mgmt!=='Pending')h+=`<div class="irow"><span class="ikey">MGMT</span><span class="ival">${p.mgmt}</span></div>`;
   h+='</div>';
+  // v2.6: lab results — the lab uploads against the MRN and they land in the
+  // patient's own keyspace (lab_subs_<mrn>). Shown under Treatment → lab card.
+  let labResults=[];try{labResults=LS.get('lab_subs_'+p.mrn)||[];}catch(e){}
+  if(labResults.length){
+    const rs=[...labResults].sort((a,b)=>b.submittedAt-a.submittedAt).slice(0,8);
+    h+='<div class="info-card"><div class="info-card-title">🧪 Lab Results</div>';
+    h+=rs.map(r=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)" class="lr-item"><div style="display:flex;justify-content:space-between;align-items:start"><div style="font-weight:700;font-size:13px">${esc(r.test||'Lab report')}</div><span style="font-size:10.5px;color:var(--text-muted)">${r.date?esc(r.date):(r.submittedAt?new Date(r.submittedAt).toLocaleDateString():'')}</span></div>${r.results?`<div style="font-size:12px;color:var(--text);margin-top:4px;white-space:pre-wrap">${esc(r.results)}</div>`:''}${r.notes?`<div style="font-size:11px;color:var(--text-muted);margin-top:3px">📝 ${esc(r.notes)}</div>`:''}<div style="font-size:10px;color:var(--text-dim);margin-top:3px">Uploaded by ${esc(r.labName||'lab')} · waiting for Dr. review</div></div>`).join('');
+    h+='</div>';
+  }
   // Next appointment
   const appts=(LS.get('appts_'+p.mrn)||[]).filter(a=>new Date(a.date)>=new Date()&&a.status!=='Declined').sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(appts.length){const n=appts[0];h+=`<div style="background:linear-gradient(135deg,#065f46,#047857);border-radius:12px;padding:16px;color:#fff;margin-bottom:12px"><div style="font-size:10px;opacity:.9;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Next Appointment</div><div style="font-weight:700;font-size:15px">${new Date(n.date).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div><div style="font-size:13px;opacity:.9;margin-top:2px">${n.time||''} · ${n.type||'Follow-up'}</div></div>`}
