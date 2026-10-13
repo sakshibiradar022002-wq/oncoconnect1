@@ -58,12 +58,15 @@ export function clearSessionCookie(res) {
 // ── Verify on each request ────────────────────────────────────────
 // No idle-timeout revoke: “stay logged in” is the product promise for the
 // Patient/Lab apps and the desktop software. Session lifetime is bounded by
-// SESSION_TTL_MIN (default 30 days) — a fresh JWT is issued long before
-// expiry thanks to the sliding refresh below.
+// SESSION_TTL_MIN (default 7 days, was 30) — a fresh JWT is issued long before
+// expiry thanks to the sliding refresh below. A stolen cookie is now useful
+// for at most 7 idle days and re-anchors on every server verify anyway.
 
 // Sliding refresh: when a session is past ⅔ of its lifetime, mint a fresh
 // JWT (and extend the DB row) so an actively-used app never sees a 401.
-const REFRESH_THRESHOLD_MS = 20 * 24 * 60 * 60 * 1000; // 20 of 30 days
+// Threshold is derived from config so the TTL stays safe to tune — it was
+// hard-coded at 20 days, which made any TTL under 20 days never refresh.
+const REFRESH_THRESHOLD_MS = ((config.sessionTtlMinutes || 43200) * 60 * 1000) * (2 / 3); // ⅔ of lifetime
 const REFRESH_COOLDOWN_MS = 60 * 60 * 1000; // at most once/hour per session
 const recentRefresh = new Map(); // jti → last refresh ts (in-memory only)
 
