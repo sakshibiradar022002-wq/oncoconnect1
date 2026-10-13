@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from '../config.js';
-import { flushDb } from './index.js';
+import { db, flushDb } from './index.js';
 
 const DB_BACKUP_DIR = path.join(path.dirname(config.dbPath || '.'), 'backups');
 let started = false;
@@ -20,9 +20,21 @@ export function backupDatabase() {
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const backupPath = path.join(DB_BACKUP_DIR, `veltruvia-${timestamp}.db`);
-    fs.copyFileSync(dbPath, backupPath);
-    try { fs.copyFileSync(dbPath + '-wal', backupPath + '-wal'); } catch {}
-    try { fs.copyFileSync(dbPath + '-shm', backupPath + '-shm'); } catch {}
+    // v2.6.2: copyFileSync on a live WAL-mode DB can land mid-write and
+    // produce a corrupt snapshot (restore drill 2026-10-13 found
+    // "wrong # of entries in idx_users_email" in a copied backup while the
+    // live DB passed quick_check). VACUUM INTO writes a fully consistent,
+    // self-contained snapshot through SQLite itself — no WAL/shm sidecar
+    // needed and always restorable. Uses the app's own open connection so it
+    // works whatever driver db/index.js loaded (node:sqlite / sql.js).
+    try {
+      db.exec(`VACUUM INTO '${backupPath.replace(/'/g, "''")}'`);
+    } catch (e) {
+      console.error('[backup] VACUUM INTO failed, falling back to file copy:', e.message);
+      fs.copyFileSync(dbPath, backupPath);
+      try { fs.copyFileSync(dbPath + '-wal', backupPath + '-wal'); } catch {}
+      try { fs.copyFileSync(dbPath + '-shm', backupPath + '-shm'); } catch {}
+    }
 
     // Prune old backups (keep last 30)
     const backups = fs.readdirSync(DB_BACKUP_DIR)
