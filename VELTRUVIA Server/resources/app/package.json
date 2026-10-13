@@ -35,6 +35,8 @@
   "scripts": {
     "postinstall": "node electron/fix-appbuilder-noble.cjs",
     "seed-demo": "node scripts/seed-demo.mjs",
-    "init-db": "node src/db/init.js"
+    "init-db": "node src/db/init.js",
+    "check": "node --check src/app.js && node --check src/server.js",
+    "test": "node --test tests/api.test.js"
   }
 }

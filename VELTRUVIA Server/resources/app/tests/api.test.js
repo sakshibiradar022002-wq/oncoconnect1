@@ -3,6 +3,9 @@
 // Run: node --test tests/api.test.js
 // ═══════════════════════════════════════════════════════════════════
 
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -10,6 +13,40 @@ import http from 'node:http';
 // ── Test config ──
 const BASE = 'http://localhost:3000';
 let serverProcess = null;
+
+// v2.6.1: boot the real server on an ephemeral DB before the suite runs.
+// Previously the suite expected an already-running localhost:3000, so CI (and
+// any fresh checkout) failed 22/30 assertions with connection refusals.
+before(async () => {
+  const appRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+  serverProcess = spawn(process.execPath, ['src/server.js'], {
+    cwd: appRoot,
+    env: {
+      ...process.env,
+      PORT: '3000',
+      DB_PATH: path.join(appRoot, 'data', 'test-db.sqlite'),
+      VELTRUVIA_DEMO: 'true',
+      VELTRUVIA_TEST_MODE: '1',
+      VELTRUVIA_DEMO_PASSWORD: 'testdoc123',
+    },
+    stdio: 'ignore',
+  });
+  // Poll /api/health until the server answers (max ~20s).
+  for (let i = 0; i < 40; i++) {
+    try {
+      const res = await request('GET', '/api/health');
+      if (res.status === 200) return;
+    } catch { /* not up yet */ }
+    await new Promise(r => setTimeout(r, 500));
+  }
+}, { timeout: 30_000 });
+
+after(async () => {
+  if (serverProcess) {
+    serverProcess.kill();
+    serverProcess = null;
+  }
+});
 
 // ── Helper: make HTTP requests ──
 function request(method, path, body = null, cookies = '') {
@@ -381,9 +418,11 @@ describe('Error Handling', () => {
     assert.ok(res.body.error);
   });
 
-  it('GET /nonexistent returns 200 (SPA fallback)', async () => {
+  it('GET /nonexistent returns a real 404 page (SPA fallback removed in app.js)', async () => {
     const res = await request('GET', '/nonexistent');
-    assert.equal(res.status, 200);
+    // app.js serves a real 404 for unknown non-API GETs (the old catch-all
+    // index.html fallback masked broken links); assert the intended behavior.
+    assert.equal(res.status, 404);
   });
 });
 

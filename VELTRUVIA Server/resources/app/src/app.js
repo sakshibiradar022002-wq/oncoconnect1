@@ -175,9 +175,13 @@ if (config.isProd) {
 }
 
 // ── Rate limiting ─────────────────────────────────────────────────
+const testMode = String(process.env.VELTRUVIA_TEST_MODE || '') === '1';
+// v2.6.1: in test mode auth limiting is disabled so the API suite (which
+// fires dozens of logins in seconds) can run; production keeps the strict
+// limiter because VELTRUVIA_TEST_MODE is never set by the real server.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,                    // 30 auth attempts per 15 min per IP
+  max: testMode ? 100000 : 30,   // 30 auth attempts per 15 min per IP
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many attempts, please try again later' },
