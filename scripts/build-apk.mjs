@@ -132,6 +132,17 @@ if (existsSync(manifestFile)) {
     writeFileSync(manifestFile, manifest);
     console.log('   ✅ CAMERA permission added to AndroidManifest (QR pairing)');
   }
+  // Medicine/appointment reminders are OS-level local notifications — the
+  // plugin manifest carries POST_NOTIFICATIONS, but declare it in the app too
+  // so a stale generated project can't silently drop reminders (Android 13+).
+  if (!manifest.includes('android.permission.POST_NOTIFICATIONS')) {
+    manifest = readFileSync(manifestFile, 'utf8');
+    manifest = manifest.replace(
+      '<uses-permission android:name="android.permission.INTERNET"',
+      '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.INTERNET"');
+    writeFileSync(manifestFile, manifest);
+    console.log('   ✅ POST_NOTIFICATIONS permission added to AndroidManifest (reminders)');
+  }
 }
 
 // Stamp the app version from package.json into the generated gradle config:

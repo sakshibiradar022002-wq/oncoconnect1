@@ -1236,6 +1236,23 @@ function _vxUrlB64ToU8(base64String){
   return Uint8Array.from(raw,(c)=>c.charCodeAt(0));
 }
 async function subscribeToPush(){
+  // v2.5.1: native Android shells (Capacitor) have no Web Push — but they
+  // don't need it: the same reminders become OS-level local notifications
+  // that fire even when VELTRUVIA is closed.
+  if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()){
+    try{
+      const LN=window.Capacitor.Plugins&&window.Capacitor.Plugins.LocalNotifications;
+      if(!LN){AppDialog.alert('Reminders need the VELTRUVIA 2.5.1 build — please update the app from the download page, then try again.');return}
+      const perm=await LN.requestPermissions();
+      if(perm&&perm.display==='denied'){AppDialog.alert('Notifications are blocked for VELTRUVIA. Allow them in Android Settings → Apps → VELTRUVIA → Notifications.');return}
+      await syncMedReminderTable();
+      const meds=await scheduleNativeMedReminders();
+      const appts=await scheduleNativeAppointmentReminders();
+      if(!meds&&!appts){AppDialog.alert('Reminders are switched on, but nothing is scheduled yet — medicine times appear once your doctor sends a prescription, appointments once one is booked.');return}
+      AppDialog.alert('✅ Reminders are ON for this device.'+(meds?' Medicine times':'')+(meds&&appts?' and':(appts?' Appointment':''))+(appts?' alerts':'')+' will arrive as phone notifications even when VELTRUVIA is closed.');
+    }catch(e){AppDialog.alert('Could not enable reminders: '+((e&&e.message)||'permission denied'))}
+    return;
+  }
   try{
     if(!('serviceWorker' in navigator)||!('PushManager' in window)){
       AppDialog.alert('Push reminders work in the VELTRUVIA web app (open veltruvia.duckdns.org in Chrome). On this device, medicine reminders fire while the app is open.');
@@ -1365,10 +1382,16 @@ function parseFreqTimes(freq){
   return['08:00'];
 }
 function setupMedReminders(){
-  if(!('Notification' in window))return;
-  if(Notification.permission==='default')Notification.requestPermission();
-  api('/rx/my').then(r=>{
-    if(!r||!r.ok||!r.prescriptions)return;
+  try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();}catch(e){}
+  syncMedReminderTable();
+}
+// Builds the local medicine-reminder table from active prescriptions.
+// Awaitable so the native (APK) path can schedule OS alarms after the table
+// exists; silent no-op on network failure.
+async function syncMedReminderTable(){
+  try{
+    const r=await api('/rx/my');
+    if(!r||!r.ok||!r.prescriptions)return 0;
     const active=r.prescriptions.filter(p=>p.status==='active');
     const all=_remindAll();
     let added=0;
@@ -1382,7 +1405,9 @@ function setupMedReminders(){
     _remindSave(all);
     if(added)showToast('⏰ '+added+' medication reminder'+(added===1?'':'s')+' scheduled');
     try{scheduleNativeMedReminders();}catch(e){}
-  }).catch(()=>{});
+    try{scheduleNativeAppointmentReminders();}catch(e){}
+    return added;
+  }catch(e){return 0}
 }
 function checkMedReminders(){
   const all=_remindAll();
@@ -1432,16 +1457,54 @@ async function scheduleNativeMedReminders(){
         schedule:{on:{hour:h,minute:m},allowWhileIdle:true},
       });
     }
-    if(!notifications.length)return;
-    try{const p=await LN.requestPermissions();if(p&&p.display==='denied')return;}catch(e){}
+    if(!notifications.length)return 0;
+    try{const p=await LN.requestPermissions();if(p&&p.display==='denied')return 0;}catch(e){}
     let pending=[];
     try{pending=((await LN.getPending())||{notifications:[]}).notifications||[];}catch(e){}
     const wanted=notifications.map(n=>n.id);
-    const stale=pending.map(n=>n.id).filter(id=>!wanted.includes(id));
+    const stale=pending.map(n=>n.id).filter(id=>id<2000&&!wanted.includes(id));
     if(stale.length){try{await LN.cancel({notifications:stale.map(id=>({id}))});}catch(e){}}
     await LN.schedule({notifications});
     console.log('[med-reminders] native daily alarms scheduled:',notifications.length);
-  }catch(e){console.debug('[med-reminders] native alarms unavailable:',e&&e.message)}
+    return notifications.length;
+  }catch(e){console.debug('[med-reminders] native alarms unavailable:',e&&e.message);return 0}
+}
+
+// v2.5.1: appointment reminders as native alarms too. The server's hourly
+// push scan can't reach an APK (no Web Push subscription), so on-device we
+// schedule a local notification the day before each upcoming appointment.
+// IDs 2000+ stay clear of the med-reminder block (1000+).
+async function scheduleNativeAppointmentReminders(){
+  try{
+    const LN=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.LocalNotifications;
+    if(!LN||!currentPat)return 0;
+    let appts=[];
+    try{const r=await api('/sync/get-appointments/'+currentPat.mrn);if(r&&r.ok&&r.appointments)appts=r.appointments;}catch(e){}
+    if(!appts.length)appts=LS.get('appts_'+currentPat.mrn)||[];
+    const now=new Date();
+    const notifications=[];
+    appts.forEach((a,i)=>{
+      if(!a||!a.date||(a.status&&['Cancelled','Declined','Completed'].indexOf(a.status)>=0))return;
+      const when=new Date(a.date+'T'+((a.time&&/^\d{1,2}:\d{2}/.test(a.time))?a.time:'09:00'));
+      if(isNaN(when.getTime())||when<=now)return;
+      const dayBefore=new Date(when.getTime()-86400000);
+      if(dayBefore<=now)return; // less than a day out — not worth a heads-up alarm
+      notifications.push({
+        id:2000+i,
+        title:'📅 Appointment tomorrow',
+        body:(a.type||'Visit')+' on '+a.date+(a.time?' at '+a.time:'')+'. Tap to review.',
+        schedule:{at:dayBefore.toISOString(),allowWhileIdle:true},
+      });
+    });
+    let pending=[];
+    try{pending=((await LN.getPending())||{notifications:[]}).notifications||[];}catch(e){}
+    const wanted=notifications.map(n=>n.id);
+    const stale=pending.map(n=>n.id).filter(id=>id>=2000&&id<3000&&!wanted.includes(id));
+    if(stale.length){try{await LN.cancel({notifications:stale.map(id=>({id}))});}catch(e){}}
+    if(notifications.length)await LN.schedule({notifications});
+    console.log('[appt-reminders] native appointment alarms scheduled:',notifications.length);
+    return notifications.length;
+  }catch(e){console.debug('[appt-reminders] native alarms unavailable:',e&&e.message);return 0}
 }
 
 // ═══════════════════════════════════════════════════════════════

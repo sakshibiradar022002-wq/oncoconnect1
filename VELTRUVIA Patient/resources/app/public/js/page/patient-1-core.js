@@ -129,6 +129,27 @@ function finishPatientLogin(pat, viaServer){
   document.getElementById('cal-phase').textContent=(pat.phase||'Treatment')+(pat.diag?' · '+pat.diag:'');
   document.getElementById('cal-today-badge').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   renderCalendar();
+  // v2.5.1: welcome card — greets the patient by name with glanceable stats.
+  try{
+    const wc=document.getElementById('pat-welcome-card');
+    if(wc){
+      wc.style.display='flex';
+      const fn=(pat.name||'').split(' ')[0]||'';
+      const hr=new Date().getHours();
+      const daypart=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+      const tEl=wc.querySelector('.welcome-title');
+      if(tEl)tEl.textContent=fn?`${daypart}, ${fn}`:'Hello 👋';
+      const sEl=wc.querySelector('.welcome-sub');
+      if(sEl)sEl.textContent=(pat.phase||'Treatment')+(pat.diag?' · '+pat.diag:' · Stay on top of your symptoms');
+      // counts: symptom logs total, active meds, scheduled/queued appointments
+      let logCount=0;try{const p=pat.mrn;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k==='log_'+p+'_'+new Date().toISOString().slice(0,8)+'%'||k.startsWith('log_'+p+'_')))logCount++;}}catch(e){}
+      let medCount=0;try{const ra=_remindAll();medCount=Object.keys(ra).filter(id=>ra[id].enabled).length;}catch(e){}
+      let apptCount=0;try{const ap=LS.get('appts_'+pat.mrn)||[];apptCount=ap.filter(a=>a.status==='Scheduled'||a.status==='Requested').length;}catch(e){}
+      const n1=document.getElementById('wc-logs');if(n1)n1.textContent=logCount;
+      const n2=document.getElementById('wc-meds');if(n2)n2.textContent=medCount;
+      const n3=document.getElementById('wc-appts');if(n3)n3.textContent=apptCount;
+    }
+  }catch(e){}
   checkPendingPCR();
   try{setupMedReminders();}catch(e){}   // v2.5: (re)build reminders + device alarms on every login
   const b=document.getElementById('conn-banner');
@@ -461,11 +482,17 @@ function renderSlotDate(){
     empty.style.display='block';info.style.display='none';return
   }
   empty.style.display='none';
-  el.innerHTML=slots.map(s=>`<button data-action="selectSlot:${ds},${s.time},${s.endTime},${s.duration}" style="padding:10px 8px;border-radius:10px;background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center">${s.time}</button>`).join('');
+  // v2.6: visible selection state — slots start BLUE (available), the picked
+  // one turns GRAY so the patient can see exactly what they are about to book.
+  el.innerHTML=slots.map(s=>{
+    const sel=_selectedSlot&&_selectedSlot.date===ds&&_selectedSlot.time===s.time;
+    const bg=sel?'var(--text-dim)':'var(--blue)';
+    return `<button data-action="selectSlot:${ds},${s.time},${s.endTime},${s.duration}" style="padding:10px 8px;border-radius:10px;background:${bg};border:1.5px solid ${sel?'var(--text-dim)':'transparent'};color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center">${s.time}</button>`;}).join('');
 }
 
 function selectSlot(date,time,endTime,dur){
   _selectedSlot={date,time,endTime,duration:parseInt(dur)};
+  renderSlotDate(); // repaint so the chosen slot shows gray immediately
   document.getElementById('slot-selected-info').style.display='block';
   const d=new Date(date+'T00:00:00');
   document.getElementById('slot-selected-details').innerHTML=`<div style="margin-bottom:6px"><span style="color:var(--green);font-weight:700">📅 ${d.toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric'})}</span></div><div><span style="color:var(--blue);font-weight:700">⏰ ${time} — ${endTime}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">Duration: ${dur} min</div>`;
@@ -477,30 +504,34 @@ async function confirmBookAppt(){
   const run=async()=>{
   const type=document.getElementById('book-appt-type').value;
   const notes=document.getElementById('book-appt-notes').value;
-  // Save to shared appointment store (works in desktop mode). If this succeeds
-  // the appointment IS on the server and the doctor's software can see it —
-  // later failures must never claim otherwise.
+  // v2.6.1: ONE booking = ONE record. The DB calendar is the source of truth;
+  // the shared store only mirrors the request as 'Requested' (with a ref to the
+  // calendar row id) so the doctor's offline-capable list still shows it.
+  // Previously the store said 'Scheduled' while the calendar said 'pending',
+  // so doctor confirmations never reconciled and patients saw duplicates.
   let stored=false;
-  try{
-    await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:{date:_selectedSlot.date,time:_selectedSlot.time,type,notes,status:'Scheduled',createdAt:Date.now()}})});
-    stored=true;
-  }catch(e){console.warn('[appt] shared-store save failed:',e.message)}
-  // Also try server booking (puts it on the doctor's calendar)
+  let bookingId=null;
   try{
     const r=await api('/schedule/book',{method:'POST',body:JSON.stringify({date:_selectedSlot.date,startTime:_selectedSlot.time,type,notes})});
-    if(r.ok){AppDialog.alert('✅ '+r.message)}else{AppDialog.alert('⚠️ '+(r.error||'This slot could not be booked')+'\n\nYour request is saved and your doctor can see it — pick another time if needed.');}
+    if(r.ok){bookingId=r.appointment&&r.appointment.id;AppDialog.alert('✅ '+r.message)}
+    else{
+      AppDialog.alert('⚠️ '+(r.error||'This slot could not be booked')+'\n\nYour request is saved and your doctor can see it — pick another time if needed.');
+      _selectedSlot=null;document.getElementById('slot-selected-info').style.display='none';renderSlotDate();return;
+    }
   }catch(e){
     // Network failure vs server refusal are very different situations — say
     // which one happened instead of always claiming the server was down.
     const offline=!e||/failed to fetch|networkerror|load failed|timed?\s?out|internet/i.test(e.message||'');
     if(offline){
-      AppDialog.alert(stored
-        ?'✅ Appointment request saved. It will reach your doctor when the connection is back.'
-        :'⚠️ No internet connection right now. Your appointment is saved on this device and will sync later — check My Appts.');
+      AppDialog.alert('⚠️ No internet connection right now. Your appointment is saved on this device and will sync later — check My Appts.');
     }else{
       AppDialog.alert('⚠️ '+(e.message||'Booking failed')+"\n\nYour request is saved and your doctor can see it in their software.");
     }
   }
+  try{
+    await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:{date:_selectedSlot.date,time:_selectedSlot.time,type,notes,status:'Requested',bookingId:bookingId,createdAt:Date.now()}})});
+    stored=true;
+  }catch(e){console.warn('[appt] shared-store mirror failed:',e.message)}
   _selectedSlot=null;
   document.getElementById('slot-selected-info').style.display='none';
   // Refresh slots
@@ -528,8 +559,13 @@ async function renderMyAppts(){
     }catch(e){}
   }
   if(!appts.length){el.innerHTML='<div class="empty-card">No upcoming appointments.</div>';return}
+  // v2.6.1: remember which list each appointment came from so the Cancel
+  // button can address the right backend (db:<calendar id> vs store:<index>).
+  const dbIds=new Set(appts.filter(a=>a.id).map(a=>a.id));
   const statusColors={pending:'var(--orange)',confirmed:'var(--green)',cancelled:'var(--red)',completed:'var(--blue)',Scheduled:'var(--blue)',Requested:'var(--orange)',Confirmed:'var(--green)',Declined:'var(--red)'};
   el.innerHTML=appts.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(a=>{
+    if(!a.id){const idx=(LS.get('appts_'+currentPat.mrn)||[]).findIndex(x=>x.date===a.date&&x.time===a.time&&x.type===a.type&&(x.status||'Scheduled')===a.status);if(idx>=0)a._storeIdx=idx;}
+    else a._storeIdx=undefined;
     const d=new Date((a.date||'')+'T00:00:00');
     const status=(a.status||'').toLowerCase();
     const canCancel=status==='pending'||status==='confirmed'||status==='scheduled';
@@ -541,17 +577,39 @@ async function renderMyAppts(){
         <div><div style="font-weight:700;font-size:14px">${esc(displayType)}</div><div style="font-size:12px;color:var(--text-muted)">${a.date?d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}):''} ${displayTime}</div></div>
         <span class="badge" style="background:${statusColors[displayStatus]||statusColors[displayStatus.charAt(0).toUpperCase()+displayStatus.slice(1)]||'var(--border)'};color:#fff;font-size:10px;padding:3px 10px;border-radius:8px">${displayStatus}</span>
       </div>
-      ${canCancel?`<button data-action="cancelPatAppt:${a.id||''}" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Cancel</button>`:''}
+      ${canCancel?`<button data-action="cancelPatAppt:${a.id?'db:'+a.id:'store:'+((a._storeIdx!==undefined)?a._storeIdx:appts.indexOf(a))}" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Cancel</button>`:''}
     </div>`;
   }).join('');
 }
 
-async function cancelPatAppt(id){
+async function cancelPatAppt(ref){
+  if(!ref){AppDialog.alert('This appointment was created before the cancel feature existed — ask your doctor to cancel or reschedule it.');return}
   if(!await AppDialog.confirm('Cancel this appointment?',{danger:true}))return;
-  try{
-    const r=await api('/schedule/cancel',{method:'POST',body:JSON.stringify({appointmentId:id})});
-    if(r.ok){AppDialog.alert('✅ Appointment cancelled');renderMyAppts()}
-  }catch(e){AppDialog.alert(e.message)}
+  const [kind,id]=ref.split(' ');
+  if(kind==='db'){
+    // Calendar booking: server cancel (notification + free slot included).
+    try{
+      const r=await api('/schedule/cancel',{method:'POST',body:JSON.stringify({appointmentId:id})});
+      if(r.ok){AppDialog.alert('✅ Appointment cancelled');renderMyAppts()}
+      else AppDialog.alert((r&&r.error)||('Cancel failed ('+(r&&r.status)+')'));
+    }catch(e){AppDialog.alert(e.message)}
+  }else{
+    // Store-based appointment: mark Cancelled locally, then push — the
+    // doctor's list and the slot generator both treat Cancelled as free.
+    for(let i=0;i<3;i++){
+      try{
+        const idx=parseInt(id,10);
+        const r=await api('/sync/get-appointments/'+currentPat.mrn);
+        const appts=(r&&r.ok&&r.appointments)||[];
+        if(!appts[idx]){AppDialog.alert('Appointment not found — it may already be cancelled.');renderMyAppts();return}
+        appts[idx].status='Cancelled';appts[idx].cancelledAt=new Date().toISOString();
+        await api('/sync/update-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,index:idx,status:'Cancelled'})});
+        LS.set('appts_'+currentPat.mrn,appts);
+        AppDialog.alert('✅ Appointment cancelled');renderMyAppts();return;
+      }catch(e){/* retry offline */ await new Promise(r=>setTimeout(r,800))}
+    }
+    AppDialog.alert('No internet right now — tap Cancel again when you are back online.');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -683,19 +741,99 @@ function rxPrintPaper(){
     if(window._vxReportOverlay){_vxReportOverlay('Prescription — '+(pat.name||pat.mrn),`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Prescription</title><style>${_RX_PRINT_CSS}</style></head><body>${html}</body></html>`,{});}
   })();
 }
-async function renderPatientRx(){
-  const el=document.getElementById('rx-list');
-  const tabs=`<div class="rx-tabs">
-    <button class="rx-tab ${_rxTab==='list'?'active':''}" data-action="rRxPatientTab:list">💊 My Prescriptions</button>
-    <button class="rx-tab ${_rxTab==='add'?'active':''}" data-action="rRxPatientTab:add">➕ Add Prescription</button>
+// ═══ MEDICATION ADHERENCE (v2.5.2) — the loop closes: doctor prescribes →
+// patient confirms each dose (Taken ✓ / Skipped) → doctor sees adherence %.
+// Today's confirmations only; the doctor's dashboard aggregates the rest.
+const _ADH_KEY_PREFIX = 'adherence_'; // medlog-style local cache, per med
+function _rxAdhId(rx){return String(rx.id||rx.medication).slice(0,48);}
+function _todayStr(){return new Date().toISOString().slice(0,10);}
+async function loadAdherenceToday(){
+  try{
+    const r=await api('/features/adherence/'+encodeURIComponent(currentPat.mrn)+'?days=1');
+    const entries=(r&&r.ok&&r.entries)||[];
+    const today=_todayStr();
+    const state={};
+    for(const e of entries){
+      if(e.scheduled_date!==today)continue;
+      const key=_rxAdhId({id:e.prescription_id,medication:e.medication});
+      state[key]={status:e.status,times:(state[key]?.times||[]).concat(e.scheduled_time||'')};
+    }
+    return state;
+  }catch(e){return {}}
+}
+function adherenceButtonsHtml(rx){
+  // Derive today's doses from the timing pattern (e.g. 0-1-0) or dosage text.
+  const m=String(rx.timing||'').match(/^(\d)-(\d)-(\d)$/);
+  let doses=[];
+  if(m){const labels=['Morning','Afternoon','Night'];doses=labels.filter((_,i)=>+m[i+1]>0).map(l=>({label:l,times:_doseTimesFor(labels.indexOf(l),rx)}));}
+  else doses=[{label:'Daily',times:_doseTimesFor(-1,rx)}];
+  if(!doses.length)doses=[{label:'Daily',times:['']}];
+  const today=_todayStr();
+  const id=_rxAdhId(rx);
+  const st=(window.__adherenceToday&&window.__adherenceToday[id])||{};
+  const pill=(doseSlot)=>{
+    // doseSlot: {label}; look up per-slot status in local cache keyed
+    // medid_time. We store one row per dose time; for now the UI confirms
+    // per-medication-day and, when timing has multiple slots, per slot.
+    const slotState=(st&&st.slots&&st.slots[doseSlot.label])||null;
+    if(slotState==='taken')return `<span style="padding:8px 14px;border-radius:8px;background:rgba(5,150,105,.12);color:var(--green);font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px">✓ Taken<span style="font-size:10px;font-weight:500">${esc(doseSlot.label)}</span></span>`;
+    if(slotState==='skipped')return `<span style="padding:8px 14px;border-radius:8px;background:rgba(251,191,36,.12);color:var(--orange);font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px">– Skipped<span style="font-size:10px;font-weight:500">${esc(doseSlot.label)}</span></span>`;
+    return `<button data-action="confirmDose:${id}:${escAttr(doseSlot.label)}:taken" style="padding:8px 12px;border-radius:8px;border:1px solid var(--green);background:var(--green);color:#04170f;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">✓ Taken</button>
+            <button data-action="confirmDose:${id}:${escAttr(doseSlot.label)}:skipped" style="padding:8px 12px;border-radius:8px;border:1px solid var(--orange);background:rgba(251,191,36,.10);color:var(--orange);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Skipped</button>`;
+  };
+  return `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px">⏰ Today's doses — confirm to track adherence</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${doses.map(pill).join('')}</div>
   </div>`;
-  if(_rxTab==='add'){el.innerHTML=tabs+rxAddFormHtml();return}
+}
+// Turn the 0-1-0 timing index into a concrete clock time (best-effort — the
+// doctor may also write whenToTake text we can't parse into exact times).
+function _doseTimesFor(slotIdx,rx){
+  // morning≈09:00, afternoon≈14:00, night≈21:00 unless whenToTake gives more.
+  const map={0:'09:00',1:'14:00',2:'21:00'};
+  if(slotIdx<0)return rx.whenToTake?'':map[2];
+  return map[slotIdx]||'';
+}
+async function confirmDose(id,slotLabel,status){
+  if(!currentPat)return;
+  // id is _rxAdhId(rx) — recover the medication name from the rendered list
+  // (we pass it through the button data-action in a second field).
+  try{
+    const r=await api('/features/adherence',{method:'POST',body:JSON.stringify({
+      patientMrn:currentPat.mrn,
+      medication:window.__adherenceMedNames?.[id]||id,
+      scheduledDate:_todayStr(),
+      scheduledTime:_doseTimesFor(['Morning','Afternoon','Night'].indexOf(slotLabel),{})||'',
+      status,
+      notes:slotLabel?slotLabel+' dose':undefined,
+    })});
+    if(r&&r.ok){
+      showToast(status==='taken'?'✓ Dose confirmed — your doctor can see this':'Dose marked skipped');
+      window.__adherenceToday=await loadAdherenceToday();
+      renderPatientRx();
+    }
+  }catch(e){showToast('Could not confirm right now: '+e.message)}
+}
+async function renderPatientRx(){
+  // v2.6: medications come from the doctor. The self-"Add Prescription" tab
+  // is gone — patients confirm doses and request refills, they don't create
+  // treatment records.
+  const el=document.getElementById('rx-list');
+  _rxTab='list';
+  const tabs=`<div class="rx-tabs">
+    <button class="rx-tab active" data-action="rRxPatientTab:list">💊 My Prescriptions</button>
+  </div>`;
   try{
     const r=await api('/rx/my');
     const serverRx=(r&&r.ok&&r.prescriptions)?r.prescriptions:[];
     let selfRx=[];try{selfRx=LS.get('selfrx_'+currentPat.mrn)||[];}catch(e){}
     const all=[...serverRx,...selfRx];
-    if(!all.length){el.innerHTML=tabs+'<div class="empty-card">No prescriptions on file.<br><span style="font-size:11px;color:var(--text-dim)">Tap “➕ Add Prescription” to record a medicine you take.</span></div>';return}
+    // v2.5.2: once active meds exist, load today's adherence state so the
+    // Taken/Skipped buttons reflect what the patient already confirmed.
+    try{window.__adherenceToday=await loadAdherenceToday();}catch(e){window.__adherenceToday={};}
+    // id → medication-name map for confirmDose POSTs.
+    try{window.__adherenceMedNames=Object.fromEntries(all.map(rx=>[_rxAdhId(rx),rx.medication]));}catch(e){}
+    if(!all.length){el.innerHTML=tabs+'<div class="empty-card">No prescriptions on file.<br><span style="font-size:11px;color:var(--text-dim)">Medicines prescribed by your doctor will appear here.</span></div>';return}
     const statusIcon={active:'✅',completed:'✔️',cancelled:'❌',expired:'⏰','pending-refill':'🔄','self':'📝'};
     const statusColor={active:'var(--green)',completed:'var(--text-muted)',cancelled:'var(--red)',expired:'var(--orange)','pending-refill':'var(--blue)',self:'var(--blue)'};
     const timingChips=(t)=>{const m=String(t||'').match(/^(\d)-(\d)-(\d)$/);if(!m)return '';const mk=(v,l)=>`<span class="rx-chip" style="background:${+v?'rgba(5,150,105,.12)':'rgba(100,116,139,.08)'};color:${+v?'var(--green)':'var(--text-dim)'}">${l} ${esc(v)}</span>`;return `<div style="display:flex;gap:4px;margin-top:6px">${mk(m[1],'M')}${mk(m[2],'A')}${mk(m[3],'N')}</div>`;};
@@ -717,6 +855,7 @@ async function renderPatientRx(){
           ${rx.refills?`<span><b>Refills:</b> ${rx.refills} left</span>`:''}
         </div>
         ${rx.instructions?`<div style="margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-muted)">📋 ${esc(rx.instructions)}</div>`:''}
+        ${(rx.status==='active')?adherenceButtonsHtml(rx):''}
         <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
           ${(!rx.selfAdded&&rx.status==='active')?`<button data-action="requestRefill:${rx.id}" style="padding:8px 14px;border-radius:8px;border:1px solid var(--green);background:rgba(5,150,105,.06);color:var(--green);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">🔄 Request Refill</button>`:''}
           ${rx.selfAdded?`<button data-action="selfRxDelete:${rx.id}" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Remove</button>`:''}
@@ -938,6 +1077,15 @@ function renderTreatmentPlan(){
   if(p.idh1&&p.idh1!=='Pending')h+=`<div class="irow"><span class="ikey">IDH1</span><span class="ival">${p.idh1}</span></div>`;
   if(p.mgmt&&p.mgmt!=='Pending')h+=`<div class="irow"><span class="ikey">MGMT</span><span class="ival">${p.mgmt}</span></div>`;
   h+='</div>';
+  // v2.6: lab results — the lab uploads against the MRN and they land in the
+  // patient's own keyspace (lab_subs_<mrn>). Shown under Treatment → lab card.
+  let labResults=[];try{labResults=LS.get('lab_subs_'+p.mrn)||[];}catch(e){}
+  if(labResults.length){
+    const rs=[...labResults].sort((a,b)=>b.submittedAt-a.submittedAt).slice(0,8);
+    h+='<div class="info-card"><div class="info-card-title">🧪 Lab Results</div>';
+    h+=rs.map(r=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)" class="lr-item"><div style="display:flex;justify-content:space-between;align-items:start"><div style="font-weight:700;font-size:13px">${esc(r.test||'Lab report')}</div><span style="font-size:10.5px;color:var(--text-muted)">${r.date?esc(r.date):(r.submittedAt?new Date(r.submittedAt).toLocaleDateString():'')}</span></div>${r.results?`<div style="font-size:12px;color:var(--text);margin-top:4px;white-space:pre-wrap">${esc(r.results)}</div>`:''}${r.notes?`<div style="font-size:11px;color:var(--text-muted);margin-top:3px">📝 ${esc(r.notes)}</div>`:''}<div style="font-size:10px;color:var(--text-dim);margin-top:3px">Uploaded by ${esc(r.labName||'lab')} · waiting for Dr. review</div></div>`).join('');
+    h+='</div>';
+  }
   // Next appointment
   const appts=(LS.get('appts_'+p.mrn)||[]).filter(a=>new Date(a.date)>=new Date()&&a.status!=='Declined').sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(appts.length){const n=appts[0];h+=`<div style="background:linear-gradient(135deg,#065f46,#047857);border-radius:12px;padding:16px;color:#fff;margin-bottom:12px"><div style="font-size:10px;opacity:.9;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Next Appointment</div><div style="font-weight:700;font-size:15px">${new Date(n.date).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div><div style="font-size:13px;opacity:.9;margin-top:2px">${n.time||''} · ${n.type||'Follow-up'}</div></div>`}
@@ -1088,6 +1236,23 @@ function _vxUrlB64ToU8(base64String){
   return Uint8Array.from(raw,(c)=>c.charCodeAt(0));
 }
 async function subscribeToPush(){
+  // v2.5.1: native Android shells (Capacitor) have no Web Push — but they
+  // don't need it: the same reminders become OS-level local notifications
+  // that fire even when VELTRUVIA is closed.
+  if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()){
+    try{
+      const LN=window.Capacitor.Plugins&&window.Capacitor.Plugins.LocalNotifications;
+      if(!LN){AppDialog.alert('Reminders need the VELTRUVIA 2.5.1 build — please update the app from the download page, then try again.');return}
+      const perm=await LN.requestPermissions();
+      if(perm&&perm.display==='denied'){AppDialog.alert('Notifications are blocked for VELTRUVIA. Allow them in Android Settings → Apps → VELTRUVIA → Notifications.');return}
+      await syncMedReminderTable();
+      const meds=await scheduleNativeMedReminders();
+      const appts=await scheduleNativeAppointmentReminders();
+      if(!meds&&!appts){AppDialog.alert('Reminders are switched on, but nothing is scheduled yet — medicine times appear once your doctor sends a prescription, appointments once one is booked.');return}
+      AppDialog.alert('✅ Reminders are ON for this device.'+(meds?' Medicine times':'')+(meds&&appts?' and':(appts?' Appointment':''))+(appts?' alerts':'')+' will arrive as phone notifications even when VELTRUVIA is closed.');
+    }catch(e){AppDialog.alert('Could not enable reminders: '+((e&&e.message)||'permission denied'))}
+    return;
+  }
   try{
     if(!('serviceWorker' in navigator)||!('PushManager' in window)){
       AppDialog.alert('Push reminders work in the VELTRUVIA web app (open veltruvia.duckdns.org in Chrome). On this device, medicine reminders fire while the app is open.');
@@ -1217,10 +1382,16 @@ function parseFreqTimes(freq){
   return['08:00'];
 }
 function setupMedReminders(){
-  if(!('Notification' in window))return;
-  if(Notification.permission==='default')Notification.requestPermission();
-  api('/rx/my').then(r=>{
-    if(!r||!r.ok||!r.prescriptions)return;
+  try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();}catch(e){}
+  syncMedReminderTable();
+}
+// Builds the local medicine-reminder table from active prescriptions.
+// Awaitable so the native (APK) path can schedule OS alarms after the table
+// exists; silent no-op on network failure.
+async function syncMedReminderTable(){
+  try{
+    const r=await api('/rx/my');
+    if(!r||!r.ok||!r.prescriptions)return 0;
     const active=r.prescriptions.filter(p=>p.status==='active');
     const all=_remindAll();
     let added=0;
@@ -1234,7 +1405,9 @@ function setupMedReminders(){
     _remindSave(all);
     if(added)showToast('⏰ '+added+' medication reminder'+(added===1?'':'s')+' scheduled');
     try{scheduleNativeMedReminders();}catch(e){}
-  }).catch(()=>{});
+    try{scheduleNativeAppointmentReminders();}catch(e){}
+    return added;
+  }catch(e){return 0}
 }
 function checkMedReminders(){
   const all=_remindAll();
@@ -1284,16 +1457,54 @@ async function scheduleNativeMedReminders(){
         schedule:{on:{hour:h,minute:m},allowWhileIdle:true},
       });
     }
-    if(!notifications.length)return;
-    try{const p=await LN.requestPermissions();if(p&&p.display==='denied')return;}catch(e){}
+    if(!notifications.length)return 0;
+    try{const p=await LN.requestPermissions();if(p&&p.display==='denied')return 0;}catch(e){}
     let pending=[];
     try{pending=((await LN.getPending())||{notifications:[]}).notifications||[];}catch(e){}
     const wanted=notifications.map(n=>n.id);
-    const stale=pending.map(n=>n.id).filter(id=>!wanted.includes(id));
+    const stale=pending.map(n=>n.id).filter(id=>id<2000&&!wanted.includes(id));
     if(stale.length){try{await LN.cancel({notifications:stale.map(id=>({id}))});}catch(e){}}
     await LN.schedule({notifications});
     console.log('[med-reminders] native daily alarms scheduled:',notifications.length);
-  }catch(e){console.debug('[med-reminders] native alarms unavailable:',e&&e.message)}
+    return notifications.length;
+  }catch(e){console.debug('[med-reminders] native alarms unavailable:',e&&e.message);return 0}
+}
+
+// v2.5.1: appointment reminders as native alarms too. The server's hourly
+// push scan can't reach an APK (no Web Push subscription), so on-device we
+// schedule a local notification the day before each upcoming appointment.
+// IDs 2000+ stay clear of the med-reminder block (1000+).
+async function scheduleNativeAppointmentReminders(){
+  try{
+    const LN=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.LocalNotifications;
+    if(!LN||!currentPat)return 0;
+    let appts=[];
+    try{const r=await api('/sync/get-appointments/'+currentPat.mrn);if(r&&r.ok&&r.appointments)appts=r.appointments;}catch(e){}
+    if(!appts.length)appts=LS.get('appts_'+currentPat.mrn)||[];
+    const now=new Date();
+    const notifications=[];
+    appts.forEach((a,i)=>{
+      if(!a||!a.date||(a.status&&['Cancelled','Declined','Completed'].indexOf(a.status)>=0))return;
+      const when=new Date(a.date+'T'+((a.time&&/^\d{1,2}:\d{2}/.test(a.time))?a.time:'09:00'));
+      if(isNaN(when.getTime())||when<=now)return;
+      const dayBefore=new Date(when.getTime()-86400000);
+      if(dayBefore<=now)return; // less than a day out — not worth a heads-up alarm
+      notifications.push({
+        id:2000+i,
+        title:'📅 Appointment tomorrow',
+        body:(a.type||'Visit')+' on '+a.date+(a.time?' at '+a.time:'')+'. Tap to review.',
+        schedule:{at:dayBefore.toISOString(),allowWhileIdle:true},
+      });
+    });
+    let pending=[];
+    try{pending=((await LN.getPending())||{notifications:[]}).notifications||[];}catch(e){}
+    const wanted=notifications.map(n=>n.id);
+    const stale=pending.map(n=>n.id).filter(id=>id>=2000&&id<3000&&!wanted.includes(id));
+    if(stale.length){try{await LN.cancel({notifications:stale.map(id=>({id}))});}catch(e){}}
+    if(notifications.length)await LN.schedule({notifications});
+    console.log('[appt-reminders] native appointment alarms scheduled:',notifications.length);
+    return notifications.length;
+  }catch(e){console.debug('[appt-reminders] native alarms unavailable:',e&&e.message);return 0}
 }
 
 // ═══════════════════════════════════════════════════════════════
