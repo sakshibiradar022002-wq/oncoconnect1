@@ -19,6 +19,8 @@ jobs:
         working-directory: VELTRUVIA Server/resources/app
       - name: Run checks
         run: npm run check
+        working-directory: VELTRUVIA Server/resources/app
       - name: Run test suite
         run: npm test
+        working-directory: VELTRUVIA Server/resources/app
         timeout-minutes: 8
