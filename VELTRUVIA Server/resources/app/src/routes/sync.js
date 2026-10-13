@@ -1259,6 +1259,20 @@ syncRouter.post('/update-appointment', authenticate, validate(updateAppointmentS
   if (!appts[index]) return res.status(404).json({ ok: false, error: 'Appointment not found — it may have already been removed.' });
   appts[index].status = status;
   appts[index].respondedAt = new Date().toISOString();
+  // v2.6.1: keep the DB calendar in step. The store row now carries the
+  // bookingId of its /schedule/book row — confirm/decline/cancel there must
+  // land on the calendar too, or the doctor confirms one copy and the patient
+  // still sees 'pending' on the other.
+  const bookingId = appts[index].bookingId;
+  if (bookingId) {
+    try {
+      const dbStatus = { Confirmed: 'confirmed', Scheduled: 'confirmed', Declined: 'cancelled', Cancelled: 'cancelled' }[status];
+      if (dbStatus) {
+        await db.prepare('UPDATE appointments SET status = ?, updated_at = ? WHERE id = ?')
+          .run(dbStatus, new Date().toISOString(), bookingId);
+      }
+    } catch (e) { console.error('[appt] calendar status sync failed:', e.message); }
+  }
   if (!writeApptStore(store)) return res.status(500).json({ ok: false, error: 'Could not save status — server storage write failed. Try again.' });
   res.json({ ok: true });
 }));
@@ -1322,6 +1336,9 @@ async function buildSlotCalendar(ownerId, days) {
   for (let i = 0; i < days; i++) {
     const d = new Date(today); d.setDate(today.getDate() + i);
     const dateStr = d.toISOString().slice(0, 10);
+    // v2.6.1: don't offer slots already in the past — a 20:00 visitor should
+    // never see (or book) this morning's 09:00 slot.
+    const nowMins = today.getHours() * 60 + today.getMinutes();
     const avail = await effectiveAvailabilityRows(ownerId || 'any', dateStr);
     const daySlots = [];
     for (const r of avail) {
@@ -1330,6 +1347,7 @@ async function buildSlotCalendar(ownerId, days) {
       const dur = r.slot_duration || 30;
       let mins = sh * 60 + sm;
       const endMins = eh * 60 + em;
+      if (i === 0 && mins < nowMins) mins = Math.ceil(nowMins / dur) * dur; // today only
       while (mins + dur <= endMins) {
         const timeStr = String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
         const endMins2 = mins + dur;

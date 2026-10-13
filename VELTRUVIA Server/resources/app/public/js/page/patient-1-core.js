@@ -504,30 +504,34 @@ async function confirmBookAppt(){
   const run=async()=>{
   const type=document.getElementById('book-appt-type').value;
   const notes=document.getElementById('book-appt-notes').value;
-  // Save to shared appointment store (works in desktop mode). If this succeeds
-  // the appointment IS on the server and the doctor's software can see it —
-  // later failures must never claim otherwise.
+  // v2.6.1: ONE booking = ONE record. The DB calendar is the source of truth;
+  // the shared store only mirrors the request as 'Requested' (with a ref to the
+  // calendar row id) so the doctor's offline-capable list still shows it.
+  // Previously the store said 'Scheduled' while the calendar said 'pending',
+  // so doctor confirmations never reconciled and patients saw duplicates.
   let stored=false;
-  try{
-    await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:{date:_selectedSlot.date,time:_selectedSlot.time,type,notes,status:'Scheduled',createdAt:Date.now()}})});
-    stored=true;
-  }catch(e){console.warn('[appt] shared-store save failed:',e.message)}
-  // Also try server booking (puts it on the doctor's calendar)
+  let bookingId=null;
   try{
     const r=await api('/schedule/book',{method:'POST',body:JSON.stringify({date:_selectedSlot.date,startTime:_selectedSlot.time,type,notes})});
-    if(r.ok){AppDialog.alert('✅ '+r.message)}else{AppDialog.alert('⚠️ '+(r.error||'This slot could not be booked')+'\n\nYour request is saved and your doctor can see it — pick another time if needed.');}
+    if(r.ok){bookingId=r.appointment&&r.appointment.id;AppDialog.alert('✅ '+r.message)}
+    else{
+      AppDialog.alert('⚠️ '+(r.error||'This slot could not be booked')+'\n\nYour request is saved and your doctor can see it — pick another time if needed.');
+      _selectedSlot=null;document.getElementById('slot-selected-info').style.display='none';renderSlotDate();return;
+    }
   }catch(e){
     // Network failure vs server refusal are very different situations — say
     // which one happened instead of always claiming the server was down.
     const offline=!e||/failed to fetch|networkerror|load failed|timed?\s?out|internet/i.test(e.message||'');
     if(offline){
-      AppDialog.alert(stored
-        ?'✅ Appointment request saved. It will reach your doctor when the connection is back.'
-        :'⚠️ No internet connection right now. Your appointment is saved on this device and will sync later — check My Appts.');
+      AppDialog.alert('⚠️ No internet connection right now. Your appointment is saved on this device and will sync later — check My Appts.');
     }else{
       AppDialog.alert('⚠️ '+(e.message||'Booking failed')+"\n\nYour request is saved and your doctor can see it in their software.");
     }
   }
+  try{
+    await api('/sync/save-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,appointment:{date:_selectedSlot.date,time:_selectedSlot.time,type,notes,status:'Requested',bookingId:bookingId,createdAt:Date.now()}})});
+    stored=true;
+  }catch(e){console.warn('[appt] shared-store mirror failed:',e.message)}
   _selectedSlot=null;
   document.getElementById('slot-selected-info').style.display='none';
   // Refresh slots
@@ -555,8 +559,13 @@ async function renderMyAppts(){
     }catch(e){}
   }
   if(!appts.length){el.innerHTML='<div class="empty-card">No upcoming appointments.</div>';return}
+  // v2.6.1: remember which list each appointment came from so the Cancel
+  // button can address the right backend (db:<calendar id> vs store:<index>).
+  const dbIds=new Set(appts.filter(a=>a.id).map(a=>a.id));
   const statusColors={pending:'var(--orange)',confirmed:'var(--green)',cancelled:'var(--red)',completed:'var(--blue)',Scheduled:'var(--blue)',Requested:'var(--orange)',Confirmed:'var(--green)',Declined:'var(--red)'};
   el.innerHTML=appts.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(a=>{
+    if(!a.id){const idx=(LS.get('appts_'+currentPat.mrn)||[]).findIndex(x=>x.date===a.date&&x.time===a.time&&x.type===a.type&&(x.status||'Scheduled')===a.status);if(idx>=0)a._storeIdx=idx;}
+    else a._storeIdx=undefined;
     const d=new Date((a.date||'')+'T00:00:00');
     const status=(a.status||'').toLowerCase();
     const canCancel=status==='pending'||status==='confirmed'||status==='scheduled';
@@ -568,17 +577,39 @@ async function renderMyAppts(){
         <div><div style="font-weight:700;font-size:14px">${esc(displayType)}</div><div style="font-size:12px;color:var(--text-muted)">${a.date?d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}):''} ${displayTime}</div></div>
         <span class="badge" style="background:${statusColors[displayStatus]||statusColors[displayStatus.charAt(0).toUpperCase()+displayStatus.slice(1)]||'var(--border)'};color:#fff;font-size:10px;padding:3px 10px;border-radius:8px">${displayStatus}</span>
       </div>
-      ${canCancel?`<button data-action="cancelPatAppt:${a.id||''}" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Cancel</button>`:''}
+      ${canCancel?`<button data-action="cancelPatAppt:${a.id?'db:'+a.id:'store:'+((a._storeIdx!==undefined)?a._storeIdx:appts.indexOf(a))}" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Cancel</button>`:''}
     </div>`;
   }).join('');
 }
 
-async function cancelPatAppt(id){
+async function cancelPatAppt(ref){
+  if(!ref){AppDialog.alert('This appointment was created before the cancel feature existed — ask your doctor to cancel or reschedule it.');return}
   if(!await AppDialog.confirm('Cancel this appointment?',{danger:true}))return;
-  try{
-    const r=await api('/schedule/cancel',{method:'POST',body:JSON.stringify({appointmentId:id})});
-    if(r.ok){AppDialog.alert('✅ Appointment cancelled');renderMyAppts()}
-  }catch(e){AppDialog.alert(e.message)}
+  const [kind,id]=ref.split(' ');
+  if(kind==='db'){
+    // Calendar booking: server cancel (notification + free slot included).
+    try{
+      const r=await api('/schedule/cancel',{method:'POST',body:JSON.stringify({appointmentId:id})});
+      if(r.ok){AppDialog.alert('✅ Appointment cancelled');renderMyAppts()}
+      else AppDialog.alert((r&&r.error)||('Cancel failed ('+(r&&r.status)+')'));
+    }catch(e){AppDialog.alert(e.message)}
+  }else{
+    // Store-based appointment: mark Cancelled locally, then push — the
+    // doctor's list and the slot generator both treat Cancelled as free.
+    for(let i=0;i<3;i++){
+      try{
+        const idx=parseInt(id,10);
+        const r=await api('/sync/get-appointments/'+currentPat.mrn);
+        const appts=(r&&r.ok&&r.appointments)||[];
+        if(!appts[idx]){AppDialog.alert('Appointment not found — it may already be cancelled.');renderMyAppts();return}
+        appts[idx].status='Cancelled';appts[idx].cancelledAt=new Date().toISOString();
+        await api('/sync/update-appointment',{method:'POST',body:JSON.stringify({mrn:currentPat.mrn,index:idx,status:'Cancelled'})});
+        LS.set('appts_'+currentPat.mrn,appts);
+        AppDialog.alert('✅ Appointment cancelled');renderMyAppts();return;
+      }catch(e){/* retry offline */ await new Promise(r=>setTimeout(r,800))}
+    }
+    AppDialog.alert('No internet right now — tap Cancel again when you are back online.');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════

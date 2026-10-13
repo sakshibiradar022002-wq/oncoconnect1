@@ -711,6 +711,25 @@ function refreshOverview(){
   document.getElementById('ov-patients').innerHTML=recent.length?recent.map(p=>`<div class="patient-row" data-action="openRecord:${escAttr(p.mrn)}"><div style="flex:1;"><div class="pat-name">${esc(p.name)}</div><div class="pat-mrn">${p.mrn} · ${esc(p.diag||'—')}</div></div></div>`).join(''):'<div class="empty-card">No patients yet.</div>';
   // v2.5.2: adherence badges (async, must run AFTER the rows exist in DOM).
   fetchAdherenceBadges(recent);
+  // v2.6.1: the localStorage count above misses requests booked online (they
+  // live in the DB calendar as 'pending'). Fetch the real number and update
+  // the badge when it arrives — fire-and-forget, never blocks the render.
+  fetchPendingCalendarCount(pendingAppts,logCount);
+}
+
+async function fetchPendingCalendarCount(storePending,logCount){
+  try{
+    const r=await api('/schedule/appointments');
+    if(!(r&&r.ok&&Array.isArray(r.appointments)))return;
+    const dbPending=r.appointments.filter(a=>a.status==='pending').length;
+    // The store rows now mirror calendar bookings (bookingId) — dedupe by
+    // counting only calendar rows, not both copies.
+    const total=Math.max(storePending,dbPending);
+    const stEl=document.getElementById('st-msgs');if(stEl)stEl.textContent=total;
+    const wcEl=document.getElementById('wc-appts');if(wcEl)wcEl.textContent=total;
+    const sEl=document.querySelector('#doc-welcome-card .welcome-sub');
+    if(sEl&&total)sEl.textContent=`${total} appointment${total===1?'':'s'} awaiting confirmation · ${logCount} log${logCount===1?'':'s'} today`;
+  }catch(e){/* offline — the sync-based estimate stays */}
 }
 
 // v2.5.2: adherence badge per recent patient (7-day med-confirmation rate).

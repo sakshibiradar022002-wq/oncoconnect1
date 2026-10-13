@@ -365,10 +365,16 @@ scheduleRouter.get('/slots', authenticate, requireRole('kv-patient'), patientSco
     while (current <= endDate) {
       const dateStr = current.toISOString().slice(0, 10);
       const daySlots = [];
+      // v2.6.1: don't offer slots already in the past today — same rule the
+      // shared /api/sync/get-slots* generator follows.
+      const isToday = dateStr === new Date().toISOString().slice(0, 10);
+      const nowMins = isToday ? (new Date().getHours() * 60 + new Date().getMinutes()) : -1;
 
       for (const a of avail) {
         const rawSlots = generateSlotsForDate(a, dateStr);
         for (const slot of rawSlots) {
+          const startMins = parseInt(slot.time.slice(0, 2), 10) * 60 + parseInt(slot.time.slice(3), 10);
+          if (startMins < nowMins) continue;
           // Check if slot conflicts with existing appointment
           const taken = existingAppts.some(
             e => e.date === dateStr &&
