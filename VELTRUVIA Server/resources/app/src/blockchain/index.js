@@ -93,13 +93,54 @@ function fileVerify() {
   return { valid: true, chainLength: chain.length };
 }
 
+// Errors a node returns when it already holds a transaction at that nonce.
+const NONCE_CONFLICT = /replacement fee too low|nonce too low|nonce too high|already known|already been used|transaction underpriced/i;
+
+/**
+ * Send one anchor transaction, tolerating a nonce conflict once.
+ *
+ * v2.6.1 — Audit records are written in bursts (one per request), and each one
+ * used to send its own anchor tx concurrently: several calls read the same
+ * "pending" nonce before any of them was mined, so the node rejected the
+ * later ones with "replacement fee too low". Between Sep 28 and Oct 15 that
+ * silently dropped 37 anchors (the local file chain was unaffected, so nothing
+ * looked wrong). The caller now hands out sequential nonces via NonceManager;
+ * if a conflict still happens, this resyncs and retries once.
+ *
+ * The retry covers the SEND only. Once a transaction is broadcast we never
+ * re-send on a confirmation failure — that would risk double-anchoring.
+ */
+export async function anchorWithNonceRetry(contract, args, { onRetry } = {}) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    let tx;
+    try {
+      tx = await contract.recordAudit(...args);
+    } catch (error) {
+      lastError = error;
+      if (attempt === 1 && NONCE_CONFLICT.test(String(error?.message || ''))) {
+        if (onRetry) await onRetry(error);
+        continue;
+      }
+      throw error;
+    }
+    const receipt = await tx.wait();
+    return { txHash: receipt.hash, blockNumber: receipt.blockNumber };
+  }
+  throw lastError;
+}
+
 class BlockchainAudit {
   constructor() {
     this.provider = null;
     this.contract = null;
     this.signer = null;
+    // Sequential-nonce wrapper around the anchor wallet, so overlapping
+    // anchor sends never collide on the same nonce (see anchorWithNonceRetry).
+    this.anchorSigner = null;
+    this.anchorStats = { sent: 0, failed: 0, retries: 0, lastTxHash: null, lastSuccessAt: null, lastError: null };
     this.connected = false;
-    this.backend = null; // 'hardhat' | 'file'
+    this.backend = null; // 'hardhat' | 'file' | 'sepolia'
   }
 
   /**
@@ -133,6 +174,10 @@ class BlockchainAudit {
           this.provider = new ethers.JsonRpcProvider(
             process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com');
           this.signer = new ethers.Wallet(process.env.ANCHOR_PRIVATE_KEY, this.provider);
+          // NonceManager assigns each send the next unused nonce instead of
+          // re-reading "pending" per call — this is what fixes the burst of
+          // "replacement fee too low" failures when audit records arrive together.
+          this.anchorSigner = new ethers.NonceManager(this.signer);
           // Minimal ABI — only what anchoring needs.
           const abi = [
             'function recordAudit(bytes32 recordHash, string action, string targetId)',
@@ -142,7 +187,7 @@ class BlockchainAudit {
             'function latestChainHashValue() view returns (bytes32)',
             'event EntryRecorded(uint256 indexed id, bytes32 recordHash, string action, bytes32 previousHash)',
           ];
-          this.contract = new ethers.Contract(deployment.address, abi, this.signer);
+          this.contract = new ethers.Contract(deployment.address, abi, this.anchorSigner);
           this.connected = true;
           this.backend = 'sepolia';
           const addr = await this.signer.getAddress();
@@ -213,10 +258,26 @@ class BlockchainAudit {
       const recordHash = this.hashRecord(record);
       let txInfo = null;
       try {
-        const tx = await this.contract.recordAudit('0x' + recordHash, String(action || 'audit'), String(targetId || 'unknown'));
-        const receipt = await tx.wait();
-        txInfo = { txHash: receipt.hash, blockNumber: receipt.blockNumber };
+        txInfo = await anchorWithNonceRetry(
+          this.contract,
+          ['0x' + recordHash, String(action || 'audit'), String(targetId || 'unknown')],
+          {
+            onRetry: async (err) => {
+              this.anchorStats.retries += 1;
+              this.anchorStats.lastError = err.message;
+              console.warn('[blockchain] sepolia anchor nonce conflict — resyncing nonce and retrying:', err.message);
+              try { this.anchorSigner?.reset(); } catch { /* not fatal — next send re-reads the nonce */ }
+              await new Promise(r => setTimeout(r, 2000));
+            },
+          },
+        );
+        this.anchorStats.sent += 1;
+        this.anchorStats.lastTxHash = txInfo.txHash;
+        this.anchorStats.lastSuccessAt = new Date().toISOString();
+        this.anchorStats.lastError = null;
       } catch (error) {
+        this.anchorStats.failed += 1;
+        this.anchorStats.lastError = error.message;
         console.error('[blockchain] sepolia anchor tx failed (local chain unaffected):', error.message);
       }
       return {
@@ -392,6 +453,9 @@ class BlockchainAudit {
         latestChainHash: latestHash,
         network: this.backend === 'sepolia' ? 'sepolia' : network.name,
         chainId: Number(network.chainId),
+        // Anchor health: captured so an operator can see dropped anchors
+        // instead of them being invisible in a log line.
+        anchoring: this.backend === 'sepolia' ? { ...this.anchorStats } : undefined,
       };
     } catch (error) {
       return { connected: false, error: error.message };
