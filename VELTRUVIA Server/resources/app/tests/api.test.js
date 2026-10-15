@@ -5,40 +5,67 @@
 
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import net from 'node:net';
 import path from 'node:path';
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 
 // ── Test config ──
-const BASE = 'http://localhost:3000';
+// Ephemeral port: a stray VELTRUVIA Server.exe (or anything else) squatting
+// :3000 used to steal every request — the suite "passed" against the wrong
+// server or failed 429 from its rate limiter. Bind a free port instead.
+let BASE = '';
 let serverProcess = null;
+let serverOutput = '';
+
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
+    });
+  });
+}
 
 // v2.6.1: boot the real server on an ephemeral DB before the suite runs.
 // Previously the suite expected an already-running localhost:3000, so CI (and
 // any fresh checkout) failed 22/30 assertions with connection refusals.
 before(async () => {
   const appRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const port = await freePort();
+  BASE = `http://127.0.0.1:${port}`;
   serverProcess = spawn(process.execPath, ['src/server.js'], {
     cwd: appRoot,
     env: {
       ...process.env,
-      PORT: '3000',
+      PORT: String(port),
       DB_PATH: path.join(appRoot, 'data', 'test-db.sqlite'),
       VELTRUVIA_DEMO: 'true',
       VELTRUVIA_TEST_MODE: '1',
       VELTRUVIA_DEMO_PASSWORD: 'testdoc123',
     },
-    stdio: 'ignore',
+    stdio: ['ignore', 'ignore', 'pipe'],
   });
-  // Poll /api/health until the server answers (max ~20s).
+  serverProcess.stderr.on('data', (d) => { serverOutput += d; });
+  serverProcess.on('exit', (code) => {
+    if (serverOutput && !serverOutput.includes('Goodbye')) {
+      serverOutput += `\n[server exited code=${code}]`;
+    }
+  });
+  // Poll /api/health until OUR server answers (max ~20s).
   for (let i = 0; i < 40; i++) {
+    if (serverProcess.exitCode !== null) break; // died at boot — don't wait
     try {
       const res = await request('GET', '/api/health');
       if (res.status === 200) return;
     } catch { /* not up yet */ }
     await new Promise(r => setTimeout(r, 500));
   }
+  throw new Error('test server never became healthy on port ' + port +
+    (serverOutput ? '\nserver output:\n' + serverOutput : ''));
 }, { timeout: 30_000 });
 
 after(async () => {
