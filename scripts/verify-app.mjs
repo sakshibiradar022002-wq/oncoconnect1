@@ -99,6 +99,14 @@ r = await api('GET', '/api/admin/users', null, docCookie);
 check('Revoked session rejected (401)', r.status === 401);
 r = await api('POST', '/api/auth/login', { email: 'test@example.com', password: 'testdoc123' });
 const cookie = extractCookie(r.setCookie);
+// Register TEST001 in the doctor's kv registry exactly like the UI's
+// createPatient() does (PUT /sync with pat_<MRN>). Several RBAC-checked
+// routes — e.g. POST /features/adherence — correctly 403 for a patient
+// that was never registered, so the precondition must exist first.
+r = await api('PUT', '/api/sync', { changes: {
+  'pat_TEST001': { mrn: 'TEST001', name: 'Verify Patient', dob: '1980-01-01', diag: 'Glioblastoma', docId: 'test-admin-doc' },
+} }, cookie);
+check('Register TEST001 in doctor registry', r.data?.ok === true);
 r = await api('POST', '/api/sync/store-login', { mrn: '12345', password: 'testpat123' });
 check('Patient store login', r.data?.ok === true);
 const patCookie = extractCookie(r.setCookie);

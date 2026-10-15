@@ -11,7 +11,7 @@ const APPS = [
 ];
 
 let failed = 0;
-const checksPerApp = 69; // keep in sync with verify-app.mjs check list
+const checksPerApp = 70; // keep in sync with verify-app.mjs check list
 for (const [dir, name] of APPS) {
   const r = spawnSync(process.execPath, [fileURLToPath(new URL('./verify-app.mjs', import.meta.url)), dir, name], { stdio: 'inherit' });
   if (r.status !== 0) failed++;
