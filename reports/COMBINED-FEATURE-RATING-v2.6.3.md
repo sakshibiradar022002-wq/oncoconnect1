@@ -619,3 +619,117 @@ document is caught here rather than by a receiving system.
 ---
 
 *Addendum generated 2026-10-17 · all exit statuses 0 · all four apps 78/78.*
+
+---
+
+# Addendum 2 — post-v2.6.3 verified addition: patient-reported outcomes
+
+The figures above are the **v2.6.3 baseline** and are left unchanged. The roadmap
+in §5 proposed “patient satisfaction survey integration” for the Patient app as a
+low-effort, +0.15 item. This addendum records what was actually built, so the
+document does not claim a capability the tree does not have — and does not claim
+a score it did not earn.
+
+## What was added
+
+A **post-visit check-in and patient-reported outcome measure (PROM)** pathway:
+two instruments a patient answers on their phone, scored server-side, stored with
+the patient record, and returned to the patient as a trend.
+
+| Piece | Where |
+|---|---|
+| Instrument library (pure, dependency-free) | `src/lib/proms.js` — catalogue, `scoreSubmission()`, `summarise()` |
+| Storage | `patient_surveys` table in `src/db/migrations.sql` (free text encrypted via `encryptPHI`) |
+| Endpoints | `GET /api/features/surveys/instruments`, `POST /api/features/surveys`, `GET /api/features/surveys/:mrn`, `GET /api/features/surveys/summary/:mrn` — audited as `survey.record` |
+| Patient UI | “⭐ Rate Your Visit” sheet in `public/patient.html` + `public/js/page/patient-1-core.js`; the check-in card on the Symptom Tracker screen |
+| Unit tests | `tests/proms-scoring.test.mjs` — 14 tests |
+| End-to-end checks | `scripts/verify-app.mjs` — 13 checks (catalogue, scoring, three refusals, cross-patient 403, unauthenticated 401, free-text round trip, trend summary) |
+
+Access control is the same rule as adherence: a patient acts only on their own
+MRN, a clinician only on a patient in their registry. The aggregate endpoint does
+not return free text at all, so a trend view cannot become a second way to read
+clinical notes.
+
+## Two design decisions that make the scores trustworthy
+
+- **An incomplete form is not scored.** `scoreSubmission()` returns
+  `score: null, complete: false` with the missing item ids. Imputing a total would
+  fabricate patient-reported data, which is the one failure mode this feature could
+  not recover from.
+- **The item set has one definition.** The form the patient sees is generated from
+  the server's catalogue, so the questions and the arithmetic cannot drift apart.
+  Unknown item ids are refused rather than dropped — a typo'd key would otherwise
+  look like a shorter, easier questionnaire.
+
+## Re-measured counts (this changes the numbers above)
+
+| Measurement | v2.6.3 baseline | After addendum 1 | Now |
+|---|---|---|---|
+| Feature checks per app | 70 (Server) · 75 (others) | 78 | **91 on all four apps** |
+| Workspace test suite | 108 tests | 118 | **132 tests** |
+
+`npm run verify` → **91 passed, 0 failed, 91 total** on Server, Doctor, Patient and Lab.
+`npm test` → **132 passed, 0 failed**.
+`npm run check` → **exit 0** (syntax, bundle-drift, page scripts, icons, lint).
+
+One tooling defect was fixed at the same time: `scripts/verify-all.mjs` carried a
+hardcoded `checksPerApp = 70`, so its summary line printed a number no command
+produced (the VER-14 class named in the regulatory set). It now reads the count
+back from each run and fails if the four bundles disagree.
+
+## Why the new checks can fail (they were proven, not assumed)
+
+Two negative controls were run against the real suite and reverted:
+
+| Mutation | Result |
+|---|---|
+| Score incomplete forms instead of leaving them unscored | `Incomplete survey stored unscored (no imputed total)` **fails** — 90 passed / 1 failed, exit 1 |
+| Remove the patient-MRN scoping from the access check | `Patient blocked from another patient's survey (403)` **fails** — 90 passed / 1 failed, exit 1 |
+
+## End-to-end, in the real patient app
+
+Beyond the HTTP checks, the flow was driven in a browser against a locally seeded
+database: patient login → “Rate Your Visit” → form rendered from the catalogue →
+submit → `Score: 4.8/5 (high)` → sheet closes → the check-in card shows
+`Latest 4.8 · high · Average 4.8 · 1/1 scored` → the stored row comes back with the
+free-text comment decrypted and `submittedRole: patient`.
+
+## What this does not prove
+
+- **The instruments are not validated.** They are locally-defined item sets, not
+  EORTC QLQ-C30, MDASI-BT or any other licensed questionnaire, and the API says so
+  (`validated: false`) and shows a disclaimer in the patient UI. Real PROMs are
+  copyrighted, need permission, and need population-specific validation before a
+  score means anything clinically. The band (`low`/`moderate`/`high`) is a trend aid
+  for a clinician who knows the patient — it is not a threshold for action.
+- **No clinician-facing chart.** Doctors can read the submissions and the summary
+  over the API, but the Doctor app has no PROM screen yet. The data reaches the
+  record; it does not yet reach the workflow.
+- **The FACT-Br sheet that already shipped in the Patient app still stores only on
+  the device** (`LS.set` in `patient-1-core.js`). It is reverse-scored, multi-subscale
+  and outside this instrument library, so it was deliberately not migrated. Patient
+  QoL entered there never reaches the server — a real gap, recorded here rather than
+  quietly counted as solved by this addendum.
+- **No external ePRO vendor integration.** No FHIR `Questionnaire`/`QuestionnaireResponse`
+  mapping either; the records are in the product's own store.
+
+## Effect on the score: none claimed
+
+§5 projected **+0.15** for this item. That projection assumes a rating that
+rewards the presence of a feature. This methodology re-weights *measurements*, and
+the only quantity that changed is the number of checks — which the method
+deliberately does not treat as quality. A growing check count with no change in
+Axis A, coverage or subsystem evidence is exactly what VER-14 warns about, so no
+dimension, no app score and no composite in this document has been moved.
+
+What would move them is reachable and unchanged from the earlier list: coverage on
+critical client paths, a clinician-side use of this data, and a validated
+instrument under licence.
+
+---
+
+*Addendum 2 generated 2026-10-17 · all exit statuses 0 · all four apps 91/91.*
+
+*Note: `ASSESSMENT-RATINGS-v2.6.3.md` §0 quotes 174 green tests as of 2026-10-16.
+That is a dated baseline; the current figures are the ones in the table above. The
+baseline line is left as measured on that date rather than edited after the fact.*
