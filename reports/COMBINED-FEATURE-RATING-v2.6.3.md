@@ -612,9 +612,10 @@ document is caught here rather than by a receiving system.
 - Narrative-only sections: entries are human-readable text, not SNOMED/LOINC
   coded entries, so downstream auto-coding is not available from this export.
 - `ASSESSMENT-RATINGS-v2.6.3.md` §0 still quotes the older green-test count
-  (174 = 66 app + 108 workspace); workspace is now 118, so that line is stale
-  (an instance of the VER-14 class: a document quoting a number no command
-  currently produces).
+  (174 = 66 app + 108 workspace); the workspace suite was 118 when this addendum
+  was written and is 132 now (Addendum 2), so that line is stale at either
+  reading (an instance of the VER-14 class: a document quoting a number no
+  command currently produces).
 
 ---
 
