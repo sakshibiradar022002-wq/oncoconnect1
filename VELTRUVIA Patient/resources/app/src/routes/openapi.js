@@ -131,22 +131,20 @@ const spec = {
         responses: { 200: { description: 'Logged out' } },
       },
     },
-    '/api/sync/pull': {
+    '/api/sync': {
       get: {
         summary: 'Pull all sync keys for the authenticated doctor',
         tags: ['Sync'],
         responses: { 200: { description: 'All key-value pairs', content: { 'application/json': { schema: { $ref: '#/components/schemas/SyncKeys' } } } } },
       },
-    },
-    '/api/sync/push': {
-      post: {
-        summary: 'Push key-value data to the server',
+      put: {
+        summary: 'Push key-value changes to the server (null value deletes a key)',
         tags: ['Sync'],
         requestBody: {
           required: true,
-          content: { 'application/json': { schema: { type: 'object', properties: { keys: { type: 'object' } } } } },
+          content: { 'application/json': { schema: { type: 'object', required: ['changes'], properties: { changes: { type: 'object', additionalProperties: true } } } } },
         },
-        responses: { 200: { description: 'Data merged' } },
+        responses: { 200: { description: 'Changes merged (returns warnings for rejected lab submissions)' }, 400: { description: 'Validation failed' } },
       },
     },
     '/api/sync/patient-login': {
@@ -212,15 +210,27 @@ const spec = {
         responses: { 200: { description: 'All checks healthy' }, 503: { description: 'One or more checks degraded' } },
       },
     },
-    '/api/team/share': {
+    '/api/team/invite': {
       post: {
-        summary: 'Share a patient with another doctor (team collaboration)',
+        summary: 'Invite a doctor or specialist to your team',
         tags: ['Team'],
         requestBody: {
           required: true,
-          content: { 'application/json': { schema: { type: 'object', required: ['mrn', 'targetDoctorId'], properties: { mrn: { type: 'string' }, targetDoctorId: { type: 'string' } } } } },
+          content: { 'application/json': { schema: { type: 'object', required: ['email', 'role'], properties: { email: { type: 'string', format: 'email' }, role: { type: 'string', enum: ['doctor', 'specialist'] }, specialty: { type: 'string' } } } } },
         },
-        responses: { 200: { description: 'Patient shared' } },
+        responses: { 200: { description: 'Invitation created' }, 409: { description: 'Already a member of this team' } },
+      },
+    },
+    '/api/team/patients/{mrn}/grant': {
+      post: {
+        summary: 'Grant a colleague access to a patient record',
+        tags: ['Team'],
+        parameters: [{ name: 'mrn', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { type: 'object', required: ['patientMrn', 'doctorId', 'accessType'], properties: { patientMrn: { type: 'string' }, doctorId: { type: 'string' }, accessType: { type: 'string', enum: ['view', 'edit', 'manage'] } } } } },
+        },
+        responses: { 200: { description: 'Access granted' }, 403: { description: 'Colleague not on your team' } },
       },
     },
     '/api/email/reminders': {

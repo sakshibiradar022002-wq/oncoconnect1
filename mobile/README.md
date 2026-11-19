@@ -39,14 +39,17 @@ A portable, user-local toolchain lives at `C:\Users\Sara\veltruvia-build-tools\`
 export JAVA_HOME="C:\\Users\Sara\veltruvia-build-tools\jdk-21.0.12.1+1"
 export ANDROID_HOME="C:\\Users\Sara\veltruvia-build-tools\android-sdk"
 export VELTRUVIA_KEYSTORE_PASSWORD="$(tr -d '\r\n' < .keystore-pass)"
-# NOTE: on this Windows build cmd.exe no longer resolves gradlew.bat from the
-# current directory — invoke it by absolute path:
-cd mobile/patient/android
-cmd //c "C:\\Users\Sara\Desktop\ve\mobile\patient\android\gradlew.bat assembleRelease"
+# android/ is generated, not committed — create it once (step 2 above) if it is
+# missing. cmd.exe on this Windows build does not resolve gradlew.bat from the
+# current directory, so expand the path before handing it to cmd:
+cd mobile/patient
+npx cap add android
+cd android
+cmd //c "%CD%\gradlew.bat assembleRelease"
 ```
 
 Both release APKs were produced and signature-verified this way; copies sit in
-`dist/` at the repo root.
+`dist/` at the repo root — build output only, gitignored, never committed.
 
 ## Building
 

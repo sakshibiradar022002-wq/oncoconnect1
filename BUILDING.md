@@ -115,7 +115,7 @@ top-level folders:
 ## Release checklist
 
 - [ ] `npm run check` green (no drift, no await bugs, icons valid)
-- [ ] `npm run verify` green (53/53 × 4 apps)
+- [ ] `npm run verify` green (70/70 × 4 apps)
 - [ ] Version bumped in all four `resources/app/package.json`
 - [ ] No `.exe.new`, `test*.db`, `.demo-admin-password`, or logs in release folders
 - [ ] `HOST` unset (or `127.0.0.1`), `VELTRUVIA_DEMO` unset
@@ -127,3 +127,8 @@ top-level folders:
       `VELTRUVIA Lab.apk` (toolchain + commands in `mobile/README.md`; on this
       machine JDK 21 + Android SDK already live in `C:\Users\Sara\veltruvia-build-tools\`)
 - [ ] APKs + exes uploaded to GitHub Releases (download-page links point there)
+- [ ] The same files present in `public/downloads/` — `VELTRUVIA-Server-Setup.exe`,
+      `VELTRUVIA-Doctor-Setup.exe`, `VELTRUVIA-Doctor-Portable.zip`,
+      `VELTRUVIA-Lab-Setup.exe`, `VELTRUVIA-Lab-Portable.zip`, `VELTRUVIA-Lab.apk`,
+      `VELTRUVIA-Patient.apk`. `download.html` links to that directory by name and
+      the page 404s on every button when it is missing; binaries are never committed
