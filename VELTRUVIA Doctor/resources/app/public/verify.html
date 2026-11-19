@@ -36,6 +36,27 @@
     .type.genesis { background: rgba(37,99,235,.10); color: var(--blue); }
     .row-ok { color: var(--green); font-weight: 700; font-size: 12px; }
     .refresh-note { color: var(--text-muted); font-size: 11px; margin-top: 14px; text-align: center; }
+    /* ── installer checksum verification ── */
+    .verify-file { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin: 22px 0 26px; }
+    .verify-file h2 { font-size: 16px; font-weight: 800; }
+    .verify-file .hint { color: var(--text-muted); font-size: 12.5px; margin: 6px 0 16px; max-width: 70ch; }
+    .vf-drop { border: 2px dashed var(--border); border-radius: 12px; padding: 24px 18px; text-align: center; transition: border-color .2s, background .2s; }
+    .vf-drop.over { border-color: var(--blue); background: rgba(37,99,235,.08); }
+    .vf-drop p { color: var(--text-muted); font-size: 12.5px; margin-bottom: 10px; }
+    .vf-btn { background: var(--blue); color: #fff; border: 0; border-radius: 10px; padding: 9px 18px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .vf-btn:disabled { opacity: .55; cursor: progress; }
+    .vf-label { display: block; color: var(--text-muted); font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; margin: 16px 0 5px; }
+    .vf-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; color: var(--text); font-family: ui-monospace, monospace; font-size: 12px; }
+    .vf-input:focus { outline: 2px solid rgba(37,99,235,.45); outline-offset: 1px; }
+    .vf-result { margin-top: 16px; font-size: 13px; line-height: 1.6; border-radius: 12px; padding: 14px 16px; display: none; }
+    .vf-result.ok { display: block; background: rgba(52,211,153,.08); border: 1px solid rgba(52,211,153,.35); color: var(--green); }
+    .vf-result.bad { display: block; background: rgba(220,38,38,.08); border: 1px solid rgba(220,38,38,.35); color: #f87171; }
+    .vf-result.unknown { display: block; background: rgba(139,92,246,.08); border: 1px solid rgba(139,92,246,.35); color: #c4b5fd; }
+    .vf-result strong { font-weight: 800; }
+    .vf-status { color: var(--text-muted); font-size: 11px; font-family: ui-monospace, monospace; word-break: break-all; margin-top: 10px; }
+    .vf-sums { color: var(--text-muted); font-size: 11.5px; margin-top: 8px; }
+    .vf-links { font-size: 12px; margin-top: 6px; }
+    .vf-links a { color: #60a5fa; }
     @media(max-width: 640px) { th:nth-child(4), td.prev { display: none; } }
   </style>
 </head>
@@ -43,6 +64,24 @@
   <div class="wrap">
     <h1><img src="/icons/brand/veltruvia-server.jpg" alt="">Chain Verifier</h1>
     <p class="sub">Public, read-only proof that the VELTRUVIA audit ledger is intact. Every medical-record change is hashed into a block whose hash covers the previous block — so editing history in the middle breaks every hash after it.</p>
+
+    <!-- Installer checksum verification (the "Verify checksum" links on the
+         download page land here). Hashing happens locally in the browser. -->
+    <section class="verify-file" id="file">
+      <h2>Verify a downloaded installer</h2>
+      <p class="hint">Drop an installer you downloaded from the download page and this page will compute its SHA-256 in your browser and compare it with the published checksum. The file is never uploaded.</p>
+      <div class="vf-drop" id="vf-drop">
+        <p>Drop the file here</p>
+        <button type="button" class="vf-btn" id="vf-pick">Choose file</button>
+        <input type="file" id="vf-file" hidden>
+      </div>
+      <label class="vf-label" for="vf-expected">Expected SHA-256 (optional — paste one to compare manually)</label>
+      <input class="vf-input" id="vf-expected" type="text" autocomplete="off" spellcheck="false" placeholder="64 hexadecimal characters">
+      <div class="vf-result" id="vf-result" role="status" aria-live="polite"></div>
+      <p class="vf-status" id="vf-status"></p>
+      <p class="vf-sums" id="vf-sums">Loading published checksums…</p>
+      <p class="vf-links"><a href="/downloads/SHA256SUMS.txt">SHA256SUMS.txt</a> · <a href="/download.html">Download page</a></p>
+    </section>
 
     <div class="verdict" id="verdict"><span class="big">⏳</span><span id="verdict-text">Verifying chain…</span></div>
 
@@ -118,5 +157,6 @@
     verify();
     setInterval(verify, 10000);
   </script>
+  <script src="/js/page/verify-file.js" defer></script>
 </body>
 </html>

@@ -360,7 +360,10 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
 .sha-table{width:100%;border-collapse:collapse;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
 .sha-table td{padding:12px 16px;border-top:1px solid var(--border);font-size:.85rem;}
 .sha-table tr:first-child td{border-top:none;}
-.sha-table td.sha{font-family:ui-monospace,Consolas,monospace;color:var(--blue);}
+.sha-table td.sha{font-family:ui-monospace,Consolas,monospace;color:var(--blue);word-break:break-all;}
+.sha-hint a{color:var(--blue);}
+.download-meta a{color:var(--blue);text-decoration:none;}
+.download-meta a:hover{text-decoration:underline;}
 /* v3: eye-catching layer */
 .orbs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;}
 .orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;will-change:transform;}
@@ -526,6 +529,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
         <span>💻 Windows 10/11</span>
         <span>🩺 full EMR dashboard</span>
         <span>✉️ self-registration with email code</span>
+        <span><a href="/verify.html#file">Verify checksum</a></span>
       </div>
     </div>
 
@@ -566,6 +570,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
         <span>💻 Windows 10/11</span>
         <span>🤖 Android 8+</span>
         <span>🔑 login from the clinic</span>
+        <span><a href="/verify.html#file">Verify checksum</a></span>
       </div>
     </div>
 
@@ -598,6 +603,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
         <span>🤖 Android 8+</span>
         <span>🍎 iPhone → web install below</span>
         <span>✉️ self-registration with email code</span>
+        <span><a href="/verify.html#file">Verify checksum</a></span>
       </div>
     </div>
 
@@ -625,6 +631,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
         <span>💻 Windows 10/11</span>
         <span>🗄️ clinic database + sync</span>
         <span>🔧 install once per clinic</span>
+        <span><a href="/verify.html#file">Verify checksum</a></span>
       </div>
     </div>
 
@@ -702,6 +709,24 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
       <p>Android APKs for phones, Windows software for the doctor, background server on PC or cloud.</p>
     </div>
   </div>
+</div>
+
+<!-- ── Published checksums ── -->
+<div class="checksums" id="checksums">
+  <h2>SHA-256 Checksums</h2>
+  <p class="sha-hint">Every release publishes a SHA-256 for each installer. Download <a href="/downloads/SHA256SUMS.txt">SHA256SUMS.txt</a> or <a href="/verify.html#file">verify a downloaded file in your browser</a> — the file is hashed locally and never uploaded.</p>
+  <table class="sha-table">
+    <tbody>
+      <tr><td>VELTRUVIA-Doctor-Setup.exe</td><td class="sha">d43ac035a79a1b764d3174b89c494d6d5d824f0909e01665bb4a4a738a486ea3</td></tr>
+      <tr><td>VELTRUVIA-Lab-Setup.exe</td><td class="sha">1c7a722864ead62890ad1b8e64be39d084dd9e3a26e04d70c0a65cdc8766f6ea</td></tr>
+      <tr><td>VELTRUVIA-Server-Setup.exe</td><td class="sha">bca65670eda34b0a89c56e07b11b2c07c5bc07d89c0b77cdaa327d89915b72e1</td></tr>
+      <tr><td>VELTRUVIA-Doctor-Portable.zip</td><td class="sha">1bfeca85930f02adee743a37e4a58c487c01c16a73ee7e66e426cfb008420259</td></tr>
+      <tr><td>VELTRUVIA-Lab-Portable.zip</td><td class="sha">350aeb13a5b0a345c07e3d57ceea85e99a15480c75e79bd57de8726d0c92852b</td></tr>
+      <tr><td>VELTRUVIA-Patient.apk</td><td class="sha">0e22a1ee073ba56637983fe99b6127984ca14e346d7b2185b08a0e0d9a0e8a09</td></tr>
+      <tr><td>VELTRUVIA-Lab.apk</td><td class="sha">9effafb824c913512a4992c818afbb6e3a87e34542282123ee918b0e712b971d</td></tr>
+      <tr><td>VELTRUVIA-Patient-Setup.exe</td><td class="sha">0f969cca218c6258d891de8eca6fbb886667f0e27cfaf7de5f1aa4a477c147d4</td></tr>
+    </tbody>
+  </table>
 </div>
 
 <!-- ── System Requirements ── -->
