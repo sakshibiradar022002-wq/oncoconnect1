@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentation — VELTRUVIA</title>
+<meta name="description" content="VELTRUVIA documentation: apps and roles, sign-in, sync model, the API surface this build actually mounts, deployment, and how to verify downloaded installers.">
+<link href="/fonts/fonts.css" rel="stylesheet">
+<link rel="icon" type="image/png" href="/icons/server-192.png">
+<style>
+:root {
+  --bg: #080d1a; --surface: #0f1729; --surface2: rgba(255,255,255,0.055);
+  --border: rgba(148,163,184,0.14); --text: #e2e8f0; --text-muted: #8494b2;
+  --blue: #6ba3ef; --green: #48c774; --purple: #4ecdc4;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; padding: 28px 18px 60px;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+h1 img { width: 34px; height: 34px; border-radius: 10px; }
+.lede { color: var(--text-muted); font-size: 13.5px; margin-top: 6px; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 26px; }
+nav.toc a {
+  font-size: 11.5px; font-weight: 700; text-decoration: none; color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 999px; padding: 5px 11px;
+}
+nav.toc a:hover { color: var(--blue); border-color: rgba(107,163,239,.45); }
+section { margin: 0 0 30px; }
+h2 {
+  font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--blue); margin-bottom: 10px;
+}
+p, li { font-size: 13.5px; line-height: 1.75; color: #cbd5e1; }
+p + p { margin-top: 8px; }
+ul { margin: 8px 0 0 18px; }
+li { margin-bottom: 5px; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 5px;
+  padding: 1px 5px; color: var(--purple);
+}
+a { color: var(--blue); }
+table {
+  width: 100%; border-collapse: collapse; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-top: 10px;
+}
+th {
+  background: rgba(107,163,239,.08); color: var(--text-muted);
+  font-size: 10px; letter-spacing: .8px; text-transform: uppercase;
+  text-align: left; padding: 9px 12px;
+}
+td { padding: 9px 12px; border-top: 1px solid var(--border); font-size: 12.5px; vertical-align: top; }
+td.path { font-family: ui-monospace, monospace; color: var(--purple); white-space: nowrap; }
+td.dim { color: var(--text-muted); }
+.note {
+  background: rgba(107,163,239,.06); border: 1px solid rgba(107,163,239,.25);
+  border-radius: 10px; padding: 12px 14px; margin-top: 12px;
+}
+.note p { font-size: 12.5px; color: #b6c4da; }
+.footer {
+  margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--border);
+  color: var(--text-muted); font-size: 11.5px; text-align: center;
+}
+.footer a { color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1><img src="/icons/brand/veltruvia-suite.jpg" alt="">Documentation</h1>
+  <p class="lede">How the suite fits together — apps, roles, sign-in, sync, the API surface this build mounts, and how to verify what you download.</p>
+
+  <nav class="toc">
+    <a href="#apps">Apps and roles</a>
+    <a href="#signin">Sign-in</a>
+    <a href="#sync">Sync</a>
+    <a href="#api">API surface</a>
+    <a href="#deployment">Deployment</a>
+    <a href="#verification">Downloads and verification</a>
+  </nav>
+
+  <section id="apps">
+    <h2>Apps and roles</h2>
+    <table>
+      <thead><tr><th>App</th><th>Runs on</th><th>For</th></tr></thead>
+      <tbody>
+        <tr><td>Doctor</td><td>Windows 10/11</td><td class="dim">Clinical workspace — records, plans, notes, labs, billing, calendar</td></tr>
+        <tr><td>Lab</td><td>Windows, Android</td><td class="dim">Requests, samples, results, clinician messaging</td></tr>
+        <tr><td>Patient</td><td>Windows, Android, web</td><td class="dim">Symptoms, medications, appointments, messages, image gallery</td></tr>
+        <tr><td>Server</td><td>Clinic PC or cloud host</td><td class="dim">Database, sync service, and the web portal every app talks to</td></tr>
+        <tr><td>Admin</td><td>Web</td><td class="dim">Accounts, roles, audit review</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="signin">
+    <h2>Sign-in model</h2>
+    <ul>
+      <li><strong>Doctors</strong> — register with email and password, then confirm the account with a six-digit code sent to that address (<code>/api/auth/otp/send</code> → <code>/api/auth/otp/verify</code>). Repeated failures lock the account briefly.</li>
+      <li><strong>Labs</strong> — sign in with the credentials the clinic issues (<code>/api/sync/lab-login</code>).</li>
+      <li><strong>Patients</strong> — sign in with their MRN and password (<code>/api/sync/patient-login</code>).</li>
+      <li>Sessions live in an HTTP-only <code>cc_session</code> cookie and are revoked on sign-out or by an administrator.</li>
+    </ul>
+  </section>
+
+  <section id="sync">
+    <h2>How sync works</h2>
+    <p>The desktop apps keep working locally and push changes when a connection is available. Each role has its own scoped sync endpoint — <code>/api/sync</code> for doctors, <code>/api/sync/patient</code> and <code>/api/sync/lab</code> for the scoped apps — and the server merges by record id and updated timestamp. A patient entry logged offline appears in the doctor's dashboard once the phone reconnects.</p>
+  </section>
+
+  <section id="api">
+    <h2>API surface</h2>
+    <p>Everything is namespaced under <code>/api</code>. The table below is the complete list of areas this build mounts: each row is an Express router attached in <code>src/app.js</code>, so a base path that is not listed here is not served.</p>
+    <table>
+      <thead><tr><th>Area</th><th>Base path</th><th>Serves</th></tr></thead>
+      <tbody>
+        <tr><td>auth</td><td class="path">/api/auth</td><td class="dim">Registration, login, logout, TOTP, password reset</td></tr>
+        <tr><td>email-otp</td><td class="path">/api/auth/otp</td><td class="dim">Six-digit codes for doctor signup and verification</td></tr>
+        <tr><td>sync</td><td class="path">/api/sync</td><td class="dim">Key-value sync, role logins, messages, appointments, telehealth rooms</td></tr>
+        <tr><td>scheduling</td><td class="path">/api/schedule</td><td class="dim">Availability, slots, appointment booking</td></tr>
+        <tr><td>prescriptions</td><td class="path">/api/rx</td><td class="dim">Prescription records and refill handling</td></tr>
+        <tr><td>clinical</td><td class="path">/api/cds</td><td class="dim">Drug-interaction checks and dosing support</td></tr>
+        <tr><td>clinical-features</td><td class="path">/api/features</td><td class="dim">Treatment protocols, tumor board, outcomes, audit trail</td></tr>
+        <tr><td>telehealth</td><td class="path">/api/telehealth</td><td class="dim">Room lifecycle and signalling for video visits (WebSocket at <code>/ws/telehealth</code>)</td></tr>
+        <tr><td>fhir</td><td class="path">/api/fhir</td><td class="dim">FHIR resource reads</td></tr>
+        <tr><td>hl7</td><td class="path">/api/hl7</td><td class="dim">HL7 message intake for lab interfaces</td></tr>
+        <tr><td>eprescribing</td><td class="path">/api/eprescribe</td><td class="dim">Electronic prescribing workflow</td></tr>
+        <tr><td>blockchain</td><td class="path">/api/blockchain</td><td class="dim">Append-only record chain and integrity proofs</td></tr>
+        <tr><td>hipaa-consent</td><td class="path">/api/hipaa</td><td class="dim">Consent capture, PHI access log, retention</td></tr>
+        <tr><td>breach-notification</td><td class="path">/api/breach</td><td class="dim">Incident reporting and notification tracking</td></tr>
+        <tr><td>enhancements</td><td class="path">/api/x</td><td class="dim">Attachment uploads and auxiliary record operations</td></tr>
+        <tr><td>images</td><td class="path">/api/images</td><td class="dim">Imaging studies and stored image bytes</td></tr>
+        <tr><td>admin</td><td class="path">/api/admin</td><td class="dim">Account management and audit review (admin only)</td></tr>
+        <tr><td>admin-dashboard</td><td class="path">/api/admin</td><td class="dim">Dashboard metrics, system health (admin only)</td></tr>
+        <tr><td>team</td><td class="path">/api/team</td><td class="dim">Invitations and per-patient access grants</td></tr>
+        <tr><td>push</td><td class="path">/api/push</td><td class="dim">Web-push subscriptions and VAPID key</td></tr>
+        <tr><td>email</td><td class="path">/api/email</td><td class="dim">Reminders and mail/SMS configuration status</td></tr>
+        <tr><td>billing-nccn-hipaa</td><td class="path">/api/billing, /api/nccn, /api/hipaa, /api/reports</td><td class="dim">Invoices and coding, NCCN recommendations, report export</td></tr>
+        <tr><td>openapi</td><td class="path">/api/docs</td><td class="dim">This build's machine-readable spec</td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:24px">Public probes</h2>
+    <table>
+      <thead><tr><th>Endpoint</th><th>Returns</th></tr></thead>
+      <tbody>
+        <tr><td class="path">GET /health</td><td class="dim"><code>{"ok":true,"version":"2.6.4"}</code></td></tr>
+        <tr><td class="path">GET /health?deep=1</td><td class="dim">Same, plus <code>db:true</code> after a database round trip</td></tr>
+        <tr><td class="path">GET /api/health</td><td class="dim">Same shape, for clients that poll under <code>/api</code></td></tr>
+        <tr><td class="path">GET /api/docs</td><td class="dim">Human-readable API browser</td></tr>
+        <tr><td class="path">GET /api/docs/openapi.json</td><td class="dim">OpenAPI 3.0 JSON for the core surface</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <p><strong>Scope of the OpenAPI document.</strong> <a href="/api/docs/openapi.json">/api/docs/openapi.json</a> describes the core surface only — System, Auth, Sync, Admin, Team, Email and Push. The remaining rows above are mounted and reachable but are not yet described in that spec, so treat the table on this page, not the JSON, as the full list.</p>
+      <p>Everything except the public probes and the sign-in routes needs an authenticated session; unauthenticated calls answer <code>401</code>, and unknown paths answer <code>404</code>.</p>
+    </div>
+  </section>
+
+  <section id="deployment">
+    <h2>Deployment</h2>
+    <ul>
+      <li>Node.js service behind a TLS-terminating reverse proxy (Caddy), one origin for UI and API.</li>
+      <li>SQLite database on the clinic's own host; snapshots every six hours, 30 retained.</li>
+      <li>Health probe: point monitoring at <code>/health?deep=1</code> and alert on anything other than <code>200</code>.</li>
+      <li>The footer of each page reports the running version. If an area in the table above answers <code>404</code>, the deployment is older than this page — redeploy from the same build that served it.</li>
+    </ul>
+  </section>
+
+  <section id="verification">
+    <h2>Downloads and verification</h2>
+    <p>Installers are on the <a href="/download.html">download page</a>, each with its SHA-256 digest printed on the card and listed again in the checksum table at the bottom of that page. The same digests are published as <a href="/downloads/SHA256SUMS.txt">/downloads/SHA256SUMS.txt</a>.</p>
+    <p>To check a file you already have, open the <a href="/verify.html#file">verifier</a>: it hashes the file locally with the browser's Web Crypto API and compares it against the published digest, or against one you paste in. The file is never uploaded, and the result is either a match or a mismatch — no partial credit.</p>
+    <p>The same page also verifies the tamper-evident record chain, which is a separate check from an installer's checksum.</p>
+  </section>
+
+  <div class="footer">
+    <p>VELTRUVIA · <a href="/download.html">Download</a> · <a href="/verify.html">Verify</a> · <a href="/">Portal</a></p>
+  </div>
+
+</div>
+</body>
+</html>

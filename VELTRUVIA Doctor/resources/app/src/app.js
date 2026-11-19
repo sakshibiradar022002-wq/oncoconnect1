@@ -309,6 +309,12 @@ app.all('/api/*', (req, res) => {
 // ── Serve the frontend (built HTML apps) ──────────────────────────
 app.use(express.static(join(__dirname, '..', 'public')));
 
+// Extension-less alias so the documented /docs URL resolves to the page
+// that is versioned with this build.
+app.get('/docs', (req, res) => {
+  res.sendFile(join(__dirname, '..', 'public', 'docs.html'));
+});
+
 // Unknown non-API GETs get a real 404 (the SPA fallback previously served
 // index.html with HTTP 200 for ANY path, hiding broken links).
 app.get('*', (req, res, next) => {
