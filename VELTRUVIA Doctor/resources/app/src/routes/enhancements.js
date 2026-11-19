@@ -34,7 +34,7 @@ export const enhanceRouter = Router();
 // kv-patient sessions carry subjectId "<doctorId>::<MRN>"; the previous
 // check (owner_id === 'pat_' + mrn) could NEVER match a patient session,
 // so patients were locked out of their own attachments and trends.
-async function canAccessMrn(req, mrn) {
+export async function canAccessMrn(req, mrn) {
   if (!req.auth) return false;
   if (req.auth.role === 'kv-patient') {
     return String(req.auth.subjectId).split('::')[1] === mrn;

@@ -680,7 +680,8 @@ function printPatientWelcomeCard(){
 function refreshOverview(){
   const pats=getMyPatients();
   document.getElementById('st-total').textContent=pats.length;
-  document.getElementById('st-active').textContent=pats.filter(p=>p.phase==='Treatment Phase').length;
+  const activeCount=pats.filter(p=>p.phase==='Treatment Phase').length;
+  document.getElementById('st-active').textContent=activeCount;
   const today=new Date().toISOString().slice(0,10);
   let logCount=0;pats.forEach(p=>{if(LS.get('log_'+p.mrn+'_'+today))logCount++;});
   document.getElementById('st-logs').textContent=logCount;
@@ -688,9 +689,66 @@ function refreshOverview(){
   let pendingAppts=0;
   pats.forEach(p=>{const appts=LS.get('appts_'+p.mrn)||[];pendingAppts+=appts.filter(a=>a.status==='Scheduled'||a.status==='Requested').length;});
   document.getElementById('st-msgs').textContent=pendingAppts;
+  // v2.5.1: welcome card — greets the doctor by name with glanceable stats.
+  try{
+    const wc=document.getElementById('doc-welcome-card');
+    if(wc){
+      wc.style.display='flex';
+      const fn=(currentDoc?.name||'').split(' ').filter(w=>!/^(dr\.?|prof\.?)$/i.test(w))[0]||'Doctor';
+      const hr=new Date().getHours();
+      const daypart=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+      const tEl=wc.querySelector('.welcome-title');
+      if(tEl)tEl.textContent=`${daypart}, Dr. ${fn}`;
+      const sEl=wc.querySelector('.welcome-sub');
+      if(sEl)sEl.textContent=pendingAppts?`${pendingAppts} appointment${pendingAppts===1?'':'s'} awaiting confirmation · ${logCount} log${logCount===1?'':'s'} today`:(logCount?`${logCount} symptom log${logCount===1?'':'s'} today — all appointments confirmed`:'Neuro-oncology command center');
+      document.getElementById('wc-total').textContent=pats.length;
+      document.getElementById('wc-active').textContent=activeCount;
+      document.getElementById('wc-appts').textContent=pendingAppts;
+    }
+  }catch(e){}
   // Recent patients
   const recent=[...pats].sort((a,b)=>(b.updatedAt||b.created||0)-(a.updatedAt||a.created||0)).slice(0,5);
   document.getElementById('ov-patients').innerHTML=recent.length?recent.map(p=>`<div class="patient-row" data-action="openRecord:${escAttr(p.mrn)}"><div style="flex:1;"><div class="pat-name">${esc(p.name)}</div><div class="pat-mrn">${p.mrn} · ${esc(p.diag||'—')}</div></div></div>`).join(''):'<div class="empty-card">No patients yet.</div>';
+  // v2.5.2: adherence badges (async, must run AFTER the rows exist in DOM).
+  fetchAdherenceBadges(recent);
+  // v2.6.1: the localStorage count above misses requests booked online (they
+  // live in the DB calendar as 'pending'). Fetch the real number and update
+  // the badge when it arrives — fire-and-forget, never blocks the render.
+  fetchPendingCalendarCount(pendingAppts,logCount);
+}
+
+async function fetchPendingCalendarCount(storePending,logCount){
+  try{
+    const r=await api('/schedule/appointments');
+    if(!(r&&r.ok&&Array.isArray(r.appointments)))return;
+    const dbPending=r.appointments.filter(a=>a.status==='pending').length;
+    // The store rows now mirror calendar bookings (bookingId) — dedupe by
+    // counting only calendar rows, not both copies.
+    const total=Math.max(storePending,dbPending);
+    const stEl=document.getElementById('st-msgs');if(stEl)stEl.textContent=total;
+    const wcEl=document.getElementById('wc-appts');if(wcEl)wcEl.textContent=total;
+    const sEl=document.querySelector('#doc-welcome-card .welcome-sub');
+    if(sEl&&total)sEl.textContent=`${total} appointment${total===1?'':'s'} awaiting confirmation · ${logCount} log${logCount===1?'':'s'} today`;
+  }catch(e){/* offline — the sync-based estimate stays */}
+}
+
+// v2.5.2: adherence badge per recent patient (7-day med-confirmation rate).
+// Fire-and-forget async: badges appear as each fetch resolves — never blocks
+// the synchronous overview render.
+async function fetchAdherenceBadges(recent){
+  for(const p of recent){
+    try{
+      const r=await api('/features/adherence/'+encodeURIComponent(p.mrn)+'?days=7');
+      const rate=(r&&r.ok&&r.stats)?r.stats.adherenceRate:null;
+      const el=document.querySelector(`[data-action="openRecord:${escAttr(p.mrn)}"] .pat-mrn`);
+      if(el&&rate!==null){
+        // Only paint the badge once (re-check guard: a badge already present)
+        if(el.innerHTML.includes('% adherence'))continue;
+        const col=rate>=80?'var(--green)':rate>=50?'var(--orange)':'var(--red)';
+        el.innerHTML+=' · <span style="font-weight:700;color:'+col+'" id="adh-'+p.mrn+'">💊 '+rate+'% adherence</span>';
+      }
+    }catch(e){/* offline or no adherence data — badge silently skipped */}
+  }
 }
 
 function refreshStorageInfo(){

@@ -159,6 +159,21 @@
           <div class="stat-card"><div class="stat-label">Logs Today</div><div class="stat-num orange" id="st-logs">0</div></div>
           <div class="stat-card"><div class="stat-label">Pending Appts</div><div class="stat-num" id="st-msgs">0</div></div>
         </div>
+        <!-- v2.5.1: Doctor welcome card — same pattern as Lab. Graces the doctor by name with glanceable stats. -->
+        <div class="welcome-card" id="doc-welcome-card" style="display:none">
+          <div class="welcome-left">
+            <div class="welcome-avatar"><img src="/icons/brand/veltruvia-doc.jpg" alt="" style="width:100%;height:100%;object-fit:cover"></div>
+            <div>
+              <div class="welcome-title">Welcome back</div>
+              <div class="welcome-sub">Neuro-oncology command center</div>
+            </div>
+          </div>
+          <div class="welcome-right">
+            <div class="welcome-stat"><div class="welcome-stat-num" id="wc-total">0</div><div class="welcome-stat-label">Patients</div></div>
+            <div class="welcome-stat"><div class="welcome-stat-num" id="wc-active">0</div><div class="welcome-stat-label">Active</div></div>
+            <div class="welcome-stat"><div class="welcome-stat-num" id="wc-appts">0</div><div class="welcome-stat-label">Appts</div></div>
+          </div>
+        </div>
         <div class="card">
           <div class="card-header"><div class="card-title">Recent Patients</div></div>
           <div id="ov-patients"></div>

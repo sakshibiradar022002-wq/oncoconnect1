@@ -162,9 +162,23 @@ clinicalFeaturesRouter.post('/rx-totp/check', requireRole('doctor', 'admin'), as
 // 3. PATIENT MEDICATION ADHERENCE
 // ═══════════════════════════════════════════════════════════════════
 
-// Get adherence for a patient
-clinicalFeaturesRouter.get('/adherence/:mrn', requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
+// Get adherence for a patient. v2.5.2: a patient may read their OWN record
+// (their app needs it to show which doses are pending); doctors/admins may
+// read any patient they own.
+clinicalFeaturesRouter.get('/adherence/:mrn', asyncHandler(async (req, res) => {
   const mrn = req.params.mrn.toUpperCase();
+  const role = req.auth?.role;
+  if (role === 'kv-patient') {
+    const ownMrn = String(req.auth?.subjectId || '').split('::')[1];
+    if (!ownMrn || ownMrn.toUpperCase() !== mrn) {
+      return res.status(403).json({ error: 'You may only view your own adherence' });
+    }
+  } else if (role === 'doctor' || role === 'admin') {
+    const owns = await db.prepare('SELECT k FROM kv_store WHERE owner_id = ? AND k = ?').get(req.auth.subjectId, 'pat_' + mrn);
+    if (!owns) return res.status(403).json({ error: 'Patient not in your registry' });
+  } else {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
   const days = parseInt(req.query.days) || 30;
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -199,6 +213,27 @@ clinicalFeaturesRouter.post('/adherence', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  // v2.5.2 RBAC: patients may only write their own MRN; doctors/admins may
+  // write for any patient they own. Labs and patients acting for others are
+  // rejected with 403 before any write happens.
+  const role = req.auth?.role;
+  const subject = String(req.auth?.subjectId || '');
+  if (role === 'kv-patient') {
+    // Patient subjectIds are '<ownerId>::<mrn>'.
+    const ownMrn = subject.split('::')[1];
+    if (!ownMrn || ownMrn.toUpperCase() !== String(patientMrn).toUpperCase()) {
+      return res.status(403).json({ error: 'You may only confirm your own medications' });
+    }
+  } else if (role === 'doctor' || role === 'admin') {
+    // Doctor ownership verified against their patient registry.
+    const owns = await db.prepare(
+      "SELECT k FROM kv_store WHERE owner_id = ? AND k = ?"
+    ).get(req.auth.subjectId, 'pat_' + String(patientMrn).toUpperCase());
+    if (!owns) return res.status(403).json({ error: 'Patient not in your registry' });
+  } else {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
   const id = randomToken(16);
   const now = new Date().toISOString();
   const takenAt = status === 'taken' ? now : null;
@@ -213,6 +248,18 @@ clinicalFeaturesRouter.post('/adherence', asyncHandler(async (req, res) => {
 // Update adherence status
 clinicalFeaturesRouter.patch('/adherence/:id', asyncHandler(async (req, res) => {
   const { status, notes } = req.body;
+  // v2.5.2 RBAC: patients may update only their own adherence rows.
+  const role = req.auth?.role;
+  const subject = String(req.auth?.subjectId || '');
+  if (role === 'kv-patient') {
+    const ownMrn = subject.split('::')[1];
+    const row = await db.prepare('SELECT patient_mrn FROM medication_adherence WHERE id = ?').get(req.params.id);
+    if (!row || !ownMrn || row.patient_mrn.toUpperCase() !== ownMrn.toUpperCase()) {
+      return res.status(403).json({ error: 'Not your medication record' });
+    }
+  } else if (role !== 'doctor' && role !== 'admin') {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
   const updates = [];
   const params = [];
   if (status) { updates.push('status = ?'); params.push(status); }

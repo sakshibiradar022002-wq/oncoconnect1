@@ -37,6 +37,7 @@ import { telehealthRouter, startTelehealthCleanup } from './routes/telehealth.js
 import { emailOtpRouter } from './routes/email-otp.js';
 import billingNccnHipaaRouter from './routes/billing-nccn-hipaa.js';
 import { enhanceRouter } from './routes/enhancements.js';
+import { imagesRouter } from './routes/images.js';
 import { initPush } from './push.js';
 import { observability, metricsSnapshot } from './observability.js';
 import { initSentry, sentryRequestHandler, sentryErrorHandler } from './observability/sentry.js';
@@ -96,6 +97,11 @@ app.use(helmet({
 
 app.use(observability); // correlation IDs + structured logs + flow metrics
 app.use('/api/x/attachments', express.raw({ limit: '10mb', type: () => true })); // v2.1: raw file bytes
+// v2.6.4: imaging uploads are raw image bytes; the share endpoint stays JSON.
+app.use('/api/images', express.raw({
+  limit: '10mb',
+  type: (req) => req.method === 'POST' && !/json/i.test(String(req.headers['content-type'] || '')),
+}));
 app.use(express.json({ limit: '8mb' })); // lab file uploads (base64) can be large
 app.use(cookieParser());
 
@@ -175,9 +181,13 @@ if (config.isProd) {
 }
 
 // ── Rate limiting ─────────────────────────────────────────────────
+const testMode = String(process.env.VELTRUVIA_TEST_MODE || '') === '1';
+// v2.6.1: in test mode auth limiting is disabled so the API suite (which
+// fires dozens of logins in seconds) can run; production keeps the strict
+// limiter because VELTRUVIA_TEST_MODE is never set by the real server.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,                    // 30 auth attempts per 15 min per IP
+  max: testMode ? 100000 : 30,   // 30 auth attempts per 15 min per IP
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many attempts, please try again later' },
@@ -286,6 +296,7 @@ app.use('/api/fhir', apiLimiter, fhirRouter);
 app.use('/api/hipaa', apiLimiter, consentRouter);
 app.use('/api/breach', apiLimiter, breachRouter);
 app.use('/api/x', apiLimiter, enhanceRouter);
+app.use('/api/images', apiLimiter, imagesRouter);
 
 // Billing router has its own auth middleware — mount under /api
 app.use('/api', apiLimiter, billingNccnHipaaRouter);

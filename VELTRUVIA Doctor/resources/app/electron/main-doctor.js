@@ -51,15 +51,37 @@ const MIME = {
   '.wasm': 'application/wasm',
 };
 
+// v2.5.1: prefer a STICKY local port so localStorage is stable across
+// restarts. A random port every launch makes each boot a *different origin*
+// (http://127.0.0.1:<random>), so "stay signed in" and the encrypted store
+// appeared to vanish between sessions. Falls back to a random port if all
+// preferred ones are busy (unlikely).
 function findFreePort() {
-  return new Promise((resolve, reject) => {
-    const srv = net.createServer();
-    srv.listen(0, '127.0.0.1', () => {
-      const port = srv.address().port;
-      srv.close(() => resolve(port));
+  const PREFERRED_PORTS = [13500, 13501, 13502];
+  return (async () => {
+    for (const p of PREFERRED_PORTS) {
+      try {
+        await new Promise((res, rej) => {
+          const testSrv = net.createServer();
+          testSrv.on('error', rej);
+          testSrv.listen(p, '127.0.0.1', () => {
+            // Release the probe BEFORE declaring the port free — a leaked
+            // test socket collides with the real listen below (EADDRINUSE).
+            testSrv.close(() => res());
+          });
+        });
+        return p;
+      } catch { /* in use — try next */ }
+    }
+    return await new Promise((resolve, reject) => {
+      const srv = net.createServer();
+      srv.listen(0, '127.0.0.1', () => {
+        const port = srv.address().port;
+        srv.close(() => resolve(port));
+      });
+      srv.on('error', reject);
     });
-    srv.on('error', reject);
-  });
+  })();
 }
 
 function serveStatic(req, res) {

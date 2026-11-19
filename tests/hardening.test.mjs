@@ -117,8 +117,11 @@ test('second DB opener gets read-only (no lock overwrite)', { timeout: 30000 }, 
   assert.ok(lockPid && lockPid !== process.pid, `lock held by another process (pid ${lockPid})`);
 
   // 2) Open a second handle → must come up read-only.
+  //    node:sqlite / better-sqlite3 reject the write outright; the sql.js
+  //    fallback accepts it in RAM. Both are correct — what matters is that
+  //    it never reaches the file (checked below).
   const db2 = await openDatabase(dbPath);
-  await db2.exec('CREATE TABLE _lock_probe (x)');      // exists only in RAM
+  await db2.exec('CREATE TABLE _lock_probe (x)').catch(() => {});
   await db2.close();
 
   // 3) The probe table must never reach the file: wait past the writer's

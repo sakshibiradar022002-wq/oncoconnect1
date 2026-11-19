@@ -233,6 +233,25 @@ function initDashboard(){
   document.getElementById('st-done').textContent=done.length;
   document.getElementById('st-urgent').textContent=urgent.length;
   document.getElementById('st-patients').textContent=uniquePats.length;
+  // v2.5.1: welcome card — greets the lab by name with glanceable stats.
+  try{
+    const wc=document.getElementById('lab-welcome-card');
+    if(wc){
+      wc.style.display='flex';
+      const fn=(currentLab?.name||'').split(' ')[0]||'Lab';
+      const hr=new Date().getHours();
+      const daypart=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+      document.getElementById('lab-welcome-title').textContent=`${daypart}, ${fn}`;
+      const wtEl=document.getElementById('lab-welcome-sub');
+      if(pending.length)wtEl.textContent=`${pending.length} test${pending.length===1?'':'s'} waiting · ${urgent.length} urgent`;
+      else if(done.length)wtEl.textContent='All caught up — great work! 🎉';
+      else wtEl.textContent='Ready to process samples';
+      document.getElementById('wc-pending').textContent=pending.length;
+      document.getElementById('wc-urgent').textContent=urgent.length;
+      const nextDue=[...pending].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];
+      document.getElementById('wc-due').textContent=nextDue?new Date(nextDue.dueDate).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—';
+    }
+  }catch(e){}
   // Recent activity
   const subs=(LS.get('lab_subs_'+_docId)||[]).filter(s=>s.labId===currentLab?.labId).sort((a,b)=>b.submittedAt-a.submittedAt);
   const actEl=document.getElementById('dash-activity');

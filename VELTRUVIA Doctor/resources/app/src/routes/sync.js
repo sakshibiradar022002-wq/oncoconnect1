@@ -17,8 +17,28 @@ import { mailConfigured, sendMail } from '../mail.js';
 import { smsConfigured, sendSms } from '../sms.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { notifySubject } from '../push.js';
-import { validateLabSubmission } from '../validators/labResults.js';
+import { validateLabSubmission, validateLabResult } from '../validators/labResults.js';
 import { effectiveAvailabilityRows } from '../lib/availability.js';
+
+// v2.5.2: real per-result criticality for lab pushes. Returns the critical
+// results found in a lab_subs_ payload (each { test, value, direction }).
+function criticalLabResults(subs) {
+  const critical = [];
+  for (const s of (Array.isArray(subs) ? subs : [])) {
+    const results = Array.isArray(s?.results) ? s.results : [];
+    for (const r of results) {
+      if (!r || !r.test) continue;
+      const num = parseFloat(r.value);
+      if (isNaN(num)) continue;
+      const v = validateLabResult(r.test, num);
+      // validateLabResult puts the CRITICAL LOW/HIGH text into warning.
+      if (v && v.valid && v.warning && /CRITICAL (LOW|HIGH)/.test(v.warning)) {
+        critical.push({ test: r.test, value: num, direction: /CRITICAL LOW/.test(v.warning) ? 'low' : 'high' });
+      }
+    }
+  }
+  return critical;
+}
 
 // Fire-and-forget doctor notifications for incoming alert / lab-result keys.
 function pushDoctorForChanges(ownerId, changes) {
@@ -31,8 +51,57 @@ function pushDoctorForChanges(ownerId, changes) {
         url: '/',
       }).catch(() => {});
     } else if (k.startsWith('lab_subs_')) {
-      notifySubject(ownerId, { title: 'New lab result', body: 'A lab uploaded new results. Tap to review.', url: '/' }).catch(() => {});
+      // v2.5.2: if any result is critically out of range, push an URGENT
+      // notification naming the patient, test and value — otherwise fall back
+      // to the generic 'new lab result' ping.
+      const subs = v && typeof v === 'object' && !Array.isArray(v) ? v : null;
+      const crit = criticalLabResults(subs);
+      if (crit.length) {
+        const first = crit[0];
+        const patients = [...new Set(subs.map(s => s?.patName || s?.mrn).filter(Boolean))];
+        const who = patients.length ? patients[0] : 'a patient';
+        notifySubject(ownerId, {
+          title: '🚨 CRITICAL lab value',
+          body: `${who}: ${first.test} ${first.value} is critically ${first.direction} (${crit.length} critical value${crit.length === 1 ? '' : 's'} in this batch). Requires review.`,
+          url: '/',
+        }).catch(() => {});
+      } else {
+        notifySubject(ownerId, { title: 'New lab result', body: 'A lab uploaded new results. Tap to review.', url: '/' }).catch(() => {});
+      }
     }
+  }
+}
+
+// v2.6: mirror each MRN-tagged lab report into that patient's own keyspace
+// (lab_subs_<mrn>) and push them a notification. The submission row already
+// carries mrn/test/date/results/notes; the patient's next /sync/patient pull
+// picks the key up naturally because patientOwnsKey allows lab_subs_<mrn>.
+async function deliverLabResultsToPatients(ownerId, docId, subs) {
+  if (!Array.isArray(subs)) return;
+  const byMrn = {};
+  for (const s of subs) {
+    const mrn = String(s?.mrn || '').trim().toUpperCase();
+    if (!mrn) continue;
+    // Only deliver for patients that actually exist under this doctor's keyspace.
+    const row = await db.prepare('SELECT v_enc FROM kv_store WHERE owner_id = ? AND k = ?').get(ownerId, 'pat_' + mrn);
+    if (!row) continue;
+    (byMrn[mrn] = byMrn[mrn] || []).push(s);
+  }
+  for (const [mrn, items] of Object.entries(byMrn)) {
+    const k = 'lab_subs_' + mrn;
+    const patientKey = await db.prepare('SELECT v_enc FROM kv_store WHERE owner_id = ? AND k = ?').get(ownerId, k);
+    let existing = [];
+    try { const prev = patientKey ? decryptPHI(patientKey.v_enc) : null; if (Array.isArray(prev)) existing = prev; } catch { /* start fresh on corrupt row */ }
+    // Don't duplicate: match on the submission timestamp if present.
+    const seen = new Set(existing.map(x => x.submittedAt));
+    const fresh = items.filter(x => !seen.has(x.submittedAt));
+    if (!fresh.length) continue;
+    await upsertKey(ownerId, k, existing.concat(fresh), new Date().toISOString());
+    notifySubject(ownerId + '::' + mrn, {
+      title: '🧪 Lab report available',
+      body: `${fresh[0].test || 'Your report'} was uploaded to your profile${fresh.length > 1 ? ` (+${fresh.length - 1} more)` : ''}. Tap to view.`,
+      url: '/patient.html',
+    }).catch(() => {});
   }
 }
 
@@ -580,6 +649,14 @@ syncRouter.put('/lab', authenticate, requireRole('kv-lab'), labScope, validate(p
 
   const count = await applyChanges(ownerId, changes, k => allowed.has(k));
   pushDoctorForChanges(ownerId, changes);
+  // v2.6: deliver each MRN-tagged report straight into that patient's own
+  // keyspace (lab_subs_<mrn> — already patient-owned) and push them a
+  // notification, so "send report to MRN" means the patient's profile shows
+  // it immediately, not after the doctor forwards it by hand.
+  const submission = Array.isArray(changes[`lab_subs_${docId}`]) ? changes[`lab_subs_${docId}`] : null;
+  if (submission) {
+    try { await deliverLabResultsToPatients(ownerId, docId, submission); } catch (e) { console.error('[sync] lab result delivery failed:', e.message); }
+  }
   await writeAudit({
     actorId: labId,
     actorRole: 'kv-lab',
@@ -1182,6 +1259,20 @@ syncRouter.post('/update-appointment', authenticate, validate(updateAppointmentS
   if (!appts[index]) return res.status(404).json({ ok: false, error: 'Appointment not found — it may have already been removed.' });
   appts[index].status = status;
   appts[index].respondedAt = new Date().toISOString();
+  // v2.6.1: keep the DB calendar in step. The store row now carries the
+  // bookingId of its /schedule/book row — confirm/decline/cancel there must
+  // land on the calendar too, or the doctor confirms one copy and the patient
+  // still sees 'pending' on the other.
+  const bookingId = appts[index].bookingId;
+  if (bookingId) {
+    try {
+      const dbStatus = { Confirmed: 'confirmed', Scheduled: 'confirmed', Declined: 'cancelled', Cancelled: 'cancelled' }[status];
+      if (dbStatus) {
+        await db.prepare('UPDATE appointments SET status = ?, updated_at = ? WHERE id = ?')
+          .run(dbStatus, new Date().toISOString(), bookingId);
+      }
+    } catch (e) { console.error('[appt] calendar status sync failed:', e.message); }
+  }
   if (!writeApptStore(store)) return res.status(500).json({ ok: false, error: 'Could not save status — server storage write failed. Try again.' });
   res.json({ ok: true });
 }));
@@ -1245,6 +1336,9 @@ async function buildSlotCalendar(ownerId, days) {
   for (let i = 0; i < days; i++) {
     const d = new Date(today); d.setDate(today.getDate() + i);
     const dateStr = d.toISOString().slice(0, 10);
+    // v2.6.1: don't offer slots already in the past — a 20:00 visitor should
+    // never see (or book) this morning's 09:00 slot.
+    const nowMins = today.getHours() * 60 + today.getMinutes();
     const avail = await effectiveAvailabilityRows(ownerId || 'any', dateStr);
     const daySlots = [];
     for (const r of avail) {
@@ -1253,6 +1347,7 @@ async function buildSlotCalendar(ownerId, days) {
       const dur = r.slot_duration || 30;
       let mins = sh * 60 + sm;
       const endMins = eh * 60 + em;
+      if (i === 0 && mins < nowMins) mins = Math.ceil(nowMins / dur) * dur; // today only
       while (mins + dur <= endMins) {
         const timeStr = String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
         const endMins2 = mins + dur;

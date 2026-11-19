@@ -120,28 +120,40 @@ export async function openDatabase(path) {
   // Boot guard: never let a corrupt file crash boot or start silently empty.
   repairCorruptDb(path);
 
+  // Single-writer enforcement is backend-INDEPENDENT. Acquiring the lock
+  // only inside the sql.js fallback meant any Node with node:sqlite (>= 22 —
+  // and production runs 24.x) skipped the lock entirely, so a second process
+  // could open the same file read-write: exactly the double-writer that
+  // corrupted production. Whoever wins the lock writes; everyone else opens
+  // READ-ONLY.
+  const lockApplicable = !!path && path !== ':memory:';
+  const canWrite = lockApplicable ? tryAcquireWriterLock(path) : true;
+  const readOnly = !canWrite;
+  if (readOnly) {
+    console.warn(`[db] ${path} is owned by another VELTRUVIA process (pid in ${path}.lock) — opening READ-ONLY.`);
+  }
+
   // Try better-sqlite3 first.
   try {
     const mod = await import('better-sqlite3');
-    const db = new mod.default(path);
-    impl = 'better-sqlite3';
-    return wrapSync(db, (s) => db.pragma(s), path);
+    const db = new mod.default(path, readOnly ? { readonly: true } : undefined);
+    impl = readOnly ? 'better-sqlite3 (read-only)' : 'better-sqlite3';
+    return wrapSync(db, (s) => db.pragma(s), path, canWrite);
   } catch {
     // Try node:sqlite (Node >= 22)
     try {
       const { DatabaseSync } = await import('node:sqlite');
-      const db = new DatabaseSync(path);
-      impl = 'node:sqlite';
-      return wrapSync(db, (s) => db.exec(`PRAGMA ${s};`), path);
+      const db = new DatabaseSync(path, readOnly ? { readOnly: true } : undefined);
+      impl = readOnly ? 'node:sqlite (read-only)' : 'node:sqlite';
+      return wrapSync(db, (s) => db.exec(`PRAGMA ${s};`), path, canWrite);
     } catch {
       // Fall back to sql.js (WASM-based, no native build needed)
       const initSqlJs = (await import('sql.js')).default;
       const SQL = await initSqlJs();
       const fs = await import('node:fs');
       let db;
-      // Single-writer enforcement BEFORE loading: without this, a second
-      // VELTRUVIA process would snapshot over the first one's writes.
-      const canWrite = tryAcquireWriterLock(path);
+      // canWrite was already decided above (lock acquired before backend
+      // selection) — sql.js is the last-resort backend of the same decision.
       if (path === ':memory:') {
         db = new SQL.Database();
       } else {
@@ -167,7 +179,7 @@ export async function openDatabase(path) {
 export function activeImpl() { return impl; }
 
 // Promisify a synchronous sqlite handle (both share prepare/exec).
-function wrapSync(db, pragma, dbPath) {
+function wrapSync(db, pragma, dbPath, canWrite = true) {
   return {
     async exec(sql) { db.exec(sql); },
     async pragma(str) { pragma(str); },
@@ -181,6 +193,9 @@ function wrapSync(db, pragma, dbPath) {
     },
     close() {
       try { db.close(); } catch {}
+      // Only the lock owner releases it; a read-only opener must never
+      // delete the writer's lock file.
+      if (canWrite) releaseWriterLock(dbPath);
     },
     flush() {},
     name: dbPath,

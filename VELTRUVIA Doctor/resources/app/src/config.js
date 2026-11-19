@@ -62,7 +62,10 @@ export const config = {
 
   // Session lifetime. 30 days: “stay logged in” is the product promise for
   // the apps and desktop software (sliding refresh extends active sessions).
-  sessionTtlMinutes: parseInt(process.env.SESSION_TTL_MIN || '43200', 10),
+  // Sliding refresh keeps active users signed in, so a week-long absolute cap
+  // costs logged-out users nothing — but a stolen cookie is only usable for
+  // 7 idle days instead of 30.
+  sessionTtlMinutes: parseInt(process.env.SESSION_TTL_MIN || '10080', 10),
 
   // Path to the SQLite database file.
   // If DB_EPHEMERAL=true, uses :memory: (for testing/preview, data lost on restart)
