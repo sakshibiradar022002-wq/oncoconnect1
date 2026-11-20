@@ -27,10 +27,17 @@
  */
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const APP_DIR = process.env.APP_DIR || '/home/ubuntu/veltruvia/app';
+const SELF = fileURLToPath(import.meta.url);
 
+// Supports both `--name value` and `--name=value`. The `=` form matters: user
+// ids are random tokens and can start with '-', which `--name -abc` would
+// otherwise swallow as an option.
 function arg(name, fallback = null) {
+  const eq = process.argv.find(a => a.startsWith(name + '='));
+  if (eq) return eq.slice(name.length + 1) || fallback;
   const i = process.argv.indexOf(name);
   return i > -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
 }
@@ -160,7 +167,7 @@ async function wipe() {
     console.log(`[wipe] accounts left: ${left}`);
     if (orphanAfter) {
       console.log(`\n[wipe] ${orphanAfter} patient-store owner(s) no longer have an account.`);
-      for (const u of users) console.log(`  after re-registering ${u.email}: node scripts/wipe-accounts.mjs --reattach ${u.id} --email ${u.email}`);
+      for (const u of users) console.log(`  after re-registering ${u.email}: node ${SELF} --reattach=${u.id} --email ${u.email}`);
     }
     console.log('\n[wipe] done — start the service: sudo systemctl start veltruvia');
   } finally { db.close(); }
