@@ -84,7 +84,9 @@ check_public() {
 }
 
 check_login() {
-  [[ -r "$CREDS_FILE" ]] || { warn "no credentials file at $CREDS_FILE — skipping login check"; return 0; }
+  # 0 = login works, 3 = no credentials to test with, 1 = login broken.
+  # Callers must treat 3 as "not tested", never as a pass.
+  [[ -r "$CREDS_FILE" ]] || return 3
   local pass token
   pass=$(grep -oP 'password:\s*\K\S+' "$CREDS_FILE" | head -1)
   [[ -n "$pass" ]] || { warn "could not read password from $CREDS_FILE"; return 1; }
@@ -184,7 +186,13 @@ $(tail -30 "$log")"
     "$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
         -d '{"endpoint":"https://example.test/x"}' "$base/api/push/unsubscribe")"
 
-  if check_login "$base"; then ok "admin login issues a token"; else warn "admin login failed on staging"; failures=$((failures + 1)); fi
+  local login_rc=0
+  check_login "$base" || login_rc=$?
+  case "$login_rc" in
+    0) ok "admin login issues a token" ;;
+    3) warn "admin login NOT tested — no readable $CREDS_FILE (set CREDS_FILE=… to enable)" ;;
+    *) warn "admin login failed on staging"; failures=$((failures + 1)) ;;
+  esac
 
   if grep -qiE 'Error|FATAL' "$log"; then
     warn "log contains errors — review:"
@@ -252,7 +260,11 @@ swap() {
   fi
   ok "public /health returns 200"
 
-  if check_login "$PUBLIC_URL"; then ok "public login issues a token"; else
+  local login_rc=0
+  check_login "$PUBLIC_URL" || login_rc=$?
+  if [[ $login_rc -eq 0 ]]; then ok "public login issues a token"
+  elif [[ $login_rc -eq 3 ]]; then warn "public login NOT tested — no readable $CREDS_FILE (not a rollback trigger)"
+  else
     warn "public login failed — rolling back"
     rollback
     die "deploy failed; previous version restored"
