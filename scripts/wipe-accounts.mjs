@@ -46,6 +46,7 @@ const DB_PATH = resolve(arg('--db', process.env.DB_PATH || join(APP_DIR, 'chemoc
 const CONFIRMED = process.argv.includes('--yes');
 const REATTACH_ID = arg('--reattach');
 const EMAIL = arg('--email');
+const DELETE_ADMIN = arg('--delete-admin');
 
 async function openDb(path, readOnly = false) {
   const opts = { readOnly };
@@ -94,6 +95,40 @@ async function reattach() {
 
 function tableExists(db, name) {
   return !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(name);
+}
+
+// Retire the seeded demo admin (test@example.com). Refuses to remove the last
+// admin so the instance cannot be left without one.
+async function deleteAdmin() {
+  const { db } = await openDb(DB_PATH);
+  db.exec('PRAGMA foreign_keys = OFF');
+  try {
+    const row = db.prepare('SELECT id, email FROM users WHERE email = ?').get(String(DELETE_ADMIN).toLowerCase());
+    if (!row) throw new Error(`no account for ${DELETE_ADMIN}`);
+    const admins = db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get().n;
+    if (admins <= 1) throw new Error('refusing to delete the only admin account');
+    const removed = {};
+    db.exec('BEGIN');
+    try {
+      for (const [table, col] of [
+        ['sessions', 'subject_id'], ['push_subs', 'subject_id'],
+        ['team_members', 'user_id'], ['password_change_requests', 'doctor_id'],
+      ]) {
+        if (tableExists(db, table)) removed[table] = db.prepare(`DELETE FROM ${table} WHERE ${col} = ?`).run(row.id).changes;
+      }
+      removed.users = db.prepare('DELETE FROM users WHERE id = ?').run(row.id).changes;
+      db.exec('COMMIT');
+    } catch (e) {
+      try { db.exec('ROLLBACK'); } catch {}
+      throw e;
+    }
+    db.prepare(`INSERT INTO audit_log (id, actor_id, actor_role, action, target_id, detail_enc, ip, created_at)
+                VALUES (?, 'system', 'system', 'admin.demo_admin_removed', 'users', NULL, NULL, ?)`)
+      .run(Math.random().toString(36).slice(2, 14), new Date().toISOString());
+    console.log(`[delete-admin] removed ${row.email}`);
+    for (const [t, n] of Object.entries(removed)) console.log(`  ${t.padEnd(24)} ${n} row(s)`);
+    console.log(`[delete-admin] admins left: ${admins - 1}`);
+  } finally { db.close(); }
 }
 
 async function wipe() {
@@ -174,7 +209,9 @@ async function wipe() {
 }
 
 try {
-  REATTACH_ID ? await reattach() : await wipe();
+  if (DELETE_ADMIN) await deleteAdmin();
+  else if (REATTACH_ID) await reattach();
+  else await wipe();
 } catch (e) {
   console.error(`[wipe] ${e.message}`);
   process.exit(1);

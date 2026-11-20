@@ -1,162 +1,99 @@
-// One-shot PHI_ENCRYPTION_KEY + JWT_SECRET rotation.
-// Re-encrypts every v1.* PHI blob in data/veltruvia.db with a fresh key,
-// swaps both secrets in .env, then verifies 100% decryptability with the
-// new key AND failure with the old one.
-//
-// Safety design:
-//   - Refuses to run while a live process holds the DB writer lock.
-//   - Old key is read from .env, used only in memory, then replaced.
-//   - Never logs key material or plaintext.
-//   - Aborts before writing if ANY blob fails to decrypt with the old key.
-//
-// Run: node scripts/rotate-secrets.mjs [--db path] [--env path]
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
-import { join, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { createHash, randomBytes, createDecipheriv, createCipheriv } from 'node:crypto';
-import { pathToFileURL } from 'node:url';
+#!/usr/bin/env node
+/**
+ * rotate-secrets.mjs — replace exposed credentials in the live .env.
+ *
+ *   node scripts/rotate-secrets.mjs                 # show what would change
+ *   node scripts/rotate-secrets.mjs --yes           # rotate JWT_SECRET, drop dead SES/AWS keys
+ *   node scripts/rotate-secrets.mjs --yes --turn    # also rotate TURN_SECRET (update coturn too!)
+ *   node scripts/rotate-secrets.mjs --yes --anchor  # also replace ANCHOR_PRIVATE_KEY with a fresh wallet
+ *
+ * Never prints a secret value. Always writes a 0600 backup of the old .env next
+ * to it. PHI_ENCRYPTION_KEY is refused by design: src/crypto.js has no key
+ * versioning, so rotating it would make existing PHI unreadable.
+ *
+ * Restart afterwards:  sudo systemctl restart veltruvia
+ */
+import { readFileSync, writeFileSync, copyFileSync, statSync, chmodSync, existsSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { randomBytes } from 'node:crypto';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const dbPath = process.argv.includes('--db')
-  ? resolve(process.argv[process.argv.indexOf('--db') + 1])
-  : join(root, 'data', 'veltruvia.db');
-const envPath = process.argv.includes('--env')
-  ? resolve(process.argv[process.argv.indexOf('--env') + 1])
-  : join(root, '.env');
+const APP_DIR = process.env.APP_DIR || '/home/ubuntu/veltruvia/app';
 
-const die = (msg) => { console.error('❌ ' + msg); process.exit(1); };
-const ok = (msg) => console.log('  ✅ ' + msg);
-
-// ── Load .env (simple KEY=VALUE parser, no dependency) ────────────
-if (!existsSync(envPath)) die(`.env not found at ${envPath}`);
-const envLines = readFileSync(envPath, 'utf8').split(/\r?\n/);
-const getEnv = (k) => {
-  const line = envLines.find(l => l.startsWith(k + '='));
-  return line ? line.slice(k.length + 1).trim() : null;
-};
-
-const oldKeyHex = getEnv('PHI_ENCRYPTION_KEY');
-if (!oldKeyHex || !/^[0-9a-fA-F]{64}$/.test(oldKeyHex)) die('PHI_ENCRYPTION_KEY missing or not 64-hex in .env');
-const oldJwt = getEnv('JWT_SECRET');
-if (!oldJwt) die('JWT_SECRET missing in .env');
-
-// ── Refuse to touch a locked (live) database ──────────────────────
-const lockPath = dbPath + '.lock';
-if (existsSync(lockPath)) {
-  die(`Writer lock present (${lockPath}) — the server appears to be running. Stop VELTRUVIA Server first.`);
+function arg(name, fallback = null) {
+  const eq = process.argv.find(a => a.startsWith(name + '='));
+  if (eq) return eq.slice(name.length + 1) || fallback;
+  const i = process.argv.indexOf(name);
+  return i > -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
 }
 
-// ── Open DB via the app bundle's sql.js (WASM, no native build) ───
-const appDir = join(root, 'VELTRUVIA Server', 'resources', 'app');
-const initSqlJs = (await import(pathToFileURL(join(appDir, 'node_modules', 'sql.js', 'dist', 'sql-wasm.js')).href)).default;
-const SQL = await initSqlJs({
-  locateFile: f => join(appDir, 'node_modules', 'sql.js', 'dist', f),
-});
-const db = new SQL.Database(readFileSync(dbPath));
+const ENV_PATH = resolve(arg('--env', join(APP_DIR, '.env')));
+const CONFIRMED = process.argv.includes('--yes');
+const DO_TURN = process.argv.includes('--turn');
+const DO_ANCHOR = process.argv.includes('--anchor');
 
-const q = (sql, params = []) => {
-  const stmt = db.prepare(sql);
-  stmt.bind(params);
-  const rows = [];
-  while (stmt.step()) rows.push(stmt.getAsObject());
-  stmt.free();
-  return rows;
-};
-const run = (sql, params = []) => { const s = db.prepare(sql); s.bind(params); s.step(); s.free(); };
-
-// ── Crypto helpers (mirror src/crypto.js v1 format exactly) ───────
-const keyOf = (hex) => Buffer.from(hex, 'hex');
-function decrypt(blob, key) {
-  const [v, ivB64, tagB64, ctB64] = String(blob).split('.');
-  if (v !== 'v1') throw new Error('bad version');
-  const d = createDecipheriv('aes-256-gcm', key, Buffer.from(ivB64, 'base64'));
-  d.setAuthTag(Buffer.from(tagB64, 'base64'));
-  return Buffer.concat([d.update(Buffer.from(ctB64, 'base64')), d.final()]);
-}
-function encrypt(plaintextBuf, key) {
-  const iv = randomBytes(12);
-  const c = createCipheriv('aes-256-gcm', key, iv);
-  const ct = Buffer.concat([c.update(plaintextBuf), c.final()]);
-  return `v1.${iv.toString('base64')}.${c.getAuthTag().toString('base64')}.${ct.toString('base64')}`;
+if (!existsSync(ENV_PATH)) {
+  console.error(`[rotate] no .env at ${ENV_PATH} (pass --env <path>)`);
+  process.exit(1);
 }
 
-const oldKey = keyOf(oldKeyHex);
-const TARGETS = [
-  { table: 'users', col: 'name_enc' },
-  { table: 'users', col: 'meta_enc' },
-  { table: 'users', col: 'totp_enc' },
-  { table: 'audit_log', col: 'detail_enc' },
-  { table: 'kv_store', col: 'v_enc' },
-  { table: 'clinical_audit_log', col: 'detail_enc' },
-];
+const original = readFileSync(ENV_PATH, 'utf8');
+const lines = original.split('\n');
+const find = key => lines.findIndex(l => l.startsWith(key + '='));
 
-// ── Pass 1: decrypt EVERYTHING with the old key (no writes yet) ───
-console.log('Pass 1: decrypting all blobs with the OLD key…');
-const plan = [];
-let total = 0;
-for (const { table, col } of TARGETS) {
-  const rows = q(`SELECT rowid AS rid, ${col} AS blob FROM ${table} WHERE ${col} LIKE 'v1.%'`);
-  for (const r of rows) {
-    let plain;
-    try { plain = decrypt(r.blob, oldKey); }
-    catch { die(`${table}.${col} rowid=${r.rid} does NOT decrypt with the old key — aborting, nothing written.`); }
-    plan.push({ table, col, rid: r.rid, plain });
-    total++;
-  }
+const changes = [];
+const dead = [];
+
+// Dead credentials: SES SMTP login and the AWS key pair that backed it. Email
+// now goes through Gmail (src/mail.js), so these only add exposure.
+for (const key of ['SES_SMTP_USER', 'SES_SMTP_PASSWORD', 'SES_SMTP_HOST', 'SES_SMTP_PORT', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY']) {
+  const i = find(key);
+  if (i > -1) dead.push(i);
 }
-ok(`${total} blobs decrypted cleanly with the old key`);
-if (total === 0) { console.log('Nothing to rotate — all done.'); process.exit(0); }
 
-// ── Generate the new secrets ──────────────────────────────────────
-const newKeyHex = randomBytes(32).toString('hex');
 const newJwt = randomBytes(32).toString('hex');
-const newKey = keyOf(newKeyHex);
-console.log('Pass 2: re-encrypting with a FRESH key (in memory)…');
+const jwtIdx = find('JWT_SECRET');
+const newTurn = DO_TURN ? randomBytes(32).toString('hex') : null;
+const turnIdx = find('TURN_SECRET');
+const newAnchor = DO_ANCHOR ? '0x' + randomBytes(32).toString('hex') : null;
+const anchorIdx = find('ANCHOR_PRIVATE_KEY');
 
-// ── Pass 2 + 3: write new blobs, then verify by reading back ──────
-let written = 0;
-for (const { table, col, rid, plain } of plan) {
-  run(`UPDATE ${table} SET ${col} = ? WHERE rowid = ?`, [encrypt(plain, newKey), rid]);
-  written++;
+changes.push(['JWT_SECRET', jwtIdx > -1 ? 'replaced' : 'added', '64 hex chars']);
+if (DO_TURN) changes.push(['TURN_SECRET', turnIdx > -1 ? 'replaced' : 'added', '64 hex chars — update coturn static-auth-secret to match']);
+if (DO_ANCHOR) changes.push(['ANCHOR_PRIVATE_KEY', anchorIdx > -1 ? 'replaced' : 'added', 'fresh secp256k1 key, no funds']);
+for (const i of dead) changes.push([lines[i].split('=')[0], 'removed', 'credential no longer used']);
+
+console.log(`[rotate] ${ENV_PATH}`);
+for (const [key, action, note] of changes) console.log(`  ${key.padEnd(20)} ${action.padEnd(9)} ${note}`);
+const phiIdx = find('PHI_ENCRYPTION_KEY');
+console.log(`  ${'PHI_ENCRYPTION_KEY'.padEnd(20)} kept      ${phiIdx > -1 ? 'cannot rotate without key versioning' : 'not present — check the app is reading one'}`);
+
+if (!CONFIRMED) {
+  console.log('\n[rotate] dry run — nothing changed. Re-run with --yes to rotate.');
+  process.exit(0);
 }
-ok(`${written}/${total} blobs re-encrypted`);
 
-let verified = 0;
-for (const { table, col, rid, plain } of plan) {
-  const row = q(`SELECT ${col} AS blob FROM ${table} WHERE rowid = ?`, [rid])[0];
-  const back = decrypt(row.blob, newKey);
-  if (!back.equals(plain)) die(`Verify failed at ${table}.${col} rowid=${rid} — aborting WITHOUT saving.`);
-  verified++;
-}
-ok(`${verified}/${total} verified byte-identical under the new key`);
+const mode = statSync(ENV_PATH).mode & 0o777;
+const backupPath = `${ENV_PATH}.bak-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`;
+copyFileSync(ENV_PATH, backupPath);
+chmodSync(backupPath, 0o600);
 
-// Prove the old key is now useless against the live data.
-let oldStillOpens = 0;
-for (const { table, col } of TARGETS) {
-  const rows = q(`SELECT rowid AS rid, ${col} AS blob FROM ${table} WHERE ${col} LIKE 'v1.%'`);
-  for (const r of rows) { try { decrypt(r.blob, oldKey); oldStillOpens++; } catch {} }
-}
-if (oldStillOpens > 0) die(`${oldStillOpens} blobs still open with the OLD key — refusing to save.`);
-ok('old key opens 0 blobs — rotation is real');
-
-// ── Persist: DB + .env swap ───────────────────────────────────────
-const dbStamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-copyFileSync(dbPath, `${dbPath}.pre-rotation-${dbStamp}`);
-writeFileSync(dbPath, Buffer.from(db.export()));
-ok(`DB saved (pre-rotation copy: ${dbPath}.pre-rotation-${dbStamp})`);
-
-const envStamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-copyFileSync(envPath, `${envPath}.pre-rotation-${envStamp}`);
-const swap = (lines, key, val) => {
-  const i = lines.findIndex(l => l.startsWith(key + '='));
-  if (i >= 0) lines[i] = `${key}=${val}`;
-  else lines.push(`${key}=${val}`);
+const set = (key, value) => {
+  const i = find(key);
+  if (i > -1) lines[i] = `${key}=${value}`;
+  else lines.push(`${key}=${value}`);
 };
-const newLines = [...envLines];
-swap(newLines, 'PHI_ENCRYPTION_KEY', newKeyHex);
-swap(newLines, 'JWT_SECRET', newJwt);
-writeFileSync(envPath, newLines.join('\n'));
-ok('.env updated (old copy kept: .env.pre-rotation-' + envStamp + ')');
 
-console.log('\n🎉 Rotation complete. Start the VELTRUVIA Server and confirm /health.');
-console.log('   Keep the .pre-rotation-* copies until you have verified logins + patient data.');
+set('JWT_SECRET', newJwt);
+if (newTurn) set('TURN_SECRET', newTurn);
+if (newAnchor) set('ANCHOR_PRIVATE_KEY', newAnchor);
+for (const i of dead.sort((a, b) => b - a)) lines.splice(i, 1);
+
+const body = lines.filter((l, i, arr) => !(l === '' && arr[i - 1] === '')).join('\n');
+writeFileSync(ENV_PATH, body, { mode: 0o600 });
+chmodSync(ENV_PATH, 0o600);
+
+console.log(`[rotate] backup: ${backupPath}`);
+console.log(`[rotate] .env rewritten (mode ${mode === 0o600 ? 'was 600' : `was ${mode.toString(8)}, now 600`})`);
+console.log('\n[rotate] restart to apply: sudo systemctl restart veltruvia');
+console.log('[rotate] every existing session is signed out (JWT_SECRET changed).');
+if (DO_TURN) console.log('[rotate] coturn: update its static-auth-secret to the new TURN_SECRET, then restart coturn.');
