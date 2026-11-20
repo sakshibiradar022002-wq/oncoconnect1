@@ -144,10 +144,10 @@ stage() {
 
   (
     cd "$tmp/app"
-    set -a
-    # shellcheck disable=SC1091
-    . ./.env
-    set +a
+    # Do not bash-source .env: values like EMAIL_FROM=VELTRUVIA <no-reply@host>
+    # are not valid shell (the '<' reads as a redirection) while systemd and
+    # dotenv parse them fine. src/server.js imports 'dotenv/config', which
+    # loads ./.env from this cwd; the explicit vars below still win over it.
     PORT="$STAGING_PORT" HOST=127.0.0.1 DB_PATH="$staledb" \
     NODE_ENV=production LOG_LEVEL=warn \
     node src/server.js >"$log" 2>&1 &
