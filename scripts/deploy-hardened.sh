@@ -127,7 +127,12 @@ stage() {
   if ! node --input-type=module -e '
       import { DatabaseSync } from "node:sqlite";
       const db = new DatabaseSync(process.argv[1]);
-      db.exec("VACUUM INTO " + JSON.stringify(process.argv[2]));
+      // SQLite treats "double quoted" tokens as identifiers, so the target
+      // filename must be a single-quoted literal; built without literal
+      // quote characters because this snippet lives in a single-quoted -e arg.
+      const q = String.fromCharCode(39);
+      const target = process.argv[2].split(q).join(q + q);
+      db.exec("VACUUM INTO " + q + target + q);
       db.close();
     ' "$live" "$staledb" 2>"$tmp/vacuum.err"; then
     die "could not snapshot the live DB (node:sqlite VACUUM INTO failed): $(tail -3 "$tmp/vacuum.err")"
