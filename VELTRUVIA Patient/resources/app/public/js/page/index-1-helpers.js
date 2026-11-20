@@ -417,18 +417,30 @@ async function doLogin(){
       refreshAll();
       return;
     }
+    // 2xx but no user object: the server answered, so say so instead of
+    // pretending the account is missing locally.
+    showMsg('login-msg','Sign-in failed — unexpected response from the server. Please try again.');
+    return;
   }catch(e){
-    if(e.status===401&&e.message?.includes('TOTP')){
-      const totpField=document.getElementById('li-totp-field');
-      if(totpField){totpField.style.display='block';showMsg('login-msg','Enter the 6-digit code from your authenticator app.');}
+    // A status means the server ANSWERED and refused the sign-in. Surface its
+    // real reason (401 wrong password, 429 lockout, 403 pending approval,
+    // 5xx / non-JSON errors) — never the offline "no account" message.
+    if(e&&e.status){
+      if(e.status===401&&e.message?.includes('TOTP')){
+        const totpField=document.getElementById('li-totp-field');
+        if(totpField){totpField.style.display='block';}
+        showMsg('login-msg','Enter the 6-digit code from your authenticator app.');
+        return;
+      }
+      const msg=e.message||('Sign-in failed (HTTP '+e.status+').');
+      showMsg('login-msg',e.status===429?('⏳ '+msg):msg);
       return;
     }
-    if(e.status===403&&e.message?.includes('pending')){
-      showMsg('login-msg',e.message);
-      return;
-    }
+    // No HTTP response at all: the server could not be reached. Only this
+    // case may fall through to the offline/local account branch below.
+    console.warn('[login] server unreachable, trying local account:',e&&e.message);
   }
-  // Local fallback (offline mode)
+  // Local fallback — GENUINE OFFLINE ONLY (server unreachable)
   const docId=LS.get('doc_email_'+email.replace(/[^a-z0-9]/g,'_'));
   if(!docId){showMsg('login-msg','No account found for this email.');return;}
   const doc=LS.get('doc_'+docId);
