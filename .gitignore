@@ -145,6 +145,10 @@ veltruvia-codesign.cer
 runtime-shell-*-backup/
 *.asar.*-backup
 .freebuff/vm-debug-users.mjs
+# DAST output and generated drug-label review queue (contain scan noise / raw label text)
+reports/zap/
+reports/drug-label-review.json
+
 # real VM address for the offsite pull script (repo stays public-safe)
 .freebuff/.vm-target
 _ico_*.png

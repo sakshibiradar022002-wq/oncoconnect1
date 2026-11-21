@@ -1,0 +1,6 @@
+#!/bin/sh
+# Reject direct edits to the generated Doctor/Patient/Lab bundles.
+# Install once per clone with: npm run hooks:install
+# Bypass only for a deliberate migration: git commit --no-verify
+
+exec node scripts/guard-canonical.mjs --staged
