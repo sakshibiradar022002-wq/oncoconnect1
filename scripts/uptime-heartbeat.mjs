@@ -30,7 +30,7 @@ const TIMEOUT = Number(arg('--timeout', 15000));
 const MAX_LATENCY = Number(arg('--max-latency', 5000));
 
 if (flag('--print-cron')) {
-  console.log('*/5 * * * * cd /home/ubuntu/veltruvia && HEARTBEAT_URL=https://hc-ping.com/<uuid> /usr/bin/node scripts/uptime-heartbeat.mjs >> /var/log/veltruvia-heartbeat.log 2>&1');
+  console.log('*/5 * * * * cd /home/ubuntu/veltruvia-repo && HEARTBEAT_URL=https://hc-ping.com/<uuid> /usr/bin/node scripts/uptime-heartbeat.mjs >> /var/log/veltruvia-heartbeat.log 2>&1');
   process.exit(0);
 }
 
