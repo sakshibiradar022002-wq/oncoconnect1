@@ -145,13 +145,13 @@ test('search by brand name finds the right drug (Temodar)', () => {
   assert.equal(hits[0].name, 'temozolomide');
 });
 
-test('search by RxNorm CUI works (36297)', () => {
-  const hits = searchDrugs('36297');
+test('search by RxNorm CUI works (37776)', () => {
+  const hits = searchDrugs('37776');
   assert.ok(hits.length >= 1);
-  assert.equal(hits[0].rxnormCui, '36297');
+  assert.equal(hits[0].rxnormCui, '37776');
 });
 
 test('getDrugInfo normalizes case/whitespace; unknown drugs return null', () => {
-  assert.equal(getDrugInfo('  Temozolomide  ').rxnormCui, '36297');
+  assert.equal(getDrugInfo('  Temozolomide  ').rxnormCui, '37776');
   assert.equal(getDrugInfo('definitely-not-a-drug-xyz'), null);
 });

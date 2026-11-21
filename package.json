@@ -16,6 +16,7 @@
     "guard": "node scripts/guard-canonical.mjs --all",
     "hooks:install": "node scripts/install-hooks.mjs",
     "drug-labels": "node scripts/enrich-drug-labels.mjs --names=contracts/drug-labels-extra.txt",
+    "audit:cui": "node scripts/audit-rxnorm-cui.mjs",
     "pentest:zap": "bash scripts/pentest/zap-scan.sh",
     "apk:patient": "node scripts/build-apk.mjs patient",
     "apk:lab": "node scripts/build-apk.mjs lab",

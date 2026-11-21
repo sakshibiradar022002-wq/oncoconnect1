@@ -148,6 +148,7 @@ runtime-shell-*-backup/
 # DAST output and generated drug-label review queue (contain scan noise / raw label text)
 reports/zap/
 reports/drug-label-review.json
+reports/rxnorm-cui-audit.json
 
 # real VM address for the offsite pull script (repo stays public-safe)
 .freebuff/.vm-target

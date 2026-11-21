@@ -116,19 +116,11 @@ let todo = [...targets.entries()];
 if (LIMIT > 0) todo = todo.slice(0, LIMIT);
 console.log(`🔎 Resolving ${todo.length} name(s) against RxNorm + DailyMed…`);
 
-// Prefer the RxNorm ingredient (TTY=IN) because the curated table stores
-// ingredient CUIs; fall back to the first exact name match.
+// /drugs.json only returns packaged/clinical forms; the exact-name endpoint
+// resolves the ingredient concept the curated table stores.
 async function resolveIngredientCui(name) {
   try {
-    const data = await fetchJson(`https://rxnav.nlm.nih.gov/REST/drugs.json?name=${encodeURIComponent(name)}`);
-    const groups = data?.drugGroup?.conceptGroup || [];
-    for (const tty of ['IN', 'PIN', 'MIN']) {
-      const group = groups.find(g => g.tty === tty && g.conceptProperties?.length);
-      if (group) return group.conceptProperties[0].rxcui;
-    }
-  } catch { /* fall through */ }
-  try {
-    const rx = await fetchJson(`https://rxnav.nlm.nih.gov/REST/rxcui.json?name=${encodeURIComponent(name)}&search=2`);
+    const rx = await fetchJson(`https://rxnav.nlm.nih.gov/REST/rxcui.json?name=${encodeURIComponent(name)}`);
     return rx?.idGroup?.rxnormId?.[0] ?? null;
   } catch {
     return null;
@@ -170,7 +162,8 @@ for (const [i, [key, target]] of todo.entries()) {
     brand: drug?.brand || null,
     aliases,
     rxcui,
-    rxcuiMatchesCurated: drug?.rxnormCui ? drug.rxnormCui === rxcui : null,
+    // null when this name has no RxNav match — "unresolved", not a mismatch
+    rxcuiMatchesCurated: drug?.rxnormCui ? (rxcui ? drug.rxnormCui === rxcui : null) : null,
     curated: Boolean(curatedKey),
     label,
   };

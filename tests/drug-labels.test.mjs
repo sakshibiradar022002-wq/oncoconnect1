@@ -18,7 +18,7 @@ test('curated drugs keep their full clinical record', () => {
   const d = getDrugInfo('temozolomide');
   assert.ok(d, 'temozolomide must resolve');
   assert.equal(d.dosing.standard, '150-200 mg/m²');
-  assert.equal(d.rxnormCui, '36297');
+  assert.equal(d.rxnormCui, '37776'); // RxNav-confirmed ingredient CUI
   assert.ok(Array.isArray(d.monitoring) && d.monitoring.length > 0);
 });
 
