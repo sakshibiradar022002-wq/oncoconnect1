@@ -10,7 +10,7 @@ import { db, writeAudit } from '../db/index.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, asyncHandler } from '../middleware/validate.js';
 import { randomToken } from '../crypto.js';
-import { DRUG_DATABASE } from '../db/drug-database.js';
+import { getDrugInfo } from '../db/drug-database.js';
 
 export const eprescribingRouter = Router();
 
@@ -104,11 +104,18 @@ eprescribingRouter.post('/prescriptions', authenticate, requireRole('doctor', 'a
       }
     }
 
-    // Drug info from database
-    const drugInfo = DRUG_DATABASE[medLower];
+    // Drug info: curated database first, NLM label reference as fallback.
+    const drugInfo = getDrugInfo(p.medication);
     if (drugInfo) {
       if (drugInfo.blackBox) {
         epcsFlags.push({ rule: 'black_box_warning', message: drugInfo.blackBox });
+      }
+      if (drugInfo.coverage === 'label-only') {
+        epcsFlags.push({
+          rule: 'reference_only',
+          message: `No structured dosing/interaction data for "${p.medication}" — review the FDA label before signing.`,
+          labelUrl: drugInfo.nlmLabel?.url || null,
+        });
       }
       if (drugInfo.contraindications?.length) {
         epcsFlags.push({ rule: 'contraindications', drugs: drugInfo.contraindications });

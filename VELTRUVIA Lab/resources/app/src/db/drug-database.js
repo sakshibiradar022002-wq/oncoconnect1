@@ -1,6 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 // VELTRUVIA Drug Database — RxNorm-style comprehensive drug data
 // ═══════════════════════════════════════════════════════════════════
+// Curated clinical data lives below. A generated, reference-only overlay
+// (NLM RxNorm + DailyMed) supplies label identity for drugs outside this
+// table and resolves brand names to their curated entry — see
+// ./drug-labels.js and scripts/enrich-drug-labels.mjs.
+
+import { allLabelEntries, getLabelEntry, normalizeDrugName } from './drug-labels.js';
 // 100+ drugs covering neuro-oncology, supportive care, and common
 // medications. Each entry includes RxNorm CUI, NDC, class, dosing,
 // interactions, contraindications, and monitoring requirements.
@@ -1694,6 +1700,28 @@ export const DRUG_DATABASE = {
 };
 
 // Drug interaction pairs for fast lookup
+// Brand, generic and NLM aliases → curated key (built once at load).
+const CURATED_INDEX = new Map();
+for (const [key, drug] of Object.entries(DRUG_DATABASE)) {
+  CURATED_INDEX.set(normalizeDrugName(key), key);
+  if (drug.generic) CURATED_INDEX.set(normalizeDrugName(drug.generic), key);
+  if (drug.brand) CURATED_INDEX.set(normalizeDrugName(drug.brand), key);
+}
+
+// A drug seen only through the NLM overlay: label link, no structured data.
+function labelOnlyRecord(name, entry) {
+  return {
+    generic: entry.generic || name,
+    brand: entry.brand || null,
+    class: null, route: null, forms: [],
+    dosing: null,
+    interactions: [], contraindications: [], monitoring: [],
+    coverage: 'label-only',
+    source: 'NLM DailyMed',
+    nlmLabel: entry.label || null,
+  };
+}
+
 export const DRUG_INTERACTIONS = [
   ['temozolomide', 'valproic acid', 'severe', 'Valproic acid inhibits UGT, reducing temozolomide clearance by ~35%. May reduce efficacy.', 'Consider alternative antiepileptic (levetiracetam preferred). If VPA essential, monitor temozolomide levels closely.'],
   ['temozolomide', 'dexamethasone', 'moderate', 'Dexamethasone may reduce temozolomide levels via CYP enzyme induction.', 'Monitor clinical response. Consider alternative steroid if possible.'],
@@ -1788,21 +1816,47 @@ export const DRUG_INTERACTIONS = [
 export function searchDrugs(query) {
   const q = query.toLowerCase().trim();
   const results = [];
+  const seen = new Set();
   for (const [name, drug] of Object.entries(DRUG_DATABASE)) {
     if (name.includes(q) || (drug.brand || '').toLowerCase().includes(q) ||
         (drug.generic || '').toLowerCase().includes(q) ||
         (drug.rxnormCui || '').includes(q)) {
       results.push({ name, ...drug });
+      seen.add(normalizeDrugName(name));
+      if (drug.generic) seen.add(normalizeDrugName(drug.generic));
+      if (drug.brand) seen.add(normalizeDrugName(drug.brand));
+    }
+  }
+  // Reference-only entries for drugs outside the curated table.
+  for (const entry of allLabelEntries()) {
+    if (seen.has(entry.key)) continue;
+    const haystack = [entry.key, entry.generic, ...(entry.aliases || [])].filter(Boolean).join(' ').toLowerCase();
+    if (haystack.includes(q) || (entry.rxcui || '').includes(q)) {
+      results.push({ name: entry.key, ...labelOnlyRecord(entry.displayName || entry.key, entry) });
     }
   }
   return results;
 }
 
 /**
- * Get detailed drug info by name
+ * Get detailed drug info by name, generic, or brand.
+ * Curated entries win; anything known only to the NLM overlay returns a
+ * reference-only record (`coverage: 'label-only'`, no dosing) instead of null.
  */
 export function getDrugInfo(name) {
-  return DRUG_DATABASE[name.toLowerCase().trim()] || null;
+  const key = normalizeDrugName(name);
+  if (!key) return null;
+
+  const curatedKey = CURATED_INDEX.get(key);
+  if (curatedKey) {
+    const drug = DRUG_DATABASE[curatedKey];
+    const entry = getLabelEntry(curatedKey) || getLabelEntry(key);
+    return entry?.label ? { ...drug, nlmLabel: entry.label } : drug;
+  }
+
+  const entry = getLabelEntry(key);
+  if (entry) return labelOnlyRecord(entry.displayName || entry.generic || name, entry);
+  return null;
 }
 
 /**

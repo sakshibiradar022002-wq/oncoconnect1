@@ -1,0 +1,4246 @@
+{
+  "generatedAt": "2026-11-21",
+  "source": "NLM RxNorm + DailyMed (public domain)",
+  "note": "Reference-only label overlay. Curated DRUG_DATABASE remains authoritative for dosing, interactions and monitoring.",
+  "entries": {
+    "acetaminophen": {
+      "displayName": "Acetaminophen",
+      "generic": "Acetaminophen",
+      "brand": "Tylenol",
+      "aliases": [
+        "acetaminophen",
+        "Acetaminophen",
+        "Tylenol"
+      ],
+      "rxcui": "161",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "4181efc2-d183-410c-b647-233444c57e32",
+        "title": "ACETAMINOPHEN REGULAR STRENGTH (ACETAMINOPHEN) TABLET [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4181efc2-d183-410c-b647-233444c57e32"
+      }
+    },
+    "acyclovir": {
+      "displayName": "Acyclovir",
+      "generic": "Acyclovir",
+      "brand": "Zovirax",
+      "aliases": [
+        "acyclovir",
+        "Acyclovir",
+        "Zovirax"
+      ],
+      "rxcui": "281",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "8cd22728-34b4-4e55-8339-580138fe46d8",
+        "title": "ACYCLOVIR CAPSULE ACYCLOVIR TABLET [CHARTWELL RX, LLC]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=8cd22728-34b4-4e55-8339-580138fe46d8"
+      }
+    },
+    "allopurinol": {
+      "displayName": "allopurinol",
+      "generic": "allopurinol",
+      "brand": null,
+      "aliases": [
+        "allopurinol"
+      ],
+      "rxcui": "519",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "682dd8b8-fc6e-47c5-95b7-82d7ad96b750",
+        "title": "ALLOPURINOL TABLET ALLOPURINOL TABLET [ACCORD HEALTHCARE INC.]",
+        "publishedDate": "Nov 09, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=682dd8b8-fc6e-47c5-95b7-82d7ad96b750"
+      }
+    },
+    "alosetron": {
+      "displayName": "Alosetron",
+      "generic": "Alosetron",
+      "brand": "Lotronex",
+      "aliases": [
+        "alosetron",
+        "Alosetron",
+        "Lotronex"
+      ],
+      "rxcui": "85248",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "35cbb9d5-639b-207a-e054-00144ff88e88",
+        "title": "LOTRONEX (ALOSETRON HYDROCHLORIDE) TABLET [SEBELA PHARMACEUTICALS INC.]",
+        "publishedDate": "Jul 02, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=35cbb9d5-639b-207a-e054-00144ff88e88"
+      }
+    },
+    "amitriptyline": {
+      "displayName": "amitriptyline",
+      "generic": "amitriptyline",
+      "brand": null,
+      "aliases": [
+        "amitriptyline"
+      ],
+      "rxcui": "704",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "29ec1221-04d8-4b21-822e-2779fcaae62c",
+        "title": "AMITRIPTYLINE HYDROCHLORIDE TABLET [MAJOR PHARMACEUTICALS]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=29ec1221-04d8-4b21-822e-2779fcaae62c"
+      }
+    },
+    "amlodipine": {
+      "displayName": "Amlodipine",
+      "generic": "Amlodipine",
+      "brand": "Norvasc",
+      "aliases": [
+        "amlodipine",
+        "Amlodipine",
+        "Norvasc"
+      ],
+      "rxcui": "17767",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "d889c656-f024-4e18-b83c-68a7707945d8",
+        "title": "AMLODIPINE BESYLATE TABLET [PREFERRED PHARMACEUTICALS INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=d889c656-f024-4e18-b83c-68a7707945d8"
+      }
+    },
+    "amlodipine-valsartan": {
+      "displayName": "Amlodipine/Valsartan",
+      "generic": "Amlodipine/Valsartan",
+      "brand": "Exforge",
+      "aliases": [
+        "amlodipine-valsartan",
+        "Amlodipine/Valsartan",
+        "Exforge"
+      ],
+      "rxcui": "729455",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "18d7820d-471f-4ee2-9ec6-25d8d27c77de",
+        "title": "EXFORGE HCT (AMLODIPINE VALSARTAN AND HYDROCHLOROTHIAZIDE) TABLET, FILM COATED [NOVARTIS PHARMACEUTICALS CORPORATION]",
+        "publishedDate": "Oct 30, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=18d7820d-471f-4ee2-9ec6-25d8d27c77de"
+      }
+    },
+    "amoxicillin": {
+      "displayName": "Amoxicillin",
+      "generic": "Amoxicillin",
+      "brand": "Amoxil",
+      "aliases": [
+        "amoxicillin",
+        "Amoxicillin",
+        "Amoxil"
+      ],
+      "rxcui": "723",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "cc445a39-d84c-4b76-9fb8-ae302e7cd96b",
+        "title": "AMOXICILLIN AND CLAVULANATE POTASSIUM TABLET, FILM COATED [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=cc445a39-d84c-4b76-9fb8-ae302e7cd96b"
+      }
+    },
+    "amoxicillin-clavulanate": {
+      "displayName": "Amoxicillin/Clavulanate",
+      "generic": "Amoxicillin/Clavulanate",
+      "brand": "Augmentin",
+      "aliases": [
+        "amoxicillin-clavulanate",
+        "Amoxicillin/Clavulanate",
+        "Augmentin"
+      ],
+      "rxcui": "19711",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "04a31a42-d79e-bbb4-e063-6394a90a63ee",
+        "title": "AUGMENTIN (AMOXICILLIN AND CLAVULANATE POTASSIUM) FOR SUSPENSION [ALLEGIS HOLDINGS, LLC]",
+        "publishedDate": "Oct 29, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=04a31a42-d79e-bbb4-e063-6394a90a63ee"
+      }
+    },
+    "apixaban": {
+      "displayName": "apixaban",
+      "generic": "apixaban",
+      "brand": null,
+      "aliases": [
+        "apixaban"
+      ],
+      "rxcui": "1364430",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "e9481622-7cc6-418a-acb6-c5450daae9b0",
+        "title": "ELIQUIS (APIXABAN) TABLET, FILM COATED ELIQUIS 30-DAY STARTER PACK (APIXABAN) KIT ELIQUIS (APIXABAN) TABLET, FOR SUSPENSION ELIQUIS SPRINKLE (APIXABAN) CAPSULE [E.R. SQUIBB & SONS, L.L.C.]",
+        "publishedDate": "Nov 12, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=e9481622-7cc6-418a-acb6-c5450daae9b0"
+      }
+    },
+    "aprepitant": {
+      "displayName": "Aprepitant",
+      "generic": "Aprepitant",
+      "brand": "Emend",
+      "aliases": [
+        "aprepitant",
+        "Aprepitant",
+        "Emend"
+      ],
+      "rxcui": "358255",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "696f9e80-9cae-403b-de9e-078343ce4713",
+        "title": "EMEND (APREPITANT) CAPSULE EMEND (APREPITANT) KIT EMEND (APREPITANT) POWDER, FOR SUSPENSION [MERCK SHARP & DOHME LLC]",
+        "publishedDate": "Nov 06, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=696f9e80-9cae-403b-de9e-078343ce4713"
+      }
+    },
+    "aripiprazole": {
+      "displayName": "Aripiprazole",
+      "generic": "Aripiprazole",
+      "brand": "Abilify",
+      "aliases": [
+        "aripiprazole",
+        "Aripiprazole",
+        "Abilify"
+      ],
+      "rxcui": "89013",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b6752b08-4c93-4e5f-895d-40f189bd356d",
+        "title": "ARIPIPRAZOLE TABLET [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b6752b08-4c93-4e5f-895d-40f189bd356d"
+      }
+    },
+    "arsenic-trioxide": {
+      "displayName": "Arsenic trioxide",
+      "generic": "Arsenic trioxide",
+      "brand": "Trisenox",
+      "aliases": [
+        "arsenic-trioxide",
+        "Arsenic trioxide",
+        "Trisenox"
+      ],
+      "rxcui": "18330",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "7fe0fe9f-e87b-44ab-b92c-9b3d23942063",
+        "title": "ARSENIC TRIOXIDE INJECTION [SAGENT PHARMACEUTICALS]",
+        "publishedDate": "Nov 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=7fe0fe9f-e87b-44ab-b92c-9b3d23942063"
+      }
+    },
+    "atorvastatin": {
+      "displayName": "atorvastatin",
+      "generic": "atorvastatin",
+      "brand": null,
+      "aliases": [
+        "atorvastatin"
+      ],
+      "rxcui": "83367",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "f7cc5704-2131-4bcb-9ff0-33a79a8167bd",
+        "title": "ATORVASTATIN CALCIUM TABLET, FILM COATED [QPHARMA, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f7cc5704-2131-4bcb-9ff0-33a79a8167bd"
+      }
+    },
+    "azacitidine": {
+      "displayName": "Azacitidine",
+      "generic": "Azacitidine",
+      "brand": "Vidaza",
+      "aliases": [
+        "azacitidine",
+        "Azacitidine",
+        "Vidaza"
+      ],
+      "rxcui": "1251",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "a6a5ca37-37e8-ab65-bc0b-9c0682ab52f7",
+        "title": "AZACITIDINE INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [APOTEX CORP]",
+        "publishedDate": "Sep 10, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a6a5ca37-37e8-ab65-bc0b-9c0682ab52f7"
+      }
+    },
+    "azathioprine": {
+      "displayName": "Azathioprine",
+      "generic": "Azathioprine",
+      "brand": "Imuran",
+      "aliases": [
+        "azathioprine",
+        "Azathioprine",
+        "Imuran"
+      ],
+      "rxcui": "1256",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "ceab8e8b-d022-4d0c-a552-cc5782446248",
+        "title": "AZATHIOPRINE TABLET [GLENMARK PHARMACEUTICALS, INC]",
+        "publishedDate": "Sep 22, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ceab8e8b-d022-4d0c-a552-cc5782446248"
+      }
+    },
+    "azithromycin": {
+      "displayName": "Azithromycin",
+      "generic": "Azithromycin",
+      "brand": "Zithromax",
+      "aliases": [
+        "azithromycin",
+        "Azithromycin",
+        "Zithromax"
+      ],
+      "rxcui": "18631",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "6cb41b00-0589-42d0-9e3e-230385768875",
+        "title": "AZITHROMYCIN POWDER, FOR SUSPENSION [PREFERRED PHARMACEUTICALS INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6cb41b00-0589-42d0-9e3e-230385768875"
+      }
+    },
+    "baclofen": {
+      "displayName": "Baclofen",
+      "generic": "Baclofen",
+      "brand": "Lioresal",
+      "aliases": [
+        "baclofen",
+        "Baclofen",
+        "Lioresal"
+      ],
+      "rxcui": "1292",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "95755a7b-4a9f-45ea-a381-d3f661150efe",
+        "title": "BACLOFEN TABLET [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=95755a7b-4a9f-45ea-a381-d3f661150efe"
+      }
+    },
+    "bendamustine": {
+      "displayName": "Bendamustine",
+      "generic": "Bendamustine",
+      "brand": "Treanda",
+      "aliases": [
+        "bendamustine",
+        "Bendamustine",
+        "Treanda"
+      ],
+      "rxcui": "134547",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "9759a4ae-82ca-40cf-9c02-e1cadb21cbdc",
+        "title": "BELRAPZO (BENDAMUSTINE HYDROCHLORIDE) INJECTION [EAGLE PHARMACEUTICALS, INC]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=9759a4ae-82ca-40cf-9c02-e1cadb21cbdc"
+      }
+    },
+    "betamethasone-topical": {
+      "displayName": "Betamethasone dipropionate",
+      "generic": "Betamethasone dipropionate",
+      "brand": "Diprolene",
+      "aliases": [
+        "betamethasone-topical",
+        "Betamethasone dipropionate",
+        "Diprolene"
+      ],
+      "rxcui": "19254",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "55365ba2-9cc4-4f99-a7dd-d66f588e7107",
+        "title": "CLOTRIMAZOLE AND BETAMETHASONE DIPROPIONATE CREAM [A-S MEDICATION SOLUTIONS]",
+        "publishedDate": "Nov 06, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=55365ba2-9cc4-4f99-a7dd-d66f588e7107"
+      }
+    },
+    "bevacizumab": {
+      "displayName": "Bevacizumab",
+      "generic": "Bevacizumab",
+      "brand": "Avastin",
+      "aliases": [
+        "bevacizumab",
+        "Bevacizumab",
+        "Avastin"
+      ],
+      "rxcui": "253337",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "7f9a3014-b3d4-4943-a83a-92a77d8f947c",
+        "title": "LYTENAVA (BEVACIZUMAB-VIKG) INJECTION [OUTLOOK THERAPEUTICS, INC.]",
+        "publishedDate": "Nov 02, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=7f9a3014-b3d4-4943-a83a-92a77d8f947c"
+      }
+    },
+    "bleomycin": {
+      "displayName": "Bleomycin",
+      "generic": "Bleomycin",
+      "brand": "Blenoxane",
+      "aliases": [
+        "bleomycin",
+        "Bleomycin",
+        "Blenoxane"
+      ],
+      "rxcui": "1622",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "640602f9-a7df-46f0-a9b1-19c471008bee",
+        "title": "BLEOMYCIN (BLEOMYCIN SULFATE) POWDER, FOR SOLUTION [MEITHEAL PHARMACEUTICALS INC.]",
+        "publishedDate": "Apr 22, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=640602f9-a7df-46f0-a9b1-19c471008bee"
+      }
+    },
+    "bortezomib": {
+      "displayName": "Bortezomib",
+      "generic": "Bortezomib",
+      "brand": "Velcade",
+      "aliases": [
+        "bortezomib",
+        "Bortezomib",
+        "Velcade"
+      ],
+      "rxcui": "358258",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b605b541-4bfd-db3e-9710-11c27f6dee6c",
+        "title": "BORTEZOMIB (BORTEZOMIB) INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [APOTEX CORP ]",
+        "publishedDate": "Sep 10, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b605b541-4bfd-db3e-9710-11c27f6dee6c"
+      }
+    },
+    "brivaracetam": {
+      "displayName": "Brivaracetam",
+      "generic": "Brivaracetam",
+      "brand": "Briviact",
+      "aliases": [
+        "brivaracetam",
+        "Brivaracetam",
+        "Briviact"
+      ],
+      "rxcui": "1739745",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "aef3ee92-e2a6-4135-94b2-b893f893d5f2",
+        "title": "BRIVARACETAM SOLUTION [ZHEJIANG POLY PHARM. CO., LTD.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=aef3ee92-e2a6-4135-94b2-b893f893d5f2"
+      }
+    },
+    "budesonide-nasal": {
+      "displayName": "Budesonide nasal",
+      "generic": "Budesonide nasal",
+      "brand": "Rhinocort",
+      "aliases": [
+        "budesonide-nasal",
+        "Budesonide nasal",
+        "Rhinocort"
+      ],
+      "rxcui": "1156071",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "ffca32a2-fbef-40bb-b0f0-73f63e18e747",
+        "title": "RHINOCORT AQUA (BUDESONIDE) SPRAY, METERED [PHYSICIANS TOTAL CARE, INC.]",
+        "publishedDate": "Feb 08, 2012",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ffca32a2-fbef-40bb-b0f0-73f63e18e747"
+      }
+    },
+    "calcitriol": {
+      "displayName": "Calcitriol",
+      "generic": "Calcitriol",
+      "brand": "Rocaltrol",
+      "aliases": [
+        "calcitriol",
+        "Calcitriol",
+        "Rocaltrol"
+      ],
+      "rxcui": "1894",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "a1567da9-af74-4afd-9ac5-8b53ec5d7cbf",
+        "title": "VECTICAL (CALCITRIOL) OINTMENT [GALDERMA LABORATORIES, L.P.]",
+        "publishedDate": "Nov 09, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a1567da9-af74-4afd-9ac5-8b53ec5d7cbf"
+      }
+    },
+    "calcium-acetate": {
+      "displayName": "Calcium acetate",
+      "generic": "Calcium acetate",
+      "brand": "PhosLo",
+      "aliases": [
+        "calcium-acetate",
+        "Calcium acetate",
+        "PhosLo"
+      ],
+      "rxcui": "214342",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "2072d9f4-abb1-4699-bde5-6041dd79cad5",
+        "title": "CALCIUM ACETATE CAPSULE [AMERICAN HEALTH PACKAGING]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2072d9f4-abb1-4699-bde5-6041dd79cad5"
+      }
+    },
+    "calcium-carbonate": {
+      "displayName": "Calcium carbonate",
+      "generic": "Calcium carbonate",
+      "brand": "Tums",
+      "aliases": [
+        "calcium-carbonate",
+        "Calcium carbonate",
+        "Tums"
+      ],
+      "rxcui": "1897",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "2916fb09-995d-0e02-e063-6394a90ab3b1",
+        "title": "WONDERBELLY MAXIMUM STRENGTH ANTACID (CALCIUM CARBONATE) KIT [GINGER HEALTH COMPANY]",
+        "publishedDate": "Nov 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2916fb09-995d-0e02-e063-6394a90ab3b1"
+      }
+    },
+    "capecitabine": {
+      "displayName": "Capecitabine",
+      "generic": "Capecitabine",
+      "brand": "Xeloda",
+      "aliases": [
+        "capecitabine",
+        "Capecitabine",
+        "Xeloda"
+      ],
+      "rxcui": "194000",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "0b59e98c-5b34-4b93-90f6-20526f4d4f88",
+        "title": "CAPECITABINE (CAPECITABINE) TABLET, FILM COATED [NORTHSTAR RXLLC]",
+        "publishedDate": "Jul 23, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0b59e98c-5b34-4b93-90f6-20526f4d4f88"
+      }
+    },
+    "carboplatin": {
+      "displayName": "Carboplatin",
+      "generic": "Carboplatin",
+      "brand": "Paraplatin",
+      "aliases": [
+        "carboplatin",
+        "Carboplatin",
+        "Paraplatin"
+      ],
+      "rxcui": "40048",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "f91c48da-68d1-4aa7-89b8-d84a3e8b629b",
+        "title": "KYXATA (CARBOPLATIN) INJECTION [AVYXA PHARMA, LLC]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f91c48da-68d1-4aa7-89b8-d84a3e8b629b"
+      }
+    },
+    "carfilzomib": {
+      "displayName": "Carfilzomib",
+      "generic": "Carfilzomib",
+      "brand": "Kyprolis",
+      "aliases": [
+        "carfilzomib",
+        "Carfilzomib",
+        "Kyprolis"
+      ],
+      "rxcui": "1302966",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "ea66eb30-e665-4693-99a1-a9d3b4bbe2d6",
+        "title": "KYPROLIS (CARFILZOMIB) INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [ONYX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Jun 26, 2025",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ea66eb30-e665-4693-99a1-a9d3b4bbe2d6"
+      }
+    },
+    "carmustine": {
+      "displayName": "Carmustine",
+      "generic": "Carmustine",
+      "brand": "BiCNU",
+      "aliases": [
+        "carmustine",
+        "Carmustine",
+        "BiCNU"
+      ],
+      "rxcui": "2105",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "06a0322b-eb28-44e2-9925-88bebd8fa91b",
+        "title": "CARMUSTINE (CARMUSTINE) KIT [NAVINTA LLC]",
+        "publishedDate": "Oct 29, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=06a0322b-eb28-44e2-9925-88bebd8fa91b"
+      }
+    },
+    "carvedilol": {
+      "displayName": "Carvedilol",
+      "generic": "Carvedilol",
+      "brand": "Coreg",
+      "aliases": [
+        "carvedilol",
+        "Carvedilol",
+        "Coreg"
+      ],
+      "rxcui": "20352",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "0930965b-80e3-4a0c-bffc-14ac32a47894",
+        "title": "CARVEDILOL TABLET, FILM COATED [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0930965b-80e3-4a0c-bffc-14ac32a47894"
+      }
+    },
+    "cefepime": {
+      "displayName": "cefepime",
+      "generic": "cefepime",
+      "brand": null,
+      "aliases": [
+        "cefepime"
+      ],
+      "rxcui": "20481",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "c84e652e-5e76-4568-8812-bd5fa34803b6",
+        "title": "ZAYNICH (ZIDEBACTAM DIHYDRATE AND CEFEPIME HYDROCHLORIDE) INJECTION, POWDER, FOR SOLUTION [WOCKHARDT SUISSE USA LLC]",
+        "publishedDate": "Oct 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c84e652e-5e76-4568-8812-bd5fa34803b6"
+      }
+    },
+    "ceftriaxone": {
+      "displayName": "ceftriaxone",
+      "generic": "ceftriaxone",
+      "brand": null,
+      "aliases": [
+        "ceftriaxone"
+      ],
+      "rxcui": "2193",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "36c07ebf-b091-483e-b2c4-f0fc0c2b4186",
+        "title": "CEFTRIAXONE SODIUM INJECTION, POWDER, FOR SOLUTION [HOSPIRA, INC]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=36c07ebf-b091-483e-b2c4-f0fc0c2b4186"
+      }
+    },
+    "celecoxib": {
+      "displayName": "Celecoxib",
+      "generic": "Celecoxib",
+      "brand": "Celebrex",
+      "aliases": [
+        "celecoxib",
+        "Celecoxib",
+        "Celebrex"
+      ],
+      "rxcui": "140587",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b99f7199-e407-442d-849f-6a1c4837e12f",
+        "title": "CELECOXIB CAPSULE [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b99f7199-e407-442d-849f-6a1c4837e12f"
+      }
+    },
+    "cetirizine": {
+      "displayName": "Cetirizine",
+      "generic": "Cetirizine",
+      "brand": "Zyrtec",
+      "aliases": [
+        "cetirizine",
+        "Cetirizine",
+        "Zyrtec"
+      ],
+      "rxcui": "20610",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "caa22bcb-6617-4724-8dcb-e63bfeef41a9",
+        "title": "BERKLEY AND JENSEN ALLERGY RELIEF (CETIRIZINE HYDROCHLORIDE) TABLET, FILM COATED [BJWC]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=caa22bcb-6617-4724-8dcb-e63bfeef41a9"
+      }
+    },
+    "ciprofloxacin": {
+      "displayName": "Ciprofloxacin",
+      "generic": "Ciprofloxacin",
+      "brand": "Cipro",
+      "aliases": [
+        "ciprofloxacin",
+        "Ciprofloxacin",
+        "Cipro"
+      ],
+      "rxcui": "2551",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "5723eaf9-8659-4730-b792-4e4c33690ccb",
+        "title": "CIPROFLOXACIN TABLET, FILM COATED [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=5723eaf9-8659-4730-b792-4e4c33690ccb"
+      }
+    },
+    "cisplatin": {
+      "displayName": "Cisplatin",
+      "generic": "Cisplatin",
+      "brand": "Platinol",
+      "aliases": [
+        "cisplatin",
+        "Cisplatin",
+        "Platinol"
+      ],
+      "rxcui": "2555",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "93edf309-993c-48ec-be90-27d89c86b62b",
+        "title": "AXYCIS (CISPLATIN) INJECTION, SOLUTION [AVYXA PHARMA, LLC]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=93edf309-993c-48ec-be90-27d89c86b62b"
+      }
+    },
+    "citalopram": {
+      "displayName": "Citalopram",
+      "generic": "Citalopram",
+      "brand": "Celexa",
+      "aliases": [
+        "citalopram",
+        "Citalopram",
+        "Celexa"
+      ],
+      "rxcui": "2556",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "0a967468-3869-4c8c-849f-9fc3a8dcc489",
+        "title": "CITALOPRAM (CITALOPRAM HYDROBROMIDE) TABLET, FILM COATED [QPHARMA, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a967468-3869-4c8c-849f-9fc3a8dcc489"
+      }
+    },
+    "cyclobenzaprine": {
+      "displayName": "Cyclobenzaprine",
+      "generic": "Cyclobenzaprine",
+      "brand": "Flexeril",
+      "aliases": [
+        "cyclobenzaprine",
+        "Cyclobenzaprine",
+        "Flexeril"
+      ],
+      "rxcui": "21949",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "34e57aff-dc4b-4631-9d57-31020244835d",
+        "title": "CYCLOBENZAPRINE HYDROCHLORIDE TABLET [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=34e57aff-dc4b-4631-9d57-31020244835d"
+      }
+    },
+    "cyclophosphamide": {
+      "displayName": "Cyclophosphamide",
+      "generic": "Cyclophosphamide",
+      "brand": "Cytoxan",
+      "aliases": [
+        "cyclophosphamide",
+        "Cyclophosphamide",
+        "Cytoxan"
+      ],
+      "rxcui": "3002",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b75d72ab-861c-4463-884b-d499d306bbd2",
+        "title": "CYCLOPHOSPHAMIDE CAPSULE [AMNEAL PHARMACEUTICALS LLC]",
+        "publishedDate": "Nov 04, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b75d72ab-861c-4463-884b-d499d306bbd2"
+      }
+    },
+    "cyclosporine": {
+      "displayName": "Cyclosporine",
+      "generic": "Cyclosporine",
+      "brand": "Neoral",
+      "aliases": [
+        "cyclosporine",
+        "Cyclosporine",
+        "Neoral"
+      ],
+      "rxcui": "3008",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "1952d4c7-a40e-4924-b669-c41400774cb9",
+        "title": "CYCLOSPORINE CAPSULE, LIQUID FILLED [HERITAGE PHARMACEUTICALS INC. D/B/A AVET PHARMACEUTICALS INC.]",
+        "publishedDate": "Nov 09, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1952d4c7-a40e-4924-b669-c41400774cb9"
+      }
+    },
+    "cytarabine": {
+      "displayName": "Cytarabine",
+      "generic": "Cytarabine",
+      "brand": "Cytosar-U",
+      "aliases": [
+        "cytarabine",
+        "Cytarabine",
+        "Cytosar-U"
+      ],
+      "rxcui": "3041",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "e3a8c0e9-19ed-49b7-8464-11e8806f47fd",
+        "title": "CYTARABINE INJECTION, SOLUTION [HOSPIRA, INC.]",
+        "publishedDate": "Oct 23, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=e3a8c0e9-19ed-49b7-8464-11e8806f47fd"
+      }
+    },
+    "dabrafenib": {
+      "displayName": "Dabrafenib",
+      "generic": "Dabrafenib",
+      "brand": "Tafinlar",
+      "aliases": [
+        "dabrafenib",
+        "Dabrafenib",
+        "Tafinlar"
+      ],
+      "rxcui": "1424911",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "fee1e6b1-e1a5-4254-9f2e-a70e0f8dbdea",
+        "title": "TAFINLAR (DABRAFENIB) CAPSULE TAFINLAR (DABRAFENIB) TABLET, FOR SUSPENSION [NOVARTIS PHARMACEUTICALS CORPORATION]",
+        "publishedDate": "May 21, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=fee1e6b1-e1a5-4254-9f2e-a70e0f8dbdea"
+      }
+    },
+    "dactinomycin": {
+      "displayName": "Dactinomycin",
+      "generic": "Dactinomycin",
+      "brand": "Cosmegen",
+      "aliases": [
+        "dactinomycin",
+        "Dactinomycin",
+        "Cosmegen"
+      ],
+      "rxcui": "3100",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "5da55538-2602-4704-a9da-603c9f7ff7dc",
+        "title": "DACTINOMYCIN INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [EUGIA US LLC]",
+        "publishedDate": "Jun 19, 2024",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=5da55538-2602-4704-a9da-603c9f7ff7dc"
+      }
+    },
+    "decitabine": {
+      "displayName": "Decitabine",
+      "generic": "Decitabine",
+      "brand": "Dacogen",
+      "aliases": [
+        "decitabine",
+        "Decitabine",
+        "Dacogen"
+      ],
+      "rxcui": "15657",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "5975fa81-1e29-4d56-e063-6394a90a9cd5",
+        "title": "DECITABINE INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [BLUEPOINT LABORATORIES]",
+        "publishedDate": "Nov 05, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=5975fa81-1e29-4d56-e063-6394a90a9cd5"
+      }
+    },
+    "denosumab": {
+      "displayName": "Denosumab",
+      "generic": "Denosumab",
+      "brand": "Xgeva",
+      "aliases": [
+        "denosumab",
+        "Denosumab",
+        "Xgeva"
+      ],
+      "rxcui": "993449",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "39a0a789-778f-4695-b3a9-61643e6396cd",
+        "title": "CONEXXENCE (DENOSUMAB) INJECTION [FRESENIUS KABI USA, LLC]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=39a0a789-778f-4695-b3a9-61643e6396cd"
+      }
+    },
+    "dexamethasone": {
+      "displayName": "Dexamethasone",
+      "generic": "Dexamethasone",
+      "brand": "Decadron",
+      "aliases": [
+        "dexamethasone",
+        "Dexamethasone",
+        "Decadron"
+      ],
+      "rxcui": "3264",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "5ec5b0e6-7fa8-4afc-97a4-d185484ada8b",
+        "title": "DEXAMETHASONE TABLET [MAJOR PHARMACEUTICALS]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=5ec5b0e6-7fa8-4afc-97a4-d185484ada8b"
+      }
+    },
+    "dextroamphetamine": {
+      "displayName": "dextroamphetamine",
+      "generic": "dextroamphetamine",
+      "brand": null,
+      "aliases": [
+        "dextroamphetamine"
+      ],
+      "rxcui": "3288",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "430cccec-1679-4225-8c86-92d746153b38",
+        "title": "DEXTROAMPHETAMINE SACCHARATE, AMPHETAMINE ASPARTATE, DEXTROAMPHETAMINE SULFATE, AND AMPHETAMINE SULFATE TABLET [CAMBER PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=430cccec-1679-4225-8c86-92d746153b38"
+      }
+    },
+    "diltiazem": {
+      "displayName": "Diltiazem",
+      "generic": "Diltiazem",
+      "brand": "Cardizem",
+      "aliases": [
+        "diltiazem",
+        "Diltiazem",
+        "Cardizem"
+      ],
+      "rxcui": "3443",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "850566b1-0c8e-42bc-85fa-c8ee710f34ba",
+        "title": "DILTIAZEM HYDROCHLORIDE CAPSULE, EXTENDED RELEASE [MACLEODS PHARMACEUTICALS LIMITED]",
+        "publishedDate": "Nov 05, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=850566b1-0c8e-42bc-85fa-c8ee710f34ba"
+      }
+    },
+    "diphenhydramine": {
+      "displayName": "Diphenhydramine",
+      "generic": "Diphenhydramine",
+      "brand": "Benadryl",
+      "aliases": [
+        "diphenhydramine",
+        "Diphenhydramine",
+        "Benadryl"
+      ],
+      "rxcui": "3498",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "8026c7dd-eb7b-ebea-e053-2991aa0a1b0f",
+        "title": "DIPHENHYDRAMINE HCL AND ZINC ACETATE (EXTRA STRENGTH ITCH RELIEF CONTINUOUS SPRAY) AEROSOL, SPRAY [TOPCO ASSOCIATES LLC]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=8026c7dd-eb7b-ebea-e053-2991aa0a1b0f"
+      }
+    },
+    "docetaxel": {
+      "displayName": "Docetaxel",
+      "generic": "Docetaxel",
+      "brand": "Taxotere",
+      "aliases": [
+        "docetaxel",
+        "Docetaxel",
+        "Taxotere"
+      ],
+      "rxcui": "72962",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "3538b979-8cac-49ed-b8dc-50f73ce38c72",
+        "title": "BEIZRAY (DOCETAXEL) INJECTION, SOLUTION [ZHUHAI BEIHAI BIOTECH CO., LTD.]",
+        "publishedDate": "Oct 21, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3538b979-8cac-49ed-b8dc-50f73ce38c72"
+      }
+    },
+    "docusate": {
+      "displayName": "Docusate sodium",
+      "generic": "Docusate sodium",
+      "brand": "Colace",
+      "aliases": [
+        "docusate",
+        "Docusate sodium",
+        "Colace"
+      ],
+      "rxcui": "71722",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "e60b520a-8c7e-40cd-b829-e4c2d7904f61",
+        "title": "GENCARE-SENNA-S SOFTGEL (SENNOSIDES 8.6 MG AND DOCUSATE SODIUM 50 MG) CAPSULE, LIQUID FILLED [PIONEER LIFE SCIENCES, LLC]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=e60b520a-8c7e-40cd-b829-e4c2d7904f61"
+      }
+    },
+    "doxorubicin": {
+      "displayName": "Doxorubicin",
+      "generic": "Doxorubicin",
+      "brand": "Adriamycin",
+      "aliases": [
+        "doxorubicin",
+        "Doxorubicin",
+        "Adriamycin"
+      ],
+      "rxcui": "3639",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "f280fb2e-5070-46e1-a4ed-ba191359cedd",
+        "title": "OXDERYS (DOXORUBICIN HYDROCHLORIDE) INJECTION, SOLUTION [AVYXA PHARMA, LLC]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f280fb2e-5070-46e1-a4ed-ba191359cedd"
+      }
+    },
+    "doxycycline": {
+      "displayName": "Doxycycline",
+      "generic": "Doxycycline",
+      "brand": "Vibramycin",
+      "aliases": [
+        "doxycycline",
+        "Doxycycline",
+        "Vibramycin"
+      ],
+      "rxcui": "3640",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "a569ba80-ffea-40b2-9fbe-a42810b1fccb",
+        "title": "DOXYCYCLINE HYCLATE TABLET [ACTAVIS PHARMA, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a569ba80-ffea-40b2-9fbe-a42810b1fccb"
+      }
+    },
+    "dronabinol": {
+      "displayName": "Dronabinol",
+      "generic": "Dronabinol",
+      "brand": "Marinol",
+      "aliases": [
+        "dronabinol",
+        "Dronabinol",
+        "Marinol"
+      ],
+      "rxcui": "10402",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "fd8c5d57-0173-4f62-8ff0-d8147986a976",
+        "title": "DRONABINOL CAPSULE [MAJOR PHARMACEUTICALS]",
+        "publishedDate": "May 21, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=fd8c5d57-0173-4f62-8ff0-d8147986a976"
+      }
+    },
+    "dulaglutide": {
+      "displayName": "Dulaglutide",
+      "generic": "Dulaglutide",
+      "brand": "Trulicity",
+      "aliases": [
+        "dulaglutide",
+        "Dulaglutide",
+        "Trulicity"
+      ],
+      "rxcui": "1551291",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "463050bd-2b1c-40f5-b3c3-0a04bb433309",
+        "title": "TRULICITY (DULAGLUTIDE) INJECTION, SOLUTION [ELI LILLY AND COMPANY]",
+        "publishedDate": "Aug 10, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=463050bd-2b1c-40f5-b3c3-0a04bb433309"
+      }
+    },
+    "duloxetine": {
+      "displayName": "Duloxetine",
+      "generic": "Duloxetine",
+      "brand": "Cymbalta",
+      "aliases": [
+        "duloxetine",
+        "Duloxetine",
+        "Cymbalta"
+      ],
+      "rxcui": "72625",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "ac903bda-76af-4aba-9c8a-ebf7066e05ee",
+        "title": "DULOXETINE CAPSULE, DELAYED RELEASE [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ac903bda-76af-4aba-9c8a-ebf7066e05ee"
+      }
+    },
+    "empagliflozin": {
+      "displayName": "Empagliflozin",
+      "generic": "Empagliflozin",
+      "brand": "Jardiance",
+      "aliases": [
+        "empagliflozin",
+        "Empagliflozin",
+        "Jardiance"
+      ],
+      "rxcui": "1545653",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "faf3dd6a-9cd0-39c2-0d2e-232cb3f67565",
+        "title": "JARDIANCE (EMPAGLIFLOZIN) TABLET, FILM COATED [BOEHRINGER INGELHEIM PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=faf3dd6a-9cd0-39c2-0d2e-232cb3f67565"
+      }
+    },
+    "enoxaparin": {
+      "displayName": "enoxaparin",
+      "generic": "enoxaparin",
+      "brand": null,
+      "aliases": [
+        "enoxaparin"
+      ],
+      "rxcui": "67108",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "b08eb00c-b2a7-4d06-ad82-7b6c90de98aa",
+        "title": "ENOXAPARIN SODIUM INJECTION [SUN PHARMACEUTICAL INDUSTRIES, INC.]",
+        "publishedDate": "Nov 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b08eb00c-b2a7-4d06-ad82-7b6c90de98aa"
+      }
+    },
+    "epoetin-alfa": {
+      "displayName": "Epoetin alfa",
+      "generic": "Epoetin alfa",
+      "brand": "Epogen",
+      "aliases": [
+        "epoetin-alfa",
+        "Epoetin alfa",
+        "Epogen",
+        "epoetin alfa"
+      ],
+      "rxcui": "105694",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "1f2d0b28-9cc5-4523-80b8-637fdaf3f7a5",
+        "title": "EPOGEN (EPOETIN ALFA) SOLUTION [AMGEN, INC]",
+        "publishedDate": "Jul 01, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1f2d0b28-9cc5-4523-80b8-637fdaf3f7a5"
+      }
+    },
+    "erlotinib": {
+      "displayName": "Erlotinib",
+      "generic": "Erlotinib",
+      "brand": "Tarceva",
+      "aliases": [
+        "erlotinib",
+        "Erlotinib",
+        "Tarceva"
+      ],
+      "rxcui": "337525",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "daaa1329-3a3f-439c-b13d-b301daa234d4",
+        "title": "ERLOTINIB TABLET, FILM COATED [ZYDUS LIFESCIENCES LIMITED]",
+        "publishedDate": "Dec 02, 2024",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=daaa1329-3a3f-439c-b13d-b301daa234d4"
+      }
+    },
+    "escitalopram": {
+      "displayName": "Escitalopram",
+      "generic": "Escitalopram",
+      "brand": "Lexapro",
+      "aliases": [
+        "escitalopram",
+        "Escitalopram",
+        "Lexapro"
+      ],
+      "rxcui": "321988",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "de803217-6d32-4ef8-afe7-02462f37bf0c",
+        "title": "ESCITALOPRAM TABLET, FILM COATED [AMERICAN HEALTH PACKAGING]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=de803217-6d32-4ef8-afe7-02462f37bf0c"
+      }
+    },
+    "estradiol": {
+      "displayName": "Estradiol",
+      "generic": "Estradiol",
+      "brand": "Estrace",
+      "aliases": [
+        "estradiol",
+        "Estradiol",
+        "Estrace"
+      ],
+      "rxcui": "4083",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "c4da6de7-9ab1-4fcf-88f3-fe785019e6e7",
+        "title": "ESTRADIOL PATCH, EXTENDED RELEASE [SANDOZ INC]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c4da6de7-9ab1-4fcf-88f3-fe785019e6e7"
+      }
+    },
+    "eszopiclone": {
+      "displayName": "Eszopiclone",
+      "generic": "Eszopiclone",
+      "brand": "Lunesta",
+      "aliases": [
+        "eszopiclone",
+        "Eszopiclone",
+        "Lunesta"
+      ],
+      "rxcui": "461016",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "4832cfbf-a540-46af-bb7d-3ba8e6bc783e",
+        "title": "ESZOPICLONE TABLET, FILM COATED [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4832cfbf-a540-46af-bb7d-3ba8e6bc783e"
+      }
+    },
+    "etoposide": {
+      "displayName": "Etoposide",
+      "generic": "Etoposide",
+      "brand": "VePesid",
+      "aliases": [
+        "etoposide",
+        "Etoposide",
+        "VePesid"
+      ],
+      "rxcui": "4179",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "4f850eb2-3542-43a0-90e8-bb37fa05cf15",
+        "title": "ETOPOSIDE INJECTION [ACCORD HEALTHCARE INC.]",
+        "publishedDate": "Nov 11, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4f850eb2-3542-43a0-90e8-bb37fa05cf15"
+      }
+    },
+    "everolimus": {
+      "displayName": "Everolimus",
+      "generic": "Everolimus",
+      "brand": "Afinitor",
+      "aliases": [
+        "everolimus",
+        "Everolimus",
+        "Afinitor"
+      ],
+      "rxcui": "141704",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "cf2dd54b-7a1d-4401-9a01-75e68235e433",
+        "title": "EVEROLIMUS TABLET [HIKMA PHARMACEUTICALS USA INC.]",
+        "publishedDate": "Nov 11, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=cf2dd54b-7a1d-4401-9a01-75e68235e433"
+      }
+    },
+    "famotidine": {
+      "displayName": "Famotidine",
+      "generic": "Famotidine",
+      "brand": "Pepcid",
+      "aliases": [
+        "famotidine",
+        "Famotidine",
+        "Pepcid"
+      ],
+      "rxcui": "4278",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "09ef39a4-c6b3-4395-8211-3f551dc44830",
+        "title": "FAMOTIDINE TABLET [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=09ef39a4-c6b3-4395-8211-3f551dc44830"
+      }
+    },
+    "febuxostat": {
+      "displayName": "febuxostat",
+      "generic": "febuxostat",
+      "brand": null,
+      "aliases": [
+        "febuxostat"
+      ],
+      "rxcui": "73689",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "f2c338dc-5bab-49f4-a4ac-d8dea8afeea5",
+        "title": "FEBUXOSTAT TABLET [REMEDYREPACK INC.]",
+        "publishedDate": "Apr 28, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f2c338dc-5bab-49f4-a4ac-d8dea8afeea5"
+      }
+    },
+    "fentanyl": {
+      "displayName": "Fentanyl",
+      "generic": "Fentanyl",
+      "brand": "Sublimaze",
+      "aliases": [
+        "fentanyl",
+        "Fentanyl",
+        "Sublimaze"
+      ],
+      "rxcui": "4337",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "58dcd3f7-e3d8-4929-a186-8f680a51ff11",
+        "title": "FENTANYL CITRATE INJECTION [PHLOW CORP.]",
+        "publishedDate": "Oct 26, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=58dcd3f7-e3d8-4929-a186-8f680a51ff11"
+      }
+    },
+    "ferric-carboxymaltose": {
+      "displayName": "Ferric carboxymaltose",
+      "generic": "Ferric carboxymaltose",
+      "brand": "Injectafer",
+      "aliases": [
+        "ferric-carboxymaltose",
+        "Ferric carboxymaltose",
+        "Injectafer"
+      ],
+      "rxcui": "1433693",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "7f05ab1e-aed4-4f87-b939-2dc9719aa34c",
+        "title": "FERRIC CARBOXYMALTOSE INJECTION, SOLUTION [MYLAN INSTITUTIONAL LLC]",
+        "publishedDate": "Oct 09, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=7f05ab1e-aed4-4f87-b939-2dc9719aa34c"
+      }
+    },
+    "ferric-maltol": {
+      "displayName": "Ferric maltol",
+      "generic": "Ferric maltol",
+      "brand": "Accrufer",
+      "aliases": [
+        "ferric-maltol",
+        "Ferric maltol",
+        "Accrufer"
+      ],
+      "rxcui": "2539932",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "367ac157-2d25-4f34-99ce-b126e0f03851",
+        "title": "ACCRUFER (FERRIC MALTOL) CAPSULE [SHIELD TX (UK) LTD]",
+        "publishedDate": "Jan 05, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=367ac157-2d25-4f34-99ce-b126e0f03851"
+      }
+    },
+    "filgrastim": {
+      "displayName": "Filgrastim",
+      "generic": "Filgrastim",
+      "brand": "Neupogen",
+      "aliases": [
+        "filgrastim",
+        "Filgrastim",
+        "Neupogen"
+      ],
+      "rxcui": "68442",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "74e1ec6e-1630-4654-895c-2bd355f939e7",
+        "title": "RELEUKO (FILGRASTIM) INJECTION, SOLUTION [AMNEAL PHARMACEUTICALS LLC]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=74e1ec6e-1630-4654-895c-2bd355f939e7"
+      }
+    },
+    "filgrastim-snapfi": {
+      "displayName": "Filgrastim-aafi",
+      "generic": "Filgrastim-aafi",
+      "brand": "Nivestym",
+      "aliases": [
+        "filgrastim-snapfi",
+        "Filgrastim-aafi",
+        "Nivestym"
+      ],
+      "rxcui": "2057198",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "d23ab39c-b6ec-41cf-a529-9dd2852c9d9a",
+        "title": "NIVESTYM (FILGRASTIM-AAFI) INJECTION, SOLUTION [PFIZER LABORATORIES DIV PFIZER INC]",
+        "publishedDate": "Aug 14, 2025",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=d23ab39c-b6ec-41cf-a529-9dd2852c9d9a"
+      }
+    },
+    "filgrastim-supportive": {
+      "displayName": "Filgrastim",
+      "generic": "Filgrastim",
+      "brand": "Neupogen",
+      "aliases": [
+        "filgrastim-supportive",
+        "Filgrastim",
+        "Neupogen",
+        "filgrastim"
+      ],
+      "rxcui": "68442",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "74e1ec6e-1630-4654-895c-2bd355f939e7",
+        "title": "RELEUKO (FILGRASTIM) INJECTION, SOLUTION [AMNEAL PHARMACEUTICALS LLC]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=74e1ec6e-1630-4654-895c-2bd355f939e7"
+      }
+    },
+    "finasteride": {
+      "displayName": "Finasteride",
+      "generic": "Finasteride",
+      "brand": "Proscar",
+      "aliases": [
+        "finasteride",
+        "Finasteride",
+        "Proscar"
+      ],
+      "rxcui": "25025",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "e482a50d-db15-4407-85c9-160c88e8a657",
+        "title": "FINASTERIDE TABLET, FILM COATED [REMEDYREPACK INC.]",
+        "publishedDate": "Oct 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=e482a50d-db15-4407-85c9-160c88e8a657"
+      }
+    },
+    "fluconazole": {
+      "displayName": "Fluconazole",
+      "generic": "Fluconazole",
+      "brand": "Diflucan",
+      "aliases": [
+        "fluconazole",
+        "Fluconazole",
+        "Diflucan"
+      ],
+      "rxcui": "4450",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "126406ae-1fdc-df20-e063-6294a90a2718",
+        "title": "FLUCONAZOLE TABLET [ST. MARY'S MEDICAL PARK PHARMACY]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=126406ae-1fdc-df20-e063-6294a90a2718"
+      }
+    },
+    "fluconazole-supportive": {
+      "displayName": "Fluconazole",
+      "generic": "Fluconazole",
+      "brand": "Diflucan",
+      "aliases": [
+        "fluconazole-supportive",
+        "Fluconazole",
+        "Diflucan",
+        "fluconazole"
+      ],
+      "rxcui": "4450",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "126406ae-1fdc-df20-e063-6294a90a2718",
+        "title": "FLUCONAZOLE TABLET [ST. MARY'S MEDICAL PARK PHARMACY]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=126406ae-1fdc-df20-e063-6294a90a2718"
+      }
+    },
+    "fluorouracil": {
+      "displayName": "Fluorouracil",
+      "generic": "Fluorouracil",
+      "brand": "Adrucil",
+      "aliases": [
+        "fluorouracil",
+        "Fluorouracil",
+        "Adrucil"
+      ],
+      "rxcui": "4492",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "1daf714b-704c-4bcc-b6e0-6f0eb2bfe66b",
+        "title": "FAVLYXA (FLUOROURACIL) INJECTION, SOLUTION [AVYXA PHARMA, LLC]",
+        "publishedDate": "Oct 29, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1daf714b-704c-4bcc-b6e0-6f0eb2bfe66b"
+      }
+    },
+    "fluticasone-nasal": {
+      "displayName": "Fluticasone propionate nasal",
+      "generic": "Fluticasone propionate nasal",
+      "brand": "Flonase",
+      "aliases": [
+        "fluticasone-nasal",
+        "Fluticasone propionate nasal",
+        "Flonase"
+      ],
+      "rxcui": "1165656",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "0107ad1c-1d8e-434c-a91f-dd2caf4fa5e5",
+        "title": "FLUTICASONE PROPIONATE (FLUTICASONE PROPIONATE NASAL) SPRAY [ADVAGEN PHARMA LTD.]",
+        "publishedDate": "Jul 20, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0107ad1c-1d8e-434c-a91f-dd2caf4fa5e5"
+      }
+    },
+    "fosaprepitant": {
+      "displayName": "fosaprepitant",
+      "generic": "fosaprepitant",
+      "brand": null,
+      "aliases": [
+        "fosaprepitant"
+      ],
+      "rxcui": "1731071",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "18a60093-cec8-1b8c-e063-6394a90a8902",
+        "title": "FOCINVEZ (FOSAPREPITANT DIMEGLUMINE) INJECTION [STERISCIENCE SPECIALTIES PRIVATE LIMITED]",
+        "publishedDate": "Oct 26, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=18a60093-cec8-1b8c-e063-6394a90a8902"
+      }
+    },
+    "furosemide": {
+      "displayName": "Furosemide",
+      "generic": "Furosemide",
+      "brand": "Lasix",
+      "aliases": [
+        "furosemide",
+        "Furosemide",
+        "Lasix"
+      ],
+      "rxcui": "4603",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "15e4c3a3-7d64-471e-bfdf-6156731e24aa",
+        "title": "FUROSEMIDE INJECTION, SOLUTION [HENRY SCHEIN, INC.]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=15e4c3a3-7d64-471e-bfdf-6156731e24aa"
+      }
+    },
+    "gabapentin": {
+      "displayName": "Gabapentin",
+      "generic": "Gabapentin",
+      "brand": "Neurontin",
+      "aliases": [
+        "gabapentin",
+        "Gabapentin",
+        "Neurontin"
+      ],
+      "rxcui": "25480",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "3f1535d9-6c3b-4355-a2ef-eb6ee33054a5",
+        "title": "GABAPENTIN (GABAPENTIN) CAPSULE [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3f1535d9-6c3b-4355-a2ef-eb6ee33054a5"
+      }
+    },
+    "gabapentin-enacarbil": {
+      "displayName": "Gabapentin enacarbil",
+      "generic": "Gabapentin enacarbil",
+      "brand": "Horizant",
+      "aliases": [
+        "gabapentin-enacarbil",
+        "Gabapentin enacarbil",
+        "Horizant"
+      ],
+      "rxcui": "1101333",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "4c486fc7-c8c4-4c6c-b30c-366dabaeaadd",
+        "title": "HORIZANT (GABAPENTIN ENACARBIL) TABLET, EXTENDED RELEASE [AZURITY PHARMACEUTICALS, INC. (FORMERLY ARBOR PHARMACEUTICALS)]",
+        "publishedDate": "May 07, 2025",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4c486fc7-c8c4-4c6c-b30c-366dabaeaadd"
+      }
+    },
+    "gefitinib": {
+      "displayName": "Gefitinib",
+      "generic": "Gefitinib",
+      "brand": "Iressa",
+      "aliases": [
+        "gefitinib",
+        "Gefitinib",
+        "Iressa"
+      ],
+      "rxcui": "328134",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "3dd135f0-5db1-4236-9756-04533b66dc9d",
+        "title": "GEFITINIB TABLET, FILM COATED [TEVA PHARMACEUTICALS, INC.]",
+        "publishedDate": "Oct 06, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3dd135f0-5db1-4236-9756-04533b66dc9d"
+      }
+    },
+    "glimepiride": {
+      "displayName": "Glimepiride",
+      "generic": "Glimepiride",
+      "brand": "Amaryl",
+      "aliases": [
+        "glimepiride",
+        "Glimepiride",
+        "Amaryl"
+      ],
+      "rxcui": "25789",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "2794f86b-d521-414b-8154-5dd1e2519653",
+        "title": "GLIMEPIRIDE TABLET [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2794f86b-d521-414b-8154-5dd1e2519653"
+      }
+    },
+    "glipizide": {
+      "displayName": "Glipizide",
+      "generic": "Glipizide",
+      "brand": "Glucotrol",
+      "aliases": [
+        "glipizide",
+        "Glipizide",
+        "Glucotrol"
+      ],
+      "rxcui": "4821",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "c829b7bf-1a12-44b2-b5ce-fd44a1f0d333",
+        "title": "GLIPIZIDE TABLET [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c829b7bf-1a12-44b2-b5ce-fd44a1f0d333"
+      }
+    },
+    "granisetron": {
+      "displayName": "Granisetron",
+      "generic": "Granisetron",
+      "brand": "Kytril",
+      "aliases": [
+        "granisetron",
+        "Granisetron",
+        "Kytril"
+      ],
+      "rxcui": "26237",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "f7c7ffdd-8270-4030-bc1e-a1cb28a6de56",
+        "title": "SUSTOL (GRANISETRON) INJECTION [HERON THERAPEUTICS, INC.]",
+        "publishedDate": "Jul 02, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f7c7ffdd-8270-4030-bc1e-a1cb28a6de56"
+      }
+    },
+    "haloperidol": {
+      "displayName": "Haloperidol",
+      "generic": "Haloperidol",
+      "brand": "Haldol",
+      "aliases": [
+        "haloperidol",
+        "Haloperidol",
+        "Haldol"
+      ],
+      "rxcui": "5093",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "8a1014d0-d917-40b7-bddd-9ac97df91ef4",
+        "title": "HALOPERIDOL TABLET [MAJOR PHARMACEUTICALS]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=8a1014d0-d917-40b7-bddd-9ac97df91ef4"
+      }
+    },
+    "hydralazine": {
+      "displayName": "Hydralazine",
+      "generic": "Hydralazine",
+      "brand": "Apresoline",
+      "aliases": [
+        "hydralazine",
+        "Hydralazine",
+        "Apresoline"
+      ],
+      "rxcui": "5470",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "0c7f9bd0-6c0a-4521-b77a-3582faa96874",
+        "title": "HYDRALAZINE HYDROCHLORIDE TABLET, FILM COATED [CHARTWELL RX, LLC]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0c7f9bd0-6c0a-4521-b77a-3582faa96874"
+      }
+    },
+    "hydrochlorothiazide": {
+      "displayName": "Hydrochlorothiazide",
+      "generic": "Hydrochlorothiazide",
+      "brand": "Microzide",
+      "aliases": [
+        "hydrochlorothiazide",
+        "Hydrochlorothiazide",
+        "Microzide"
+      ],
+      "rxcui": "5487",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "176b400b-2b4e-481d-b6c4-0f99e4c711c3",
+        "title": "VALSARTAN AND HYDROCHLOROTHIAZIDE TABLET, FILM COATED [VIONA PHARMACEUTICALS INC]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=176b400b-2b4e-481d-b6c4-0f99e4c711c3"
+      }
+    },
+    "hydrocortisone": {
+      "displayName": "Hydrocortisone",
+      "generic": "Hydrocortisone",
+      "brand": "Solu-Cortef",
+      "aliases": [
+        "hydrocortisone",
+        "Hydrocortisone",
+        "Solu-Cortef"
+      ],
+      "rxcui": "5492",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "6069ec2b-47a5-e1e8-e063-6294a90ae436",
+        "title": "MEDPRIDE (HYDROCORTISONE) CREAM [UMENDRA LIFE SCIENCES PRIVATE LIMITED]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6069ec2b-47a5-e1e8-e063-6294a90ae436"
+      }
+    },
+    "hydrocortisone-topical": {
+      "displayName": "Hydrocortisone topical",
+      "generic": "Hydrocortisone topical",
+      "brand": "Cortaid",
+      "aliases": [
+        "hydrocortisone-topical",
+        "Hydrocortisone topical",
+        "Cortaid"
+      ],
+      "rxcui": "1164013",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "1f64555d-f77e-4a83-b222-fdb3ed7d8853",
+        "title": "EQUATE HYDROCORTISONE TOPICAL (HYDROCORTISONE) CREAM [WALMART]",
+        "publishedDate": "Jan 20, 2025",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1f64555d-f77e-4a83-b222-fdb3ed7d8853"
+      }
+    },
+    "hydromorphone": {
+      "displayName": "Hydromorphone",
+      "generic": "Hydromorphone",
+      "brand": "Dilaudid",
+      "aliases": [
+        "hydromorphone",
+        "Hydromorphone",
+        "Dilaudid"
+      ],
+      "rxcui": "3423",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "9eebd88a-5632-460f-b7b6-26c8a180540d",
+        "title": "DILAUDID (HYDROMORPHONE HYDROCHLORIDE) INJECTION, SOLUTION [FRESENIUS KABI USA, LLC]",
+        "publishedDate": "Aug 31, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=9eebd88a-5632-460f-b7b6-26c8a180540d"
+      }
+    },
+    "hydroxyurea": {
+      "displayName": "Hydroxyurea",
+      "generic": "Hydroxyurea",
+      "brand": "Hydrea",
+      "aliases": [
+        "hydroxyurea",
+        "Hydroxyurea",
+        "Hydrea"
+      ],
+      "rxcui": "5552",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b9514ae5-79ae-4cc2-9d7f-c8f7806d1694",
+        "title": "HYDROXYUREA CAPSULE [TEVA PHARMACEUTICALS USA, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b9514ae5-79ae-4cc2-9d7f-c8f7806d1694"
+      }
+    },
+    "hydroxyurea-supportive": {
+      "displayName": "Hydroxyurea",
+      "generic": "Hydroxyurea",
+      "brand": "Droxia",
+      "aliases": [
+        "hydroxyurea-supportive",
+        "Hydroxyurea",
+        "Droxia"
+      ],
+      "rxcui": "5552",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b9514ae5-79ae-4cc2-9d7f-c8f7806d1694",
+        "title": "HYDROXYUREA CAPSULE [TEVA PHARMACEUTICALS USA, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b9514ae5-79ae-4cc2-9d7f-c8f7806d1694"
+      }
+    },
+    "hydroxyzine": {
+      "displayName": "Hydroxyzine",
+      "generic": "Hydroxyzine",
+      "brand": "Atarax",
+      "aliases": [
+        "hydroxyzine",
+        "Hydroxyzine",
+        "Atarax"
+      ],
+      "rxcui": "5553",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "8f41912e-12ce-4174-a0fb-cfb4888d8d58",
+        "title": "HYDROXYZINE HYDROCHLORIDE TABLET, FILM COATED [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=8f41912e-12ce-4174-a0fb-cfb4888d8d58"
+      }
+    },
+    "ibuprofen": {
+      "displayName": "Ibuprofen",
+      "generic": "Ibuprofen",
+      "brand": "Advil",
+      "aliases": [
+        "ibuprofen",
+        "Ibuprofen",
+        "Advil"
+      ],
+      "rxcui": "5640",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "a0861feb-87ff-473c-aa84-88343b1a592c",
+        "title": "IBUPROFEN TABLET, FILM COATED [PREFERRED PHARMACEUTICALS INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a0861feb-87ff-473c-aa84-88343b1a592c"
+      }
+    },
+    "idarubicin": {
+      "displayName": "Idarubicin",
+      "generic": "Idarubicin",
+      "brand": "Idamycin",
+      "aliases": [
+        "idarubicin",
+        "Idarubicin",
+        "Idamycin"
+      ],
+      "rxcui": "5650",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "0a5a6d93-cc1e-4d7f-8da1-446c134503b3",
+        "title": "IDAMYCIN PFS (IDARUBICIN HYDROCHLORIDE) SOLUTION [PFIZER LABORATORIES DIV PFIZER INC]",
+        "publishedDate": "Apr 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0a5a6d93-cc1e-4d7f-8da1-446c134503b3"
+      }
+    },
+    "ifosfamide": {
+      "displayName": "Ifosfamide",
+      "generic": "Ifosfamide",
+      "brand": "Ifex",
+      "aliases": [
+        "ifosfamide",
+        "Ifosfamide",
+        "Ifex"
+      ],
+      "rxcui": "5657",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "91e433a9-6800-43a6-ac13-a49a04a5aecd",
+        "title": "IFOSFAMIDE INJECTION, POWDER, FOR SOLUTION [BAXTER HEALTHCARE COMPANY]",
+        "publishedDate": "Nov 05, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=91e433a9-6800-43a6-ac13-a49a04a5aecd"
+      }
+    },
+    "insulin-glargine": {
+      "displayName": "Insulin glargine",
+      "generic": "Insulin glargine",
+      "brand": "Lantus",
+      "aliases": [
+        "insulin-glargine",
+        "Insulin glargine",
+        "Lantus",
+        "insulin glargine"
+      ],
+      "rxcui": "274783",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "536a4b0a-4b7c-2d23-e063-6294a90a7b7c",
+        "title": "INSULIN GLARGINE-ALDY INJECTION, SOLUTION [LANEXA BIOLOGICS, LLC]",
+        "publishedDate": "Oct 20, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=536a4b0a-4b7c-2d23-e063-6294a90a7b7c"
+      }
+    },
+    "insulin-lispro": {
+      "displayName": "Insulin lispro",
+      "generic": "Insulin lispro",
+      "brand": "Humalog",
+      "aliases": [
+        "insulin-lispro",
+        "Insulin lispro",
+        "Humalog"
+      ],
+      "rxcui": "86009",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "2be14cbb-197a-4da8-82c8-2443594e7f6f",
+        "title": "INSULIN LISPRO INJECTION, SOLUTION [A-S MEDICATION SOLUTIONS]",
+        "publishedDate": "Sep 21, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2be14cbb-197a-4da8-82c8-2443594e7f6f"
+      }
+    },
+    "irinotecan": {
+      "displayName": "Irinotecan",
+      "generic": "Irinotecan",
+      "brand": "Camptosar",
+      "aliases": [
+        "irinotecan",
+        "Irinotecan",
+        "Camptosar"
+      ],
+      "rxcui": "51499",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b3526a9e-9408-4be5-bac7-8b9cf1babdab",
+        "title": "IRINOTECAN HYDROCHLORIDE INJECTION, SOLUTION [BLUEPOINT LABORATORIES]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b3526a9e-9408-4be5-bac7-8b9cf1babdab"
+      }
+    },
+    "iron-sucrose": {
+      "displayName": "Iron sucrose",
+      "generic": "Iron sucrose",
+      "brand": "Venofer",
+      "aliases": [
+        "iron-sucrose",
+        "Iron sucrose",
+        "Venofer"
+      ],
+      "rxcui": "24909",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "3f109bdb-a412-43b2-84c7-9dad05e85a71",
+        "title": "IRON SUCROSE INJECTION, SOLUTION [MYLAN INSTITUTIONAL LLC]",
+        "publishedDate": "Sep 07, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3f109bdb-a412-43b2-84c7-9dad05e85a71"
+      }
+    },
+    "ixazomib": {
+      "displayName": "Ixazomib",
+      "generic": "Ixazomib",
+      "brand": "Ninlaro",
+      "aliases": [
+        "ixazomib",
+        "Ixazomib",
+        "Ninlaro"
+      ],
+      "rxcui": "1723735",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "038f2461-834b-4488-9ebd-863c83eef5a7",
+        "title": "NINLARO (IXAZOMIB) CAPSULE [TAKEDA PHARMACEUTICALS AMERICA, INC.]",
+        "publishedDate": "Aug 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=038f2461-834b-4488-9ebd-863c83eef5a7"
+      }
+    },
+    "l-asparaginase": {
+      "displayName": "L-Asparaginase",
+      "generic": "L-Asparaginase",
+      "brand": "Elspar",
+      "aliases": [
+        "l-asparaginase",
+        "L-Asparaginase",
+        "Elspar"
+      ],
+      "rxcui": "1156",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "e3101e4b-8cc4-4fdb-9595-13e0c493ccb4",
+        "title": "L-ASPARAGINASE POWDER [BLUEBAY SHANDONG CO.,LTD]",
+        "publishedDate": "Sep 13, 2019",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=e3101e4b-8cc4-4fdb-9595-13e0c493ccb4"
+      }
+    },
+    "lacosamide": {
+      "displayName": "Lacosamide",
+      "generic": "Lacosamide",
+      "brand": "Vimpat",
+      "aliases": [
+        "lacosamide",
+        "Lacosamide",
+        "Vimpat"
+      ],
+      "rxcui": "623400",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "e3658b3c-f193-41a2-acc7-0bb912e27173",
+        "title": "LACOSAMIDE TABLET, FILM COATED [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=e3658b3c-f193-41a2-acc7-0bb912e27173"
+      }
+    },
+    "lamotrigine": {
+      "displayName": "Lamotrigine",
+      "generic": "Lamotrigine",
+      "brand": "Lamictal",
+      "aliases": [
+        "lamotrigine",
+        "Lamotrigine",
+        "Lamictal"
+      ],
+      "rxcui": "28439",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "474fb321-575c-4b97-9dbe-080061652ee4",
+        "title": "LAMOTRIGINE KIT (LAMOTRIGINE) KIT LAMOTRIGINE TABLET [OWP PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 09, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=474fb321-575c-4b97-9dbe-080061652ee4"
+      }
+    },
+    "latanoprost": {
+      "displayName": "Latanoprost",
+      "generic": "Latanoprost",
+      "brand": "Xalatan",
+      "aliases": [
+        "latanoprost",
+        "Latanoprost",
+        "Xalatan"
+      ],
+      "rxcui": "43611",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "2c87e99e-33d4-4060-8876-ff05557c05eb",
+        "title": "LATANOPROST OPHTHALMIC SOLUTION SOLUTION/ DROPS [LIFESTAR PHARMA LLC]",
+        "publishedDate": "Nov 03, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2c87e99e-33d4-4060-8876-ff05557c05eb"
+      }
+    },
+    "lenalidomide": {
+      "displayName": "Lenalidomide",
+      "generic": "Lenalidomide",
+      "brand": "Revlimid",
+      "aliases": [
+        "lenalidomide",
+        "Lenalidomide",
+        "Revlimid"
+      ],
+      "rxcui": "342369",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "76f6c1e7-985b-43d9-892c-849df50ae80e",
+        "title": "LENALIDOMIDE CAPSULE [MYLAN PHARMACEUTICALS INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=76f6c1e7-985b-43d9-892c-849df50ae80e"
+      }
+    },
+    "lenalidomide-supportive": {
+      "displayName": "Lenalidomide",
+      "generic": "Lenalidomide",
+      "brand": "Revlimid",
+      "aliases": [
+        "lenalidomide-supportive",
+        "Lenalidomide",
+        "Revlimid"
+      ],
+      "rxcui": "342369",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "76f6c1e7-985b-43d9-892c-849df50ae80e",
+        "title": "LENALIDOMIDE CAPSULE [MYLAN PHARMACEUTICALS INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=76f6c1e7-985b-43d9-892c-849df50ae80e"
+      }
+    },
+    "leucovorin": {
+      "displayName": "Leucovorin calcium",
+      "generic": "Leucovorin calcium",
+      "brand": "Wellcovorin",
+      "aliases": [
+        "leucovorin",
+        "Leucovorin calcium",
+        "Wellcovorin"
+      ],
+      "rxcui": "225852",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "82c445f5-4cb7-4457-af19-3b5b8a121b4f",
+        "title": "LEUCOVORIN CALCIUM INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [GLAND PHARMA LIMITED]",
+        "publishedDate": "Oct 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=82c445f5-4cb7-4457-af19-3b5b8a121b4f"
+      }
+    },
+    "levetiracetam": {
+      "displayName": "Levetiracetam",
+      "generic": "Levetiracetam",
+      "brand": "Keppra",
+      "aliases": [
+        "levetiracetam",
+        "Levetiracetam",
+        "Keppra"
+      ],
+      "rxcui": "114477",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "5feca839-8554-739b-e063-6394a90a4e65",
+        "title": "LEVETIRACETAM TABLET, FILM COATED [COUPLER LLC]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=5feca839-8554-739b-e063-6394a90a4e65"
+      }
+    },
+    "levofloxacin": {
+      "displayName": "Levofloxacin",
+      "generic": "Levofloxacin",
+      "brand": "Levaquin",
+      "aliases": [
+        "levofloxacin",
+        "Levofloxacin",
+        "Levaquin"
+      ],
+      "rxcui": "82122",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "794d69ae-5e24-49c5-a9ba-096e9128e8ca",
+        "title": "LEVOFLOXACIN TABLET, FILM COATED [A-S MEDICATION SOLUTIONS]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=794d69ae-5e24-49c5-a9ba-096e9128e8ca"
+      }
+    },
+    "levothyroxine": {
+      "displayName": "Levothyroxine",
+      "generic": "Levothyroxine",
+      "brand": "Synthroid",
+      "aliases": [
+        "levothyroxine",
+        "Levothyroxine",
+        "Synthroid"
+      ],
+      "rxcui": "10582",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "ce990712-49c1-4f66-9ee4-c770e8ec394c",
+        "title": "LEVOTHYROXINE SODIUM (LEVOTHYROXINE SODIUM ANHYDROUS) INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [FRESENIUS KABI USA, LLC]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ce990712-49c1-4f66-9ee4-c770e8ec394c"
+      }
+    },
+    "linezolid": {
+      "displayName": "Linezolid",
+      "generic": "Linezolid",
+      "brand": "Zyvox",
+      "aliases": [
+        "linezolid",
+        "Linezolid",
+        "Zyvox"
+      ],
+      "rxcui": "190376",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "16007ca5-7956-4414-af38-406a6623400e",
+        "title": "LINEZOLID POWDER, FOR SUSPENSION [HIKMA PHARMACEUTICALS USA INC.]",
+        "publishedDate": "Nov 09, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=16007ca5-7956-4414-af38-406a6623400e"
+      }
+    },
+    "lisinopril": {
+      "displayName": "Lisinopril",
+      "generic": "Lisinopril",
+      "brand": "Zestril",
+      "aliases": [
+        "lisinopril",
+        "Lisinopril",
+        "Zestril"
+      ],
+      "rxcui": "29046",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b17cd16b-8d0a-4cfa-bd48-2529983fcd12",
+        "title": "LISINOPRIL TABLET [QPHARMA INC]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b17cd16b-8d0a-4cfa-bd48-2529983fcd12"
+      }
+    },
+    "lomustine": {
+      "displayName": "Lomustine",
+      "generic": "Lomustine",
+      "brand": "Ceenu",
+      "aliases": [
+        "lomustine",
+        "Lomustine",
+        "Ceenu"
+      ],
+      "rxcui": "6466",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "3c3637fc-4499-4331-a3c4-6969fc86704e",
+        "title": "LOMUSTINE CAPSULE, GELATIN COATED [WILSHIRE PHARMACEUTICALS, INC.]",
+        "publishedDate": "Apr 15, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3c3637fc-4499-4331-a3c4-6969fc86704e"
+      }
+    },
+    "loperamide": {
+      "displayName": "Loperamide",
+      "generic": "Loperamide",
+      "brand": "Imodium",
+      "aliases": [
+        "loperamide",
+        "Loperamide",
+        "Imodium"
+      ],
+      "rxcui": "6468",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "5a728c6d-26ec-3316-e063-6394a90ade08",
+        "title": "LOPERAMIDE HYDROCHLORIDE CAPSULE, LIQUID FILLED [YYBA CORP]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=5a728c6d-26ec-3316-e063-6394a90ade08"
+      }
+    },
+    "loratadine": {
+      "displayName": "Loratadine",
+      "generic": "Loratadine",
+      "brand": "Claritin",
+      "aliases": [
+        "loratadine",
+        "Loratadine",
+        "Claritin"
+      ],
+      "rxcui": "28889",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "4e74e322-7f6e-467c-96c0-9b531ddb429b",
+        "title": "LORATADINE TABLET, ORALLY DISINTEGRATING [CVS PHARMACY, INC]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4e74e322-7f6e-467c-96c0-9b531ddb429b"
+      }
+    },
+    "lorazepam": {
+      "displayName": "Lorazepam",
+      "generic": "Lorazepam",
+      "brand": "Ativan",
+      "aliases": [
+        "lorazepam",
+        "Lorazepam",
+        "Ativan"
+      ],
+      "rxcui": "6470",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "6c5356b1-c199-49ad-bb00-fd67c6691f74",
+        "title": "LORAZEPAM TABLET [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6c5356b1-c199-49ad-bb00-fd67c6691f74"
+      }
+    },
+    "magnesium-oxide": {
+      "displayName": "Magnesium oxide",
+      "generic": "Magnesium oxide",
+      "brand": "Mag-Ox",
+      "aliases": [
+        "magnesium-oxide",
+        "Magnesium oxide",
+        "Mag-Ox"
+      ],
+      "rxcui": "6582",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "7e9446e1-81d5-45da-8c1d-9087a6f5cdb9",
+        "title": "MAGNESIUM OXIDE TABLET [RISING PHARMA HOLDINGS, INC.]",
+        "publishedDate": "Nov 11, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=7e9446e1-81d5-45da-8c1d-9087a6f5cdb9"
+      }
+    },
+    "mechlorethamine": {
+      "displayName": "Mechlorethamine",
+      "generic": "Mechlorethamine",
+      "brand": "Mustargen",
+      "aliases": [
+        "mechlorethamine",
+        "Mechlorethamine",
+        "Mustargen"
+      ],
+      "rxcui": "6674",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "6a52e4c2-6a9f-4ebb-bc77-046b4f8bcd57",
+        "title": "VALCHLOR (MECHLORETHAMINE HYDROCHLORIDE) GEL [HELSINN THERAPEUTICS (U.S.), INC.]",
+        "publishedDate": "Nov 25, 2024",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6a52e4c2-6a9f-4ebb-bc77-046b4f8bcd57"
+      }
+    },
+    "megestrol-acetate": {
+      "displayName": "megestrol acetate",
+      "generic": "megestrol acetate",
+      "brand": null,
+      "aliases": [
+        "megestrol acetate"
+      ],
+      "rxcui": "29451",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "46622697-2c51-44d5-9f1f-e48f8526f132",
+        "title": "MEGESTROL ACETATE SUSPENSION [PAI HOLDINGS, LLC DBA PAI PHARMA]",
+        "publishedDate": "Oct 05, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=46622697-2c51-44d5-9f1f-e48f8526f132"
+      }
+    },
+    "melatonin": {
+      "displayName": "Melatonin",
+      "generic": "Melatonin",
+      "brand": "Sonne Slumber",
+      "aliases": [
+        "melatonin",
+        "Melatonin",
+        "Sonne Slumber"
+      ],
+      "rxcui": "6711",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "d29af0e7-0d04-47e3-9a50-d99c7e14b44d",
+        "title": "PERFECT SLEEP (ADENOSINUM TRIPHOSPHORICUM DINATRUM, PANTOTHENIC ACID, PINEAL GLAND (SUIS), SARCOLACTICUM ACIDUM, UBIDECARENONUM, L-TRYPTOPHAN, MELATONIN, PYRROLE, ARSENICUM ALBUM, AVENA SATIVA, CHAMOMILLA, COFFEA CRUDA, MERCURIUS CORROSIVUS, PASSIFLORA INCARNATA, SILICEA, ZINCUM VALERIANICUM, DYSENTERY BACILLUS, GAERTNER BACILLUS) TABLET [DESERET BIOLOGICALS, INC.]",
+        "publishedDate": "Oct 30, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=d29af0e7-0d04-47e3-9a50-d99c7e14b44d"
+      }
+    },
+    "meropenem": {
+      "displayName": "Meropenem",
+      "generic": "Meropenem",
+      "brand": "Merrem",
+      "aliases": [
+        "meropenem",
+        "Meropenem",
+        "Merrem"
+      ],
+      "rxcui": "29561",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "31dd2160-7dbd-51fa-e054-00144ff88e88",
+        "title": "MEROPENEM INJECTION [SAVIOR LIFETEC CORPORATION]",
+        "publishedDate": "Nov 03, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=31dd2160-7dbd-51fa-e054-00144ff88e88"
+      }
+    },
+    "metformin": {
+      "displayName": "Metformin",
+      "generic": "Metformin",
+      "brand": "Glucophage",
+      "aliases": [
+        "metformin",
+        "Metformin",
+        "Glucophage"
+      ],
+      "rxcui": "6809",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "06ade2e1-5981-4e3d-b7e9-7ff083eb4551",
+        "title": "METFORMIN HCL TABLET [QPHARMA, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=06ade2e1-5981-4e3d-b7e9-7ff083eb4551"
+      }
+    },
+    "methadone": {
+      "displayName": "methadone",
+      "generic": "methadone",
+      "brand": null,
+      "aliases": [
+        "methadone"
+      ],
+      "rxcui": "6813",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "8f4cf84e-165c-489d-a668-0f715053f196",
+        "title": "METHADONE HYDROCHLORIDE TABLET [CAMBER PHARMACEUTICALS, INC]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=8f4cf84e-165c-489d-a668-0f715053f196"
+      }
+    },
+    "methimazole": {
+      "displayName": "Methimazole",
+      "generic": "Methimazole",
+      "brand": "Tapazole",
+      "aliases": [
+        "methimazole",
+        "Methimazole",
+        "Tapazole"
+      ],
+      "rxcui": "6835",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "ff6164ed-7588-4f3e-b582-d06cffce1d62",
+        "title": "REGUZOL ORAL SOLUTION (METHIMAZOLE) SOLUTION [MWI/VETONE]",
+        "publishedDate": "Oct 29, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ff6164ed-7588-4f3e-b582-d06cffce1d62"
+      }
+    },
+    "methotrexate": {
+      "displayName": "Methotrexate",
+      "generic": "Methotrexate",
+      "brand": "Trexall",
+      "aliases": [
+        "methotrexate",
+        "Methotrexate",
+        "Trexall"
+      ],
+      "rxcui": "6851",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "63bb6fbf-dd59-4edc-af8f-d0c397ca1262",
+        "title": "METHOTREXATE INJECTION, SOLUTION [EUGIA US LLC]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=63bb6fbf-dd59-4edc-af8f-d0c397ca1262"
+      }
+    },
+    "methotrexate-supportive": {
+      "displayName": "Methotrexate",
+      "generic": "Methotrexate",
+      "brand": "Otrexup",
+      "aliases": [
+        "methotrexate-supportive",
+        "Methotrexate",
+        "Otrexup"
+      ],
+      "rxcui": "6851",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "63bb6fbf-dd59-4edc-af8f-d0c397ca1262",
+        "title": "METHOTREXATE INJECTION, SOLUTION [EUGIA US LLC]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=63bb6fbf-dd59-4edc-af8f-d0c397ca1262"
+      }
+    },
+    "methylphenidate": {
+      "displayName": "methylphenidate",
+      "generic": "methylphenidate",
+      "brand": null,
+      "aliases": [
+        "methylphenidate"
+      ],
+      "rxcui": "6901",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "2c312c31-3198-4775-91ab-294e0b4b9e7f",
+        "title": "DAYTRANA (METHYLPHENIDATE) PATCH DAYTRANA (METHYLPHENIDATE) PATCH [NOVEN THERAPEUTICS, LLC]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2c312c31-3198-4775-91ab-294e0b4b9e7f"
+      }
+    },
+    "methylprednisolone": {
+      "displayName": "Methylprednisolone",
+      "generic": "Methylprednisolone",
+      "brand": "Solu-Medrol",
+      "aliases": [
+        "methylprednisolone",
+        "Methylprednisolone",
+        "Solu-Medrol"
+      ],
+      "rxcui": "6902",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "04a15892-79e5-4e00-8a7d-21d3242cefca",
+        "title": "METHYLPREDNISOLONE ACETATE INJECTION, SUSPENSION [GLAND PHARMA LIMITED]",
+        "publishedDate": "Nov 06, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=04a15892-79e5-4e00-8a7d-21d3242cefca"
+      }
+    },
+    "metoclopramide": {
+      "displayName": "Metoclopramide",
+      "generic": "Metoclopramide",
+      "brand": "Reglan",
+      "aliases": [
+        "metoclopramide",
+        "Metoclopramide",
+        "Reglan"
+      ],
+      "rxcui": "6915",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "917494a9-cff1-4ee6-9523-e112120373c5",
+        "title": "METOCLOPRAMIDE INJECTION, SOLUTION [CARDINAL HEALTH 107, LLC]",
+        "publishedDate": "Nov 09, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=917494a9-cff1-4ee6-9523-e112120373c5"
+      }
+    },
+    "metoprolol": {
+      "displayName": "Metoprolol",
+      "generic": "Metoprolol",
+      "brand": "Lopressor",
+      "aliases": [
+        "metoprolol",
+        "Metoprolol",
+        "Lopressor"
+      ],
+      "rxcui": "6918",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "2ad0606c-7a90-44bd-a75d-d256de30fbcf",
+        "title": "METOPROLOL TARTRATE TABLET, FILM COATED [QPHARMA INC]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2ad0606c-7a90-44bd-a75d-d256de30fbcf"
+      }
+    },
+    "mirtazapine": {
+      "displayName": "Mirtazapine",
+      "generic": "Mirtazapine",
+      "brand": "Remeron",
+      "aliases": [
+        "mirtazapine",
+        "Mirtazapine",
+        "Remeron"
+      ],
+      "rxcui": "15996",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "58e9b4c6-531f-49c4-a640-6953e70892fe",
+        "title": "MIRTAZAPINE TABLET, FILM COATED [RISING PHARMA HOLDINGS, INC.]",
+        "publishedDate": "Nov 02, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=58e9b4c6-531f-49c4-a640-6953e70892fe"
+      }
+    },
+    "misoprostol": {
+      "displayName": "Misoprostol",
+      "generic": "Misoprostol",
+      "brand": "Cytotec",
+      "aliases": [
+        "misoprostol",
+        "Misoprostol",
+        "Cytotec"
+      ],
+      "rxcui": "42331",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "c842c35f-6a64-4ecc-95a1-41b6d056047e",
+        "title": "MISOPROSTOL TABLET [BRYANT RANCH PREPACK]",
+        "publishedDate": "Nov 06, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c842c35f-6a64-4ecc-95a1-41b6d056047e"
+      }
+    },
+    "mitoxantrone": {
+      "displayName": "Mitoxantrone",
+      "generic": "Mitoxantrone",
+      "brand": "Novantrone",
+      "aliases": [
+        "mitoxantrone",
+        "Mitoxantrone",
+        "Novantrone"
+      ],
+      "rxcui": "7005",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "1634528a-30c5-4309-acc8-4c0293ae14ae",
+        "title": "MITOXANTRONE INJECTION, SOLUTION, CONCENTRATE [MEITHEAL PHARMACEUTICALS INC.]",
+        "publishedDate": "Nov 02, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1634528a-30c5-4309-acc8-4c0293ae14ae"
+      }
+    },
+    "modafinil": {
+      "displayName": "modafinil",
+      "generic": "modafinil",
+      "brand": null,
+      "aliases": [
+        "modafinil"
+      ],
+      "rxcui": "30125",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "0391f182-1958-9fef-a944-53b229ce99e7",
+        "title": "PROVIGIL (MODAFINIL) TABLET [APOTEX CORP]",
+        "publishedDate": "Nov 12, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0391f182-1958-9fef-a944-53b229ce99e7"
+      }
+    },
+    "montelukast": {
+      "displayName": "Montelukast",
+      "generic": "Montelukast",
+      "brand": "Singulair",
+      "aliases": [
+        "montelukast",
+        "Montelukast",
+        "Singulair"
+      ],
+      "rxcui": "88249",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "c9ec1996-6a54-4622-b8a6-57dea49f6b35",
+        "title": "MONTELUKAST SODIUM TABLET, FILM COATED [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c9ec1996-6a54-4622-b8a6-57dea49f6b35"
+      }
+    },
+    "morphine": {
+      "displayName": "Morphine",
+      "generic": "Morphine",
+      "brand": "MS Contin",
+      "aliases": [
+        "morphine",
+        "Morphine",
+        "MS Contin"
+      ],
+      "rxcui": "7052",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "be420e8b-bcb0-49b5-bb4d-1df8b9959809",
+        "title": "MORPHINE SULFATE INJECTION, SOLUTION [HOSPIRA, INC.]",
+        "publishedDate": "Oct 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=be420e8b-bcb0-49b5-bb4d-1df8b9959809"
+      }
+    },
+    "mupirocin": {
+      "displayName": "Mupirocin",
+      "generic": "Mupirocin",
+      "brand": "Bactroban",
+      "aliases": [
+        "mupirocin",
+        "Mupirocin",
+        "Bactroban"
+      ],
+      "rxcui": "42372",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "1692855a-c6c1-4c30-aaa8-a761d635d931",
+        "title": "MUPIROCIN OINTMENT [A-S MEDICATION SOLUTIONS]",
+        "publishedDate": "Nov 02, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1692855a-c6c1-4c30-aaa8-a761d635d931"
+      }
+    },
+    "mycophenolate": {
+      "displayName": "Mycophenolate mofetil",
+      "generic": "Mycophenolate mofetil",
+      "brand": "CellCept",
+      "aliases": [
+        "mycophenolate",
+        "Mycophenolate mofetil",
+        "CellCept"
+      ],
+      "rxcui": "68149",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "24c0b94a-c141-44b6-a6f0-ade1669b254c",
+        "title": "MYCOPHENOLATE MOFETIL POWDER, FOR SUSPENSION [LANNETT COMPANY, LLC]",
+        "publishedDate": "Nov 11, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=24c0b94a-c141-44b6-a6f0-ade1669b254c"
+      }
+    },
+    "mycophenolate-supportive": {
+      "displayName": "Mycophenolate mofetil",
+      "generic": "Mycophenolate mofetil",
+      "brand": "CellCept",
+      "aliases": [
+        "mycophenolate-supportive",
+        "Mycophenolate mofetil",
+        "CellCept"
+      ],
+      "rxcui": "68149",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "24c0b94a-c141-44b6-a6f0-ade1669b254c",
+        "title": "MYCOPHENOLATE MOFETIL POWDER, FOR SUSPENSION [LANNETT COMPANY, LLC]",
+        "publishedDate": "Nov 11, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=24c0b94a-c141-44b6-a6f0-ade1669b254c"
+      }
+    },
+    "nabilone": {
+      "displayName": "nabilone",
+      "generic": "nabilone",
+      "brand": null,
+      "aliases": [
+        "nabilone"
+      ],
+      "rxcui": "31447",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": null
+    },
+    "naproxen": {
+      "displayName": "naproxen",
+      "generic": "naproxen",
+      "brand": null,
+      "aliases": [
+        "naproxen"
+      ],
+      "rxcui": "7258",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "307aa67f-53b9-4c60-a328-091bbf6338d4",
+        "title": "NAPROXEN TABLET [QPHARMA, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=307aa67f-53b9-4c60-a328-091bbf6338d4"
+      }
+    },
+    "netupitant": {
+      "displayName": "netupitant",
+      "generic": "netupitant",
+      "brand": null,
+      "aliases": [
+        "netupitant"
+      ],
+      "rxcui": "1552337",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "8e47618e-af46-4d82-94e8-1507c042252d",
+        "title": "AKYNZEO (NETUPITANT AND PALONOSETRON) CAPSULE AKYNZEO (FOSNETUPITANT AND PALONOSETRON) INJECTION [HELSINN THERAPEUTICS (U.S.), INC.]",
+        "publishedDate": "Jun 25, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=8e47618e-af46-4d82-94e8-1507c042252d"
+      }
+    },
+    "nifedipine": {
+      "displayName": "Nifedipine",
+      "generic": "Nifedipine",
+      "brand": "Procardia",
+      "aliases": [
+        "nifedipine",
+        "Nifedipine",
+        "Procardia"
+      ],
+      "rxcui": "7417",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "86c1bdae-c749-4ec3-90f6-7ebe8e76c461",
+        "title": "NIFEDIPINE TABLET, FILM COATED, EXTENDED RELEASE [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=86c1bdae-c749-4ec3-90f6-7ebe8e76c461"
+      }
+    },
+    "nortriptyline": {
+      "displayName": "nortriptyline",
+      "generic": "nortriptyline",
+      "brand": null,
+      "aliases": [
+        "nortriptyline"
+      ],
+      "rxcui": "7531",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "ba4edb34-82ac-4c98-8abd-fd6176838c78",
+        "title": "NORTRIPTYLINE HYDROCHLORIDE CAPSULE [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ba4edb34-82ac-4c98-8abd-fd6176838c78"
+      }
+    },
+    "olanzapine": {
+      "displayName": "Olanzapine",
+      "generic": "Olanzapine",
+      "brand": "Zyprexa",
+      "aliases": [
+        "olanzapine",
+        "Olanzapine",
+        "Zyprexa"
+      ],
+      "rxcui": "61381",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "0f692652-4451-4eef-901d-1e6aadc43847",
+        "title": "OLANZAPINE (OLANZAPINE) TABLET, FILM COATED [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0f692652-4451-4eef-901d-1e6aadc43847"
+      }
+    },
+    "omeprazole": {
+      "displayName": "Omeprazole",
+      "generic": "Omeprazole",
+      "brand": "Prilosec",
+      "aliases": [
+        "omeprazole",
+        "Omeprazole",
+        "Prilosec"
+      ],
+      "rxcui": "7646",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "3349ee88-e53b-4586-8d28-20ecf8fcb1a5",
+        "title": "ACID REDUCER (OMEPRAZOLE) TABLET, DELAYED RELEASE [CVS PHARMACY, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3349ee88-e53b-4586-8d28-20ecf8fcb1a5"
+      }
+    },
+    "ondansetron": {
+      "displayName": "Ondansetron",
+      "generic": "Ondansetron",
+      "brand": "Zofran",
+      "aliases": [
+        "ondansetron",
+        "Ondansetron",
+        "Zofran"
+      ],
+      "rxcui": "26225",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "2fa30bdb-f60e-40a7-98b4-c346bc85d539",
+        "title": "ONDANSETRON HYDROCHLORIDE TABLET, FILM COATED [QPHARMA, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2fa30bdb-f60e-40a7-98b4-c346bc85d539"
+      }
+    },
+    "ondansetron-prn": {
+      "displayName": "Ondansetron ODT",
+      "generic": "Ondansetron ODT",
+      "brand": "Zofran ODT",
+      "aliases": [
+        "ondansetron-prn",
+        "Ondansetron ODT",
+        "Zofran ODT"
+      ],
+      "rxcui": null,
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "af836a30-5e51-5c97-e053-2995a90a15b9",
+        "title": "ONDANSETRON ODT (ONDANSETRON) TABLET, ORALLY DISINTEGRATING [ADVANCED RX OF TENNESSEE, LLC]",
+        "publishedDate": "Jan 01, 2025",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=af836a30-5e51-5c97-e053-2995a90a15b9"
+      }
+    },
+    "oxaliplatin": {
+      "displayName": "Oxaliplatin",
+      "generic": "Oxaliplatin",
+      "brand": "Eloxatin",
+      "aliases": [
+        "oxaliplatin",
+        "Oxaliplatin",
+        "Eloxatin"
+      ],
+      "rxcui": "32592",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "a6f89dc3-a594-4b5b-8728-272e20c1ecb5",
+        "title": "OXALIPLATIN INJECTION, SOLUTION [GLAND PHARMA LIMITED]",
+        "publishedDate": "Sep 01, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a6f89dc3-a594-4b5b-8728-272e20c1ecb5"
+      }
+    },
+    "oxcarbazepine": {
+      "displayName": "Oxcarbazepine",
+      "generic": "Oxcarbazepine",
+      "brand": "Trileptal",
+      "aliases": [
+        "oxcarbazepine",
+        "Oxcarbazepine",
+        "Trileptal"
+      ],
+      "rxcui": "32624",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "c7718f8b-63e2-40b9-b519-e687cfc2cacf",
+        "title": "OXCARBAZEPINE TABLET, FILM COATED [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c7718f8b-63e2-40b9-b519-e687cfc2cacf"
+      }
+    },
+    "oxycodone": {
+      "displayName": "Oxycodone",
+      "generic": "Oxycodone",
+      "brand": "OxyContin",
+      "aliases": [
+        "oxycodone",
+        "Oxycodone",
+        "OxyContin"
+      ],
+      "rxcui": "7804",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "42777191-0454-4ccb-8fc3-8b18b0ee43f7",
+        "title": "OXYCODONE AND ACETAMINOPHEN TABLET [CAMBER PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=42777191-0454-4ccb-8fc3-8b18b0ee43f7"
+      }
+    },
+    "oxymetazoline": {
+      "displayName": "Oxymetazoline nasal",
+      "generic": "Oxymetazoline nasal",
+      "brand": "Afrin",
+      "aliases": [
+        "oxymetazoline",
+        "Oxymetazoline nasal",
+        "Afrin"
+      ],
+      "rxcui": "1162247",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "58e88fa2-d5c0-bcde-e063-6294a90af601",
+        "title": "OXYMETAZOLINE HYDROCHLORIDE NASAL SOLUTION (OXYMETAZOLINE HYDROCHLORIDE) SPRAY [ACCENT PHARMA]",
+        "publishedDate": "Aug 31, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=58e88fa2-d5c0-bcde-e063-6294a90af601"
+      }
+    },
+    "paclitaxel": {
+      "displayName": "Paclitaxel",
+      "generic": "Paclitaxel",
+      "brand": "Taxol",
+      "aliases": [
+        "paclitaxel",
+        "Paclitaxel",
+        "Taxol"
+      ],
+      "rxcui": "56946",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "4df3fda6-0b29-420e-ab91-81441ce914ed",
+        "title": "PACLITAXEL (PACLITAXEL (AIBUMIN-BOUND)) INJECTION, POWDER, LYOPHILIZED, FOR SUSPENSION [NINGBO SHUANGCHENG PHARMACEUTICAL CO., LTD]",
+        "publishedDate": "Oct 29, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4df3fda6-0b29-420e-ab91-81441ce914ed"
+      }
+    },
+    "palifermin": {
+      "displayName": "Palifermin",
+      "generic": "Palifermin",
+      "brand": "Kepivance",
+      "aliases": [
+        "palifermin",
+        "Palifermin",
+        "Kepivance"
+      ],
+      "rxcui": "196319",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "426f6e64-2c20-4a61-6d65-7320426f6e64",
+        "title": "KEPIVANCE (PALIFERMIN) INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [SWEDISH ORPHAN BIOVITRUM AB (PUBL)]",
+        "publishedDate": "Dec 19, 2025",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=426f6e64-2c20-4a61-6d65-7320426f6e64"
+      }
+    },
+    "palonosetron": {
+      "displayName": "Palonosetron",
+      "generic": "Palonosetron",
+      "brand": "Aloxi",
+      "aliases": [
+        "palonosetron",
+        "Palonosetron",
+        "Aloxi"
+      ],
+      "rxcui": "70561",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "689c953c-2120-2546-67a4-22bb34ba3330",
+        "title": "PALONOSETRON INJECTION, SOLUTION [NORTHSTAR RX LLC]",
+        "publishedDate": "Nov 06, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=689c953c-2120-2546-67a4-22bb34ba3330"
+      }
+    },
+    "pantoprazole": {
+      "displayName": "Pantoprazole",
+      "generic": "Pantoprazole",
+      "brand": "Protonix",
+      "aliases": [
+        "pantoprazole",
+        "Pantoprazole",
+        "Protonix"
+      ],
+      "rxcui": "40790",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "3cde88e6-28f2-4cbe-8c3f-770b05cc0e1b",
+        "title": "PROTONIX I.V. (PANTOPRAZOLE SODIUM) INJECTION, POWDER, FOR SOLUTION [CARDINAL HEALTH 107, LLC]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3cde88e6-28f2-4cbe-8c3f-770b05cc0e1b"
+      }
+    },
+    "pegaspargase": {
+      "displayName": "Pegaspargase",
+      "generic": "Pegaspargase",
+      "brand": "Oncaspar",
+      "aliases": [
+        "pegaspargase",
+        "Pegaspargase",
+        "Oncaspar"
+      ],
+      "rxcui": "34132",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "ac7b6a6f-6ddb-48c6-8088-d8a8e3fea6ce",
+        "title": "ONCASPAR (PEGASPARGASE) INJECTION, SOLUTION [SERVIER PHARMACEUTICALS LLC]",
+        "publishedDate": "Oct 10, 2024",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ac7b6a6f-6ddb-48c6-8088-d8a8e3fea6ce"
+      }
+    },
+    "pegfilgrastim": {
+      "displayName": "Pegfilgrastim",
+      "generic": "Pegfilgrastim",
+      "brand": "Neulasta",
+      "aliases": [
+        "pegfilgrastim",
+        "Pegfilgrastim",
+        "Neulasta"
+      ],
+      "rxcui": "338036",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "c48fe1a7-63d7-4dce-bb53-a913cb0ade83",
+        "title": "ARMLUPEG (PEGFILGRASTIM-UNNE) INJECTION [LUPIN PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 02, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c48fe1a7-63d7-4dce-bb53-a913cb0ade83"
+      }
+    },
+    "pegfilgrastim-sndk": {
+      "displayName": "Pegfilgrastim-jmdb",
+      "generic": "Pegfilgrastim-jmdb",
+      "brand": "Fulphila",
+      "aliases": [
+        "pegfilgrastim-sndk",
+        "Pegfilgrastim-jmdb",
+        "Fulphila"
+      ],
+      "rxcui": "2048018",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "9bfc4d3e-6120-7fec-f1d6-0b3743752034",
+        "title": "FULPHILA (PEGFILGRASTIM-JMDB) INJECTION [BIOCON BIOLOGICS INC.]",
+        "publishedDate": "Jul 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=9bfc4d3e-6120-7fec-f1d6-0b3743752034"
+      }
+    },
+    "pemetrexed": {
+      "displayName": "Pemetrexed",
+      "generic": "Pemetrexed",
+      "brand": "Alimta",
+      "aliases": [
+        "pemetrexed",
+        "Pemetrexed",
+        "Alimta"
+      ],
+      "rxcui": "68446",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "fa8f1f52-3f05-4ae8-bfec-7f0a029e6825",
+        "title": "PEMETREXED (PEMETREXED DISODIUM) INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [SAGENT PHARMACEUTICALS]",
+        "publishedDate": "Sep 25, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=fa8f1f52-3f05-4ae8-bfec-7f0a029e6825"
+      }
+    },
+    "permethrin": {
+      "displayName": "Permethrin",
+      "generic": "Permethrin",
+      "brand": "Elimite",
+      "aliases": [
+        "permethrin",
+        "Permethrin",
+        "Elimite"
+      ],
+      "rxcui": "33199",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "4ddc2aef-daef-13a9-e063-6394a90af3e3",
+        "title": "KAKSHAL PERMETHRIN (PERMETHRIN) LOTION [KAKSHAL]",
+        "publishedDate": "Sep 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4ddc2aef-daef-13a9-e063-6394a90af3e3"
+      }
+    },
+    "phenylephrine-nasal": {
+      "displayName": "Phenylephrine nasal",
+      "generic": "Phenylephrine nasal",
+      "brand": "Neo-Synephrine",
+      "aliases": [
+        "phenylephrine-nasal",
+        "Phenylephrine nasal",
+        "Neo-Synephrine"
+      ],
+      "rxcui": "1158148",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "e8fd3f0e-a023-4423-8906-17ae02bc083b",
+        "title": "DOLLAR GENERAL (NASAL PHENYLEPHRINE HYDROCHLORIDE) SPRAY [DOLGENCORP, INC. (DOLLAR GENERAL & REXALL)]",
+        "publishedDate": "Sep 04, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=e8fd3f0e-a023-4423-8906-17ae02bc083b"
+      }
+    },
+    "phenytoin": {
+      "displayName": "Phenytoin",
+      "generic": "Phenytoin",
+      "brand": "Dilantin",
+      "aliases": [
+        "phenytoin",
+        "Phenytoin",
+        "Dilantin"
+      ],
+      "rxcui": "8183",
+      "rxcuiMatchesCurated": true,
+      "curated": true,
+      "label": {
+        "setid": "a52cf1bd-dc1f-47be-aba8-29066d9a50fb",
+        "title": "PHENYTOIN SODIUM INJECTION [HENRY SCHEIN, INC.]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a52cf1bd-dc1f-47be-aba8-29066d9a50fb"
+      }
+    },
+    "pilocarpine": {
+      "displayName": "Pilocarpine",
+      "generic": "Pilocarpine",
+      "brand": "Isopto Carpine",
+      "aliases": [
+        "pilocarpine",
+        "Pilocarpine",
+        "Isopto Carpine"
+      ],
+      "rxcui": "8328",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "4ee2a840-1203-473a-aa42-316a3ddf2fbe",
+        "title": "QLOSI (PILOCARPINE HYDROCHLORIDE) SOLUTION [ORASIS PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4ee2a840-1203-473a-aa42-316a3ddf2fbe"
+      }
+    },
+    "piperacillin-tazobactam": {
+      "displayName": "Piperacillin/Tazobactam",
+      "generic": "Piperacillin/Tazobactam",
+      "brand": "Zosyn",
+      "aliases": [
+        "piperacillin-tazobactam",
+        "Piperacillin/Tazobactam",
+        "Zosyn"
+      ],
+      "rxcui": "74169",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "8db6bd91-2106-4bfd-8cc8-38aaf1e18d17",
+        "title": "ZOSYN (PIPERACILLIN SODIUM AND TAZOBACTAM SODIUM) INJECTION, SOLUTION [BAXTER HEALTHCARE CORPORATION]",
+        "publishedDate": "Jun 03, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=8db6bd91-2106-4bfd-8cc8-38aaf1e18d17"
+      }
+    },
+    "polyethylene-glycol-3350": {
+      "displayName": "polyethylene glycol 3350",
+      "generic": "polyethylene glycol 3350",
+      "brand": null,
+      "aliases": [
+        "polyethylene glycol 3350"
+      ],
+      "rxcui": "221147",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "48488531-5d04-4af6-e063-6294a90afe4b",
+        "title": "POLYETHYLENE GLYCOL 3350 POWDER, FOR SOLUTION [YYBA CORP]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=48488531-5d04-4af6-e063-6294a90afe4b"
+      }
+    },
+    "pomalidomide": {
+      "displayName": "Pomalidomide",
+      "generic": "Pomalidomide",
+      "brand": "Pomalyst",
+      "aliases": [
+        "pomalidomide",
+        "Pomalidomide",
+        "Pomalyst"
+      ],
+      "rxcui": "1369713",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b8c3b7f3-7e72-47af-be23-133e7bb3db59",
+        "title": "POMALIDOMIDE CAPSULE [NOVADOZ PHARMACEUTICALS LLC]",
+        "publishedDate": "Oct 08, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b8c3b7f3-7e72-47af-be23-133e7bb3db59"
+      }
+    },
+    "pomalidomide-supportive": {
+      "displayName": "Pomalidomide",
+      "generic": "Pomalidomide",
+      "brand": "Pomalyst",
+      "aliases": [
+        "pomalidomide-supportive",
+        "Pomalidomide",
+        "Pomalyst"
+      ],
+      "rxcui": "1369713",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b8c3b7f3-7e72-47af-be23-133e7bb3db59",
+        "title": "POMALIDOMIDE CAPSULE [NOVADOZ PHARMACEUTICALS LLC]",
+        "publishedDate": "Oct 08, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b8c3b7f3-7e72-47af-be23-133e7bb3db59"
+      }
+    },
+    "posaconazole": {
+      "displayName": "posaconazole",
+      "generic": "posaconazole",
+      "brand": null,
+      "aliases": [
+        "posaconazole"
+      ],
+      "rxcui": "282446",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "3e47c561-8c1d-4639-95d4-6ed14ca2c118",
+        "title": "MOMETAMAX SINGLE (GENTAMICIN, POSACONAZOLE, AND MOMETASONE FUROATE OTIC SUSPENSION) SUSPENSION [MERCK SHARP & DOHME CORP.]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3e47c561-8c1d-4639-95d4-6ed14ca2c118"
+      }
+    },
+    "potassium-chloride": {
+      "displayName": "Potassium chloride",
+      "generic": "Potassium chloride",
+      "brand": "K-Tab",
+      "aliases": [
+        "potassium-chloride",
+        "Potassium chloride",
+        "K-Tab"
+      ],
+      "rxcui": "8591",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "bf8e8ac7-e6a8-4571-a0ea-7bcab89290f6",
+        "title": "POTASSIUM CHLORIDE INJECTION, SOLUTION, CONCENTRATE [HENRY SCHEIN, INC.]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=bf8e8ac7-e6a8-4571-a0ea-7bcab89290f6"
+      }
+    },
+    "prednisone": {
+      "displayName": "Prednisone",
+      "generic": "Prednisone",
+      "brand": "Deltasone",
+      "aliases": [
+        "prednisone",
+        "Prednisone",
+        "Deltasone"
+      ],
+      "rxcui": "8640",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "318fdf0d-c03a-4b48-a380-b7bb630363fb",
+        "title": "PREDNISONE TABLET [QPHARMA, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=318fdf0d-c03a-4b48-a380-b7bb630363fb"
+      }
+    },
+    "pregabalin": {
+      "displayName": "Pregabalin",
+      "generic": "Pregabalin",
+      "brand": "Lyrica",
+      "aliases": [
+        "pregabalin",
+        "Pregabalin",
+        "Lyrica"
+      ],
+      "rxcui": "187832",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "1760ccdc-46f7-4182-a563-96b13212cb7e",
+        "title": "PREGABALIN CAPSULE [PREFERRED PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1760ccdc-46f7-4182-a563-96b13212cb7e"
+      }
+    },
+    "procarbazine": {
+      "displayName": "Procarbazine",
+      "generic": "Procarbazine",
+      "brand": "Matulane",
+      "aliases": [
+        "procarbazine",
+        "Procarbazine",
+        "Matulane"
+      ],
+      "rxcui": "8702",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "1aa75a3a-18c9-49e1-91a6-293d0b7da756",
+        "title": "MATULANE (PROCARBAZINE HYDROCHLORIDE) CAPSULE [LEADIANT BIOSCIENCES, INC.]",
+        "publishedDate": "Oct 14, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1aa75a3a-18c9-49e1-91a6-293d0b7da756"
+      }
+    },
+    "prochlorperazine": {
+      "displayName": "Prochlorperazine",
+      "generic": "Prochlorperazine",
+      "brand": "Compazine",
+      "aliases": [
+        "prochlorperazine",
+        "Prochlorperazine",
+        "Compazine"
+      ],
+      "rxcui": "8704",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b23b67eb-78b7-48eb-84ff-c95d3ce8683c",
+        "title": "COMPRO (PROCHLORPERAZINE) SUPPOSITORY [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b23b67eb-78b7-48eb-84ff-c95d3ce8683c"
+      }
+    },
+    "promethazine": {
+      "displayName": "promethazine",
+      "generic": "promethazine",
+      "brand": null,
+      "aliases": [
+        "promethazine"
+      ],
+      "rxcui": "8745",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "7fa840ad-10e7-4faf-9325-451648604161",
+        "title": "PROMETHAZINE HYDROCHLORIDE INJECTION [HENRY SCHEIN, INC.]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=7fa840ad-10e7-4faf-9325-451648604161"
+      }
+    },
+    "propranolol": {
+      "displayName": "Propranolol",
+      "generic": "Propranolol",
+      "brand": "Inderal",
+      "aliases": [
+        "propranolol",
+        "Propranolol",
+        "Inderal"
+      ],
+      "rxcui": "8787",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "601b8b7e-763f-2466-e063-6294a90aa688",
+        "title": "PROPRANOLOL HYDROCHLORIDE TABLET [ST. MARY'S MEDICAL PARK PHARMACY]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=601b8b7e-763f-2466-e063-6294a90aa688"
+      }
+    },
+    "quetiapine": {
+      "displayName": "Quetiapine",
+      "generic": "Quetiapine",
+      "brand": "Seroquel",
+      "aliases": [
+        "quetiapine",
+        "Quetiapine",
+        "Seroquel"
+      ],
+      "rxcui": "51272",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "6562eb60-0d70-4909-bd07-88d5c9241516",
+        "title": "QUETIAPINE FUMARATE (QUETIAPINE) TABLET, FILM COATED, EXTENDED RELEASE [AUROBINDO PHARMA LIMITED]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=6562eb60-0d70-4909-bd07-88d5c9241516"
+      }
+    },
+    "rasburicase": {
+      "displayName": "rasburicase",
+      "generic": "rasburicase",
+      "brand": null,
+      "aliases": [
+        "rasburicase"
+      ],
+      "rxcui": "283821",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "0ae10bc4-6b65-402f-9db5-2d7753054922",
+        "title": "ELITEK (RASBURICASE) KIT [SANOFI-AVENTIS U.S. LLC]",
+        "publishedDate": "Aug 04, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0ae10bc4-6b65-402f-9db5-2d7753054922"
+      }
+    },
+    "rituximab": {
+      "displayName": "Rituximab",
+      "generic": "Rituximab",
+      "brand": "Rituxan",
+      "aliases": [
+        "rituximab",
+        "Rituximab",
+        "Rituxan"
+      ],
+      "rxcui": "121191",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "f941fc61-f7a3-4e4a-ab7c-87c1667fa05b",
+        "title": "RUXIENCE (RITUXIMAB-PVVR) INJECTION, SOLUTION [PFIZER LABORATORIES DIV PFIZER INC]",
+        "publishedDate": "Oct 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f941fc61-f7a3-4e4a-ab7c-87c1667fa05b"
+      }
+    },
+    "rivaroxaban": {
+      "displayName": "rivaroxaban",
+      "generic": "rivaroxaban",
+      "brand": null,
+      "aliases": [
+        "rivaroxaban"
+      ],
+      "rxcui": "1114195",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "e98f6d83-5172-97a1-ee41-5d7d1d8ba2fd",
+        "title": "RIVAROXABAN TABLET, FILM COATED [APOTEX CORP.]",
+        "publishedDate": "Oct 26, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=e98f6d83-5172-97a1-ee41-5d7d1d8ba2fd"
+      }
+    },
+    "semaglutide": {
+      "displayName": "Semaglutide",
+      "generic": "Semaglutide",
+      "brand": "Ozempic",
+      "aliases": [
+        "semaglutide",
+        "Semaglutide",
+        "Ozempic"
+      ],
+      "rxcui": "1991302",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "27f15fac-7d98-4114-a2ec-92494a91da98",
+        "title": "OZEMPIC (ORAL SEMAGLUTIDE) TABLET RYBELSUS (ORAL SEMAGLUTIDE) TABLET [NOVO NORDISK PHARMACEUTICAL INDUSTRIES, LP]",
+        "publishedDate": "Aug 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=27f15fac-7d98-4114-a2ec-92494a91da98"
+      }
+    },
+    "senna": {
+      "displayName": "Senna",
+      "generic": "Senna",
+      "brand": "Senokot",
+      "aliases": [
+        "senna",
+        "Senna",
+        "Senokot"
+      ],
+      "rxcui": "36387",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "f21f882c-b18e-43de-a57f-bdce407ff0b8",
+        "title": "SINUS ANTIGENS (SENNA (CASSIA ANGUSTIFOLIA), HYDRASTIS CANADENSIS, PHYTOLACCA DECANDRA, STILLINGIA SYLVATICA, MUCOSA NASALIS SUIS, PULSATILLA (PRATENSIS), KALI BICHROMICUM, MERCURIUS SOLUBILIS, SANGUINARIA CANADENSIS, THUJA OCCIDENTALIS, ADENOVIREN NOSODE, ASPERGILLUS NIGER, HAEMOPHILUS INFLUENZAE B, PSEUDOMONAS AERUGINOSA, SINUSITISINUM, STAPHYLOCOCCUS AUREUS) LIQUID [ENERGIQUE, INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f21f882c-b18e-43de-a57f-bdce407ff0b8"
+      }
+    },
+    "sertraline": {
+      "displayName": "Sertraline",
+      "generic": "Sertraline",
+      "brand": "Zoloft",
+      "aliases": [
+        "sertraline",
+        "Sertraline",
+        "Zoloft"
+      ],
+      "rxcui": "36437",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "687ebdc4-6946-454e-8d46-3207488ccf32",
+        "title": "SERTRALINE HYDROCHLORIDE TABLET [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 09, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=687ebdc4-6946-454e-8d46-3207488ccf32"
+      }
+    },
+    "sevelamer": {
+      "displayName": "Sevelamer",
+      "generic": "Sevelamer",
+      "brand": "Renagel",
+      "aliases": [
+        "sevelamer",
+        "Sevelamer",
+        "Renagel"
+      ],
+      "rxcui": "214824",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "c13532a7-4c56-4084-839d-3dcfd4dc30f8",
+        "title": "SEVELAMER HYDROCHLORIDE TABLET, FILM COATED [CARDINAL HEALTH 107, LLC]",
+        "publishedDate": "Nov 09, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=c13532a7-4c56-4084-839d-3dcfd4dc30f8"
+      }
+    },
+    "sirolimus": {
+      "displayName": "Sirolimus",
+      "generic": "Sirolimus",
+      "brand": "Rapamune",
+      "aliases": [
+        "sirolimus",
+        "Sirolimus",
+        "Rapamune"
+      ],
+      "rxcui": "35302",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "09f24e7a-0bea-4e02-b557-c60eb842d41a",
+        "title": "SIROLIMUS TABLET, FILM COATED [REMEDYREPACK INC.]",
+        "publishedDate": "Oct 30, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=09f24e7a-0bea-4e02-b557-c60eb842d41a"
+      }
+    },
+    "sitagliptin": {
+      "displayName": "Sitagliptin",
+      "generic": "Sitagliptin",
+      "brand": "Januvia",
+      "aliases": [
+        "sitagliptin",
+        "Sitagliptin",
+        "Januvia"
+      ],
+      "rxcui": "593411",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b2da9d77-154b-48f7-8793-3f4a24dfafc6",
+        "title": "ZITUVIO (SITAGLIPTIN) TABLET [ZYDUS LIFESCIENCES LIMITED]",
+        "publishedDate": "Nov 04, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b2da9d77-154b-48f7-8793-3f4a24dfafc6"
+      }
+    },
+    "sodium-bicarbonate": {
+      "displayName": "Sodium bicarbonate",
+      "generic": "Sodium bicarbonate",
+      "brand": "Neutra-Phos",
+      "aliases": [
+        "sodium-bicarbonate",
+        "Sodium bicarbonate",
+        "Neutra-Phos"
+      ],
+      "rxcui": "36676",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "da484a2f-154f-48b4-8467-7a86729204c3",
+        "title": "SODIUM BICARBONATE INJECTION, SOLUTION [HENRY SCHEIN, INC.]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=da484a2f-154f-48b4-8467-7a86729204c3"
+      }
+    },
+    "sodium-phosphate": {
+      "displayName": "Sodium phosphate",
+      "generic": "Sodium phosphate",
+      "brand": "OsmoPrep",
+      "aliases": [
+        "sodium-phosphate",
+        "Sodium phosphate",
+        "OsmoPrep"
+      ],
+      "rxcui": "36709",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "9318c0a1-6871-45b2-86b1-953ac88a915f",
+        "title": "PREDNISOLONE SODIUM PHOSPHATE SOLUTION [AMERICAN HEALTH PACKAGING]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=9318c0a1-6871-45b2-86b1-953ac88a915f"
+      }
+    },
+    "spironolactone": {
+      "displayName": "Spironolactone",
+      "generic": "Spironolactone",
+      "brand": "Aldactone",
+      "aliases": [
+        "spironolactone",
+        "Spironolactone",
+        "Aldactone"
+      ],
+      "rxcui": "9997",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "ae0dcb4e-63df-459c-8e60-0caa817b8135",
+        "title": "SPIRONOLACTONE TABLET [NORTHSTAR RX LLC]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ae0dcb4e-63df-459c-8e60-0caa817b8135"
+      }
+    },
+    "streptozocin": {
+      "displayName": "Streptozocin",
+      "generic": "Streptozocin",
+      "brand": "Zanosar",
+      "aliases": [
+        "streptozocin",
+        "Streptozocin",
+        "Zanosar"
+      ],
+      "rxcui": "10114",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "f31d3bff-6fc6-c35f-e053-2995a90a596b",
+        "title": "ZANOSAR (STREPTOZOCIN) POWDER, FOR SOLUTION [ESTEVE PHARMACEUTICALS, S.A.]",
+        "publishedDate": "Sep 25, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f31d3bff-6fc6-c35f-e053-2995a90a596b"
+      }
+    },
+    "sucralfate": {
+      "displayName": "Sucralfate",
+      "generic": "Sucralfate",
+      "brand": "Carafate",
+      "aliases": [
+        "sucralfate",
+        "Sucralfate",
+        "Carafate"
+      ],
+      "rxcui": "10156",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "92c8672a-c6b8-4ec8-a815-c30bdd960ac7",
+        "title": "SUCRALFATE SUSPENSION [CARDINAL HEALTH 107, LLC]",
+        "publishedDate": "Nov 06, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=92c8672a-c6b8-4ec8-a815-c30bdd960ac7"
+      }
+    },
+    "sucralfate-supportive": {
+      "displayName": "Sucralfate",
+      "generic": "Sucralfate",
+      "brand": "Carafate",
+      "aliases": [
+        "sucralfate-supportive",
+        "Sucralfate",
+        "Carafate"
+      ],
+      "rxcui": "10156",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "92c8672a-c6b8-4ec8-a815-c30bdd960ac7",
+        "title": "SUCRALFATE SUSPENSION [CARDINAL HEALTH 107, LLC]",
+        "publishedDate": "Nov 06, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=92c8672a-c6b8-4ec8-a815-c30bdd960ac7"
+      }
+    },
+    "tacrolimus": {
+      "displayName": "Tacrolimus",
+      "generic": "Tacrolimus",
+      "brand": "Prograf",
+      "aliases": [
+        "tacrolimus",
+        "Tacrolimus",
+        "Prograf"
+      ],
+      "rxcui": "42316",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "604576da-e234-a27f-e063-6294a90a6d8d",
+        "title": "TACROLIMUS CAPSULE [AVKARE]",
+        "publishedDate": "Nov 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=604576da-e234-a27f-e063-6294a90a6d8d"
+      }
+    },
+    "tamsulosin": {
+      "displayName": "Tamsulosin",
+      "generic": "Tamsulosin",
+      "brand": "Flomax",
+      "aliases": [
+        "tamsulosin",
+        "Tamsulosin",
+        "Flomax"
+      ],
+      "rxcui": "77492",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "f6b6aeab-bedd-4254-8811-4f65cf8a351f",
+        "title": "TAMSULOSIN HYDROCHLORIDE CAPSULE [PD-RX PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f6b6aeab-bedd-4254-8811-4f65cf8a351f"
+      }
+    },
+    "temozolomide": {
+      "displayName": "Temozolomide",
+      "generic": "Temozolomide",
+      "brand": "Temodar",
+      "aliases": [
+        "temozolomide",
+        "Temozolomide",
+        "Temodar"
+      ],
+      "rxcui": "37776",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "28fae355-e29a-4f76-9c83-bc44663ff7d4",
+        "title": "TEMOZOLOMIDE CAPSULE [OPKO PHARMACEUTICALS, LLC]",
+        "publishedDate": "Nov 02, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=28fae355-e29a-4f76-9c83-bc44663ff7d4"
+      }
+    },
+    "teniposide": {
+      "displayName": "Teniposide",
+      "generic": "Teniposide",
+      "brand": "Vumon",
+      "aliases": [
+        "teniposide",
+        "Teniposide",
+        "Vumon"
+      ],
+      "rxcui": "10362",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": null
+    },
+    "testosterone": {
+      "displayName": "Testosterone",
+      "generic": "Testosterone",
+      "brand": "AndroGel",
+      "aliases": [
+        "testosterone",
+        "Testosterone",
+        "AndroGel"
+      ],
+      "rxcui": "10379",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "29cefc89-3bb6-484e-84ab-116b5827a4c3",
+        "title": "MALE SUPPORT (AGNUS CASTUS, AURUM METALLICUM, BENZOICUM ACIDUM, BRYONIA (ALBA), BUFO RANA, CALADIUM SEGUINUM, CHIMAPHILA UMBELLATA, CLEMATIS ERECTA, CONIUM MACULATUM, CORTISONE ACETICUM, HYPOTHALAMUS SUIS, KALI ARSENICOSUM, LYCOPODIUM CLAVATUM, NATRUM MURIATICUM, PROSTATE (SUIS), RHODODENDRON CHRYSANTHUM, SABAL SERRULATA, SELENIUM METALLICUM, SEPIA, TESTOSTERONE, THUJA OCCIDENTALIS) LIQUID [DESERET BIOLOGICALS, INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=29cefc89-3bb6-484e-84ab-116b5827a4c3"
+      }
+    },
+    "thalidomide": {
+      "displayName": "Thalidomide",
+      "generic": "Thalidomide",
+      "brand": "Thalomid",
+      "aliases": [
+        "thalidomide",
+        "Thalidomide",
+        "Thalomid"
+      ],
+      "rxcui": "10432",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "2eda833b-1357-4ed4-a093-194524fcb061",
+        "title": "THALOMID (THALIDOMIDE) CAPSULE [CELGENE CORPORATION]",
+        "publishedDate": "Oct 26, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2eda833b-1357-4ed4-a093-194524fcb061"
+      }
+    },
+    "thalidomide-supportive": {
+      "displayName": "Thalidomide",
+      "generic": "Thalidomide",
+      "brand": "Thalomid",
+      "aliases": [
+        "thalidomide-supportive",
+        "Thalidomide",
+        "Thalomid"
+      ],
+      "rxcui": "10432",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "2eda833b-1357-4ed4-a093-194524fcb061",
+        "title": "THALOMID (THALIDOMIDE) CAPSULE [CELGENE CORPORATION]",
+        "publishedDate": "Oct 26, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2eda833b-1357-4ed4-a093-194524fcb061"
+      }
+    },
+    "timolol-eye": {
+      "displayName": "Timolol ophthalmic",
+      "generic": "Timolol ophthalmic",
+      "brand": "Timoptic",
+      "aliases": [
+        "timolol-eye",
+        "Timolol ophthalmic",
+        "Timoptic"
+      ],
+      "rxcui": "1157100",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "ed315996-a7a7-4609-9f3e-92e6aba139fe",
+        "title": "BRIMONIDINE TARTRATE AND TIMOLOL MALEATE OPHTHALMIC SOLUTION (BRIMONIDINE TARTRATE AND TIMOLOL MALEATE) SOLUTION/ DROPS [DEVATIS INC.]",
+        "publishedDate": "Sep 15, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ed315996-a7a7-4609-9f3e-92e6aba139fe"
+      }
+    },
+    "tizanidine": {
+      "displayName": "Tizanidine",
+      "generic": "Tizanidine",
+      "brand": "Zanaflex",
+      "aliases": [
+        "tizanidine",
+        "Tizanidine",
+        "Zanaflex"
+      ],
+      "rxcui": "57258",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "25db7cc0-604c-3d6b-e063-6394a90a337f",
+        "title": "TIZANIDINE TABLET [APHENA PHARMA SOLUTIONS - TENNESSEE, LLC ]",
+        "publishedDate": "Nov 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=25db7cc0-604c-3d6b-e063-6394a90a337f"
+      }
+    },
+    "topiramate": {
+      "displayName": "Topiramate",
+      "generic": "Topiramate",
+      "brand": "Topamax",
+      "aliases": [
+        "topiramate",
+        "Topiramate",
+        "Topamax"
+      ],
+      "rxcui": "38404",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "3f99b26b-79b9-4efb-aa2c-2868e1e126c8",
+        "title": "TOPIRAMATE TABLET, FILM COATED [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3f99b26b-79b9-4efb-aa2c-2868e1e126c8"
+      }
+    },
+    "topotecan": {
+      "displayName": "Topotecan",
+      "generic": "Topotecan",
+      "brand": "Hycamtin",
+      "aliases": [
+        "topotecan",
+        "Topotecan",
+        "Hycamtin"
+      ],
+      "rxcui": "57308",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b6019088-cd94-43b4-b5ce-ba20b6b8021e",
+        "title": "TOPOTECAN HYDROCHLORIDE INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [FRESENIUS KABI USA, LLC]",
+        "publishedDate": "Feb 09, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b6019088-cd94-43b4-b5ce-ba20b6b8021e"
+      }
+    },
+    "tramadol": {
+      "displayName": "Tramadol",
+      "generic": "Tramadol",
+      "brand": "Ultram",
+      "aliases": [
+        "tramadol",
+        "Tramadol",
+        "Ultram"
+      ],
+      "rxcui": "10689",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "9f0e33bd-65f8-446a-886f-e7e16a142ce5",
+        "title": "TRAMADOL HYDROCHLORIDE TABLET, COATED [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=9f0e33bd-65f8-446a-886f-e7e16a142ce5"
+      }
+    },
+    "trametinib": {
+      "displayName": "Trametinib",
+      "generic": "Trametinib",
+      "brand": "Mekinist",
+      "aliases": [
+        "trametinib",
+        "Trametinib",
+        "Mekinist"
+      ],
+      "rxcui": "1425099",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "0002ad27-779d-42ab-83b5-bc65453412a1",
+        "title": "MEKINIST (TRAMETINIB) TABLET, FILM COATED MEKINIST (TRAMETINIB) POWDER, FOR SOLUTION [NOVARTIS PHARMACEUTICALS CORPORATION]",
+        "publishedDate": "May 20, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0002ad27-779d-42ab-83b5-bc65453412a1"
+      }
+    },
+    "tranexamic-acid": {
+      "displayName": "Tranexamic acid",
+      "generic": "Tranexamic acid",
+      "brand": "Lysteda",
+      "aliases": [
+        "tranexamic-acid",
+        "Tranexamic acid",
+        "Lysteda"
+      ],
+      "rxcui": "10691",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "00630e54-0e84-465d-96a5-63486c87dcd9",
+        "title": "TRANEXAMIC ACID INJECTION, SOLUTION [AVENACY, INC.]",
+        "publishedDate": "Nov 04, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=00630e54-0e84-465d-96a5-63486c87dcd9"
+      }
+    },
+    "trazodone": {
+      "displayName": "Trazodone",
+      "generic": "Trazodone",
+      "brand": "Desyrel",
+      "aliases": [
+        "trazodone",
+        "Trazodone",
+        "Desyrel"
+      ],
+      "rxcui": "10737",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "602d3866-7ff4-71aa-e063-6294a90a9521",
+        "title": "TRAZODONE HCL TABLET [DIRECT_RX]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=602d3866-7ff4-71aa-e063-6294a90a9521"
+      }
+    },
+    "trimethoprim-sulfamethoxazole": {
+      "displayName": "Trimethoprim/Sulfamethoxazole",
+      "generic": "Trimethoprim/Sulfamethoxazole",
+      "brand": "Bactrim",
+      "aliases": [
+        "trimethoprim-sulfamethoxazole",
+        "Trimethoprim/Sulfamethoxazole",
+        "Bactrim"
+      ],
+      "rxcui": "10831",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "f59d0c04-9c66-4d53-a0e1-cb55570deb62",
+        "title": "BACTRIM DS (SULFAMETHOXAZOLE AND TRIMETHOPRIM) TABLET BACTRIM (SULFAMETHOXAZOLE AND TRIMETHOPRIM) TABLET [SUN PHARMACEUTICAL INDUSTRIES, INC]",
+        "publishedDate": "Jan 01, 2025",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f59d0c04-9c66-4d53-a0e1-cb55570deb62"
+      }
+    },
+    "valacyclovir": {
+      "displayName": "Valacyclovir",
+      "generic": "Valacyclovir",
+      "brand": "Valtrex",
+      "aliases": [
+        "valacyclovir",
+        "Valacyclovir",
+        "Valtrex"
+      ],
+      "rxcui": "73645",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "495f22cc-18d4-4264-9313-7ab20e7b5bc9",
+        "title": "VALACYCLOVIR HYDROCHLORIDE TABLET, FILM COATED [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=495f22cc-18d4-4264-9313-7ab20e7b5bc9"
+      }
+    },
+    "valproic-acid": {
+      "displayName": "Valproic acid",
+      "generic": "Valproic acid",
+      "brand": "Depakote",
+      "aliases": [
+        "valproic-acid",
+        "Valproic acid",
+        "Depakote"
+      ],
+      "rxcui": "11118",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "cef3e335-5891-412f-89c4-79fcd2f145b7",
+        "title": "VALPROIC (VALPROIC ACID) CAPSULE, LIQUID FILLED [ACTAVIS PHARMA, INC.]",
+        "publishedDate": "Nov 18, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=cef3e335-5891-412f-89c4-79fcd2f145b7"
+      }
+    },
+    "vancomycin": {
+      "displayName": "Vancomycin",
+      "generic": "Vancomycin",
+      "brand": "Vancocin",
+      "aliases": [
+        "vancomycin",
+        "Vancomycin",
+        "Vancocin"
+      ],
+      "rxcui": "11124",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "1bda7fa4-fdee-410a-a216-02cfbf91632f",
+        "title": "VANCOMYCIN HYDROCHLORIDE INJECTION, POWDER, LYOPHILIZED, FOR SOLUTION [HENRY SCHEIN, INC.]",
+        "publishedDate": "Nov 16, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=1bda7fa4-fdee-410a-a216-02cfbf91632f"
+      }
+    },
+    "venlafaxine": {
+      "displayName": "venlafaxine",
+      "generic": "venlafaxine",
+      "brand": null,
+      "aliases": [
+        "venlafaxine"
+      ],
+      "rxcui": "39786",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "5fecf4b2-67fe-a7e9-e063-6394a90a793e",
+        "title": "VENLAFAXINE TABLET [COUPLER LLC]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=5fecf4b2-67fe-a7e9-e063-6394a90a793e"
+      }
+    },
+    "vinblastine": {
+      "displayName": "Vinblastine",
+      "generic": "Vinblastine",
+      "brand": "Velban",
+      "aliases": [
+        "vinblastine",
+        "Vinblastine",
+        "Velban"
+      ],
+      "rxcui": "11198",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "f073b58e-56d6-4c8d-a2ce-b37719402d77",
+        "title": "VINBLASTINE SULFATE INJECTION [FRESENIUS KABI USA, LLC]",
+        "publishedDate": "Apr 29, 2025",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f073b58e-56d6-4c8d-a2ce-b37719402d77"
+      }
+    },
+    "vincristine": {
+      "displayName": "Vincristine",
+      "generic": "Vincristine",
+      "brand": "Oncovin",
+      "aliases": [
+        "vincristine",
+        "Vincristine",
+        "Oncovin"
+      ],
+      "rxcui": "11202",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "b22e4c8e-dbe1-4d4b-a026-e1812974071c",
+        "title": "VINCRISTINE SULFATE INJECTION, SOLUTION [HOSPIRA, INC.]",
+        "publishedDate": "Feb 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b22e4c8e-dbe1-4d4b-a026-e1812974071c"
+      }
+    },
+    "vitamin-d": {
+      "displayName": "Cholecalciferol",
+      "generic": "Cholecalciferol",
+      "brand": "D3",
+      "aliases": [
+        "vitamin-d",
+        "Cholecalciferol",
+        "D3"
+      ],
+      "rxcui": "2418",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "d422003f-ac04-48cb-ba6d-8ed4fa023f22",
+        "title": "VITATREX (.BETA.-CAROTENE, ASCORBIC ACID, SODIUM ASCORBATE, CHOLECALCIFEROL, .ALPHA.-TOCOPHEROL ACETATE, DL-, THIAMINE MONONITRATE, RIBOFLAVIN, NIACINAMIDE, PYRIDOXINE HYDROCHLORIDE, FOLIC ACID, CYANOCOBALAMIN, AND FERROUS FUMARATE) TABLET, CHEWABLE [KREWE PHARMA, LLC]",
+        "publishedDate": "Nov 19, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=d422003f-ac04-48cb-ba6d-8ed4fa023f22"
+      }
+    },
+    "vorasidenib": {
+      "displayName": "Vorasidenib",
+      "generic": "Vorasidenib",
+      "brand": "Voranigo",
+      "aliases": [
+        "vorasidenib",
+        "Vorasidenib",
+        "Voranigo"
+      ],
+      "rxcui": "2690647",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "31405fee-55b7-4857-987e-2724ee76be84",
+        "title": "VORANIGO (VORASIDENIB) TABLET, FILM COATED [SERVIER PHARMACEUTICALS LLC]",
+        "publishedDate": "Sep 17, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=31405fee-55b7-4857-987e-2724ee76be84"
+      }
+    },
+    "warfarin": {
+      "displayName": "warfarin",
+      "generic": "warfarin",
+      "brand": null,
+      "aliases": [
+        "warfarin"
+      ],
+      "rxcui": "11289",
+      "rxcuiMatchesCurated": null,
+      "curated": false,
+      "label": {
+        "setid": "73b8e5ab-86f8-44f8-b290-346acb81c9ae",
+        "title": "WARFARIN SODIUM TABLET [REMEDYREPACK INC.]",
+        "publishedDate": "Nov 12, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=73b8e5ab-86f8-44f8-b290-346acb81c9ae"
+      }
+    },
+    "zoledronic-acid": {
+      "displayName": "Zoledronic acid",
+      "generic": "Zoledronic acid",
+      "brand": "Reclast",
+      "aliases": [
+        "zoledronic-acid",
+        "Zoledronic acid",
+        "Reclast",
+        "zoledronic acid"
+      ],
+      "rxcui": "77655",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "4b699dd8-d232-4bdb-88ce-9b42ed93e036",
+        "title": "ZOLEDRONIC ACID INJECTION, SOLUTION, CONCENTRATE [AVENACY INC.]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=4b699dd8-d232-4bdb-88ce-9b42ed93e036"
+      }
+    },
+    "zolpidem": {
+      "displayName": "Zolpidem",
+      "generic": "Zolpidem",
+      "brand": "Ambien",
+      "aliases": [
+        "zolpidem",
+        "Zolpidem",
+        "Ambien"
+      ],
+      "rxcui": "39993",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "625fad5b-8817-4773-a2fc-20b662140e6e",
+        "title": "ZOLPIDEM TARTRATE TABLET, FILM COATED, EXTENDED RELEASE [PREFERRED PHARMACEUTICALS INC.]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=625fad5b-8817-4773-a2fc-20b662140e6e"
+      }
+    },
+    "zonisamide": {
+      "displayName": "Zonisamide",
+      "generic": "Zonisamide",
+      "brand": "Zonegran",
+      "aliases": [
+        "zonisamide",
+        "Zonisamide",
+        "Zonegran"
+      ],
+      "rxcui": "39998",
+      "rxcuiMatchesCurated": false,
+      "curated": true,
+      "label": {
+        "setid": "53ecba6c-0de4-4e11-81d5-6deac79accd5",
+        "title": "ZONISAMIDE CAPSULE [PREFERRED PHARMACEUTICALS, INC.]",
+        "publishedDate": "Nov 13, 2026",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=53ecba6c-0de4-4e11-81d5-6deac79accd5"
+      }
+    }
+  }
+}

@@ -1,0 +1,109 @@
+# Drugs beyond the curated DRUG_DATABASE that neuro-oncology clinics
+# commonly prescribe. Run:
+#   node scripts/enrich-drug-labels.mjs --names=contracts/drug-labels-extra.txt
+#
+# These become REFERENCE-ONLY entries (FDA label link, no dosing). To make
+# any of them fully structured, add a curated entry to
+# VELTRUVIA Server/resources/app/src/db/drug-database.js instead.
+# Names already in the curated table are skipped automatically.
+# One name per line; # starts a comment.
+
+# ── Supportive care: nausea / appetite / mood ──
+ondansetron
+granisetron
+palonosetron
+aprepitant
+fosaprepitant
+netupitant
+metoclopramide
+prochlorperazine
+promethazine
+haloperidol
+olanzapine
+mirtazapine
+dronabinol
+nabilone
+megestrol acetate
+
+# ── Steroids ──
+prednisone
+methylprednisolone
+
+# ── Seizures / neuropathic pain ──
+levetiracetam
+lamotrigine
+pregabalin
+gabapentin
+duloxetine
+venlafaxine
+amitriptyline
+nortriptyline
+baclofen
+tizanidine
+
+# ── Analgesia ──
+morphine
+oxycodone
+hydromorphone
+fentanyl
+methadone
+tramadol
+acetaminophen
+ibuprofen
+naproxen
+celecoxib
+
+# ── GI / prophylaxis ──
+pantoprazole
+omeprazole
+famotidine
+senna
+docusate
+polyethylene glycol 3350
+
+# ── Infection ──
+trimethoprim-sulfamethoxazole
+ceftriaxone
+cefepime
+meropenem
+vancomycin
+piperacillin-tazobactam
+acyclovir
+valacyclovir
+fluconazole
+posaconazole
+
+# ── Marrow / metabolic support ──
+filgrastim
+pegfilgrastim
+epoetin alfa
+levothyroxine
+insulin glargine
+allopurinol
+febuxostat
+rasburicase
+zoledronic acid
+denosumab
+
+# ── VTE / cardiac / metabolic comorbidity ──
+warfarin
+enoxaparin
+apixaban
+rivaroxaban
+atorvastatin
+metformin
+lisinopril
+amlodipine
+carvedilol
+furosemide
+spironolactone
+
+# ── Alertness / allergy / sleep ──
+modafinil
+methylphenidate
+dextroamphetamine
+melatonin
+loratadine
+cetirizine
+diphenhydramine
+hydroxyzine
