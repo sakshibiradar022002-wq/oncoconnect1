@@ -39,5 +39,6 @@ open a private security advisory rather than a public issue.
 - Unique, rotated `PHI_ENCRYPTION_KEY` per installation; back it up securely —
   losing it makes encrypted PHI unreadable
 - `VELTRUVIA_DEMO` unset; remove `data/patient-store.json` demo entries if present
-- Enable `BACKUP_INTERVAL_MS` and secure the `backups/` directory
+- Automated backups are on by default (every 6 h, last 30 kept); `BACKUP_INTERVAL_MS` only
+  tunes the cadence (`0` disables it). Secure the `backups/` directory
 - Signed executables; OS-level disk encryption (BitLocker) on host machines

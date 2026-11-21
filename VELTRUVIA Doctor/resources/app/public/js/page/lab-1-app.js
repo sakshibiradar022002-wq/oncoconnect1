@@ -21,7 +21,7 @@ function closeSheet(id){document.getElementById(id).classList.remove('open')}
 function showToast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000)}
 
 // ═══ SERVER API ═══
-async function api(url,opts={}){const r=await fetch('/api'+url,{credentials:'include',headers:{'Content-Type':'application/json'},...opts});if(!r.ok){const e=await r.json().catch(()=>({error:r.statusText}));throw new Error(e.error||r.statusText)}return r.json()}
+async function api(url,opts={}){const r=await fetch('/api'+url,{credentials:'include',headers:{'Content-Type':'application/json'},...opts});if(!r.ok){const e=await r.json().catch(()=>({error:r.statusText}));throw Object.assign(new Error(e.error||r.statusText),{status:r.status})}return r.json()}
 
 // Merge server-returned keys into localStorage
 function mergeServerKeys(keys){if(!keys)return;for(const[k,entry]of Object.entries(keys)){if(entry&&entry.v!==undefined){LS.set(k,entry.v)}}}
@@ -107,8 +107,14 @@ async function doLogin(){
   const errEl=document.getElementById('login-err');
   if(!user||!pass){showErr(errEl,'Enter username and password.');return}
   // v2.5: track WHY login failed for honest errors (offline ≠ wrong password).
-  let sawServer=false,wrongCreds=false;
-  const netDown=e=>/failed to fetch|networkerror|load failed|timed?\s?out/i.test(String(e&&e.message||e));
+  let sawServer=false,wrongCreds=false,statusErr=null;
+  const netDown=e=>/failed to fetch|networkerror|network request failed|load failed|timed?\s?out/i.test(String(e&&e.message||e));
+  // An HTTP status means the server ANSWERED — surface its real reason instead of
+  // blaming the password (429 lockout, 5xx outage, 403 pending approval).
+  const loginMsg=e=>{const s=e&&e.status;
+    if(s===429)return 'Too many attempts. Wait a few minutes and try again.';
+    if(s>=500)return 'The clinic server had a problem (HTTP '+s+'). Your credentials may still be correct — try again shortly.';
+    return (e&&e.message)||('Sign-in failed'+(s?' (HTTP '+s+')':''));};
   // 1. Try shared JSON store login first
   try{
     const result=await api('/sync/lab-store-login',{method:'POST',body:JSON.stringify({username:user,password:pass})});
@@ -123,7 +129,7 @@ async function doLogin(){
       return;
     }
     sawServer=true;
-  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
+  }catch(e){if(e&&e.status){sawServer=true;if(e.status===401||e.status===403)wrongCreds=true;else statusErr=statusErr||e}else if(!netDown(e)){sawServer=true;statusErr=statusErr||e}}
   // 2. Try server login (sql.js DB)
   try{
     const result=await api('/sync/lab-login',{method:'POST',body:JSON.stringify({username:user,password:pass})});
@@ -144,7 +150,7 @@ async function doLogin(){
         return;
       }
     }
-  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
+  }catch(e){if(e&&e.status){sawServer=true;if(e.status===401||e.status===403)wrongCreds=true;else statusErr=statusErr||e}else if(!netDown(e)){sawServer=true;statusErr=statusErr||e}}
   // 3. Local fallback
   let foundLab=null,foundDocId=null;
   for(const name of SecureStore.names('lab_')){
@@ -156,6 +162,7 @@ async function doLogin(){
     }
   }
   if(!foundLab){
+    if(statusErr){showErr(errEl,loginMsg(statusErr));return}
     // v2.5: honest messages — the old "No matching lab account found" fired
     // for wrong passwords and offline servers alike.
     if(wrongCreds)showErr(errEl,'Wrong username or password. Check with your doctor and try again.');

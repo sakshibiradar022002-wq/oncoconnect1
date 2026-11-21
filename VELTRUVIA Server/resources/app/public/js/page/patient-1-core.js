@@ -16,7 +16,7 @@ function showToast(msg){const t=document.createElement('div');t.style.cssText='p
 let currentPat=null,currentLab=null,calMonth=new Date().getMonth(),calYear=new Date().getFullYear(),_docId=null;
 
 // ═══ SERVER API ═══
-async function api(url,opts={}){const r=await fetch('/api'+url,{credentials:'include',headers:{'Content-Type':'application/json'},...opts});if(!r.ok){const e=await r.json().catch(()=>({error:r.statusText}));throw new Error(e.error||r.statusText)}return r.json()}
+async function api(url,opts={}){const r=await fetch('/api'+url,{credentials:'include',headers:{'Content-Type':'application/json'},...opts});if(!r.ok){const e=await r.json().catch(()=>({error:r.statusText}));throw Object.assign(new Error(e.error||r.statusText),{status:r.status})}return r.json()}
 
 // Merge server-returned keys into localStorage (decrypts server-side PHI)
 function mergeServerKeys(keys){if(!keys)return;for(const[k,entry]of Object.entries(keys)){if(entry&&entry.v!==undefined){LS.set(k,entry.v)}}}
@@ -71,8 +71,14 @@ async function doLogin(){
   // v2.5: track WHY login failed so the messages below are honest instead
   // of the old blanket "No patient accounts exist yet" (which fired for
   // wrong passwords AND offline phones alike).
-  let sawServer=false,wrongCreds=false;
-  const netDown=e=>/failed to fetch|networkerror|load failed|timed?\s?out/i.test(String(e&&e.message||e));
+  let sawServer=false,wrongCreds=false,statusErr=null;
+  const netDown=e=>/failed to fetch|networkerror|network request failed|load failed|timed?\s?out/i.test(String(e&&e.message||e));
+  // An HTTP status means the server ANSWERED — surface its real reason instead of
+  // blaming the password (429 lockout, 5xx outage, 403 pending approval).
+  const loginMsg=e=>{const s=e&&e.status;
+    if(s===429)return 'Too many attempts. Wait a few minutes and try again.';
+    if(s>=500)return 'The clinic server had a problem (HTTP '+s+'). Your credentials may still be correct — try again shortly.';
+    return (e&&e.message)||('Sign-in failed'+(s?' (HTTP '+s+')':''));};
   // ── 1. Try shared JSON store login (most reliable cross-app method) ──
   try{
     const result=await api('/sync/store-login',{method:'POST',body:JSON.stringify({mrn, password:pass})});
@@ -84,7 +90,7 @@ async function doLogin(){
       return;
     }
     sawServer=true;
-  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
+  }catch(e){if(e&&e.status){sawServer=true;if(e.status===401||e.status===403)wrongCreds=true;else statusErr=statusErr||e}else if(!netDown(e)){sawServer=true;statusErr=statusErr||e}}
   // ── 2. Try server login (sql.js DB) ──
   try{
     const result=await api('/sync/patient-login',{method:'POST',body:JSON.stringify({mrn, password:pass})});
@@ -98,12 +104,13 @@ async function doLogin(){
       }
     }
     sawServer=true;
-  }catch(e){if(!netDown(e)){sawServer=true;wrongCreds=true}}
+  }catch(e){if(e&&e.status){sawServer=true;if(e.status===401||e.status===403)wrongCreds=true;else statusErr=statusErr||e}else if(!netDown(e)){sawServer=true;statusErr=statusErr||e}}
   // ── 3. Local fallback (offline mode) ──
   let pat=null;
   if(LS.get('pat_'+mrn))pat=LS.get('pat_'+mrn);
   else{const keys=LS.keys('pat_');for(const k of keys){const p=LS.get(k);if(p&&p.mrn&&p.mrn.toLowerCase()===mrn.toLowerCase()){pat=p;break}}}
   if(!pat){
+    if(statusErr){showErr(errEl,loginMsg(statusErr));return}
     if(wrongCreds)showErr(errEl,'Wrong MRN or password. Check the slip your doctor gave you and try again.');
     else if(sawServer)showErr(errEl,'No account found for that MRN on the clinic server. Ask your doctor to register you.');
     else showErr(errEl,"Can't reach the clinic server, and this device has no saved copy of this account. Connect to the internet once (Wi-Fi or mobile data) to log in for the first time.");
