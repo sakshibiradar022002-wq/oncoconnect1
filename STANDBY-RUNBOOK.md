@@ -145,18 +145,34 @@ Record the drill date and elapsed time in the table at the bottom.
 
 ---
 
-## 6. Beyond snapshots — the next step (not yet implemented)
+## 6. Beyond snapshots
 
 Snapshots protect against machine loss, not against a bad deploy that also
-corrupts the snapshot or a region-wide outage. When the pilot justifies it:
+corrupts the snapshot or a region-wide outage.
 
-| Option | Effort | Benefit |
+| Option | Status | Benefit |
 |---|---|---|
-| Second offsite copy (Backblaze B2/R2 via rclone) | ~1 day | Survives account/region loss |
-| Cold standby instance (stopped, monthly snapshot refresh) | ~2 h/month | Cutover measured in minutes |
-| Warm standby with streaming replication | days | Near-zero RPO; needs a real DB migration |
+| Second offsite copy (any path or rclone remote: B2/R2/S3) | **Ready** — `npm run backup:offsite` | Survives account/region loss |
+| External uptime dead-man's switch | **Ready** — `npm run uptime:ping` | Alerts when the VM itself dies |
+| Cold standby instance (stopped, monthly snapshot refresh) | Not built | Cutover measured in minutes |
+| Warm standby with streaming replication | Not built | Near-zero RPO; needs a real DB migration |
 
-Trigger for the second option: first paid clinic, or > 1,000 patient records.
+**Second offsite copy.** One-time setup on the backup host:
+
+```bash
+openssl rand -hex 32 > ~/.secrets/offsite.key && chmod 600 ~/.secrets/offsite.key
+rclone config            # create a remote once (b2/r2/s3), then:
+node scripts/offsite-backup.mjs --source /home/ubuntu/veltruvia/app/backups \
+  --key-file ~/.secrets/offsite.key --rclone b2:veltruvia-offsite/db --keep 12
+```
+
+Each run encrypts the newest `*.db` with AES-256-GCM, writes a SHA-256
+manifest, decrypts the result in memory to prove it round-trips, uploads both,
+and prunes old timestamped archives. `--dest <dir>` targets a USB/NFS/other
+host instead of rclone; `--dry-run` shows what it would do. Restore one archive
+with `--decrypt <archive>.enc --out <dir> --key-file <key>`.
+
+Trigger for a cold standby: first paid clinic, or > 1,000 patient records.
 
 ---
 

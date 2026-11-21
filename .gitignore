@@ -147,6 +147,9 @@ runtime-shell-*-backup/
 .freebuff/vm-debug-users.mjs
 # DAST output and generated drug-label review queue (contain scan noise / raw label text)
 reports/zap/
+reports/pentest/
+reports/anomaly/
+reports/offsite/
 reports/drug-label-review.json
 reports/rxnorm-cui-audit.json
 
