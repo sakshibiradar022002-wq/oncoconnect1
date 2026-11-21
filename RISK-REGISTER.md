@@ -20,7 +20,7 @@ Severity × Likelihood → Rating: **H** high, **M** medium, **L** low.
 
 | ID | Risk | Sev | Lik | Rating | Mitigation in place | Residual / status |
 |----|------|-----|-----|--------|------|------|
-| S1 | Unauthorized access to PHI | H | M | **H** | PBKDF2-SHA512 210k passwords; session cookies; role gate (`requireRole` — doctor/admin/lab/patient/kv-*); optional TOTP 2FA; `REQUIRE_DOCTOR_APPROVAL` workflow; CSRF Origin check; login rate limiting | **External pen test not yet performed** — highest-value open item. **Open** |
+| S1 | Unauthorized access to PHI | H | M | **H** | PBKDF2-SHA512 210k passwords; session cookies; role gate (`requireRole` — doctor/admin/lab/patient/kv-*); optional TOTP 2FA; `REQUIRE_DOCTOR_APPROVAL` workflow; CSRF Origin check; login rate limiting | **External pen test not yet performed.** Free DAST + manual auth checklist ready to run in [PENTEST-SCOPE.md](PENTEST-SCOPE.md) — highest-value open item. **Open (tooling ready)** |
 | S2 | PHI readable at rest (stolen disk/backup) | H | L | **M** | AES-256-GCM for SQL PHI and every JSON store (same key via `encryptPHI`); offsite backups encrypted archives; key in `.env` outside archives | Key lives on the same host as the DB (no HSM/KMS split) — **accepted for current stage** |
 | S3 | SQL injection / malformed input | H | L | **L** | Parameterized `db.prepare` everywhere (await-audit in `npm run check`); zod validation on every route (400, never 5xx); route test with injection payloads | None known — **mitigated** |
 | S4 | XSS / supply-chain script injection | H | L | **L** | CSP `script-src 'self'` (no `unsafe-inline` — verified by test; CDN axe.js was blocked by it during audits); `script-src-attr 'none'`; nosniff | Inline styles allowed by policy — low risk. **Mitigated** |
@@ -32,9 +32,9 @@ Severity × Likelihood → Rating: **H** high, **M** medium, **L** low.
 
 | ID | Risk | Sev | Lik | Rating | Mitigation in place | Residual / status |
 |----|------|-----|-----|--------|------|------|
-| O1 | Data loss (DB corruption, ransomware, accidental delete) | H | L | **M** | Nightly `VACUMM INTO` snapshot + tar (VM 02:15 UTC, keep 14); daily offsite pull to Sara's PC (keep 30); **freshness guard: pull exits 4 + watchdog Event ID 2 if newest offsite copy > 36 h old** (live-verified both branches) | Backups land on one person's PC — second offsite copy (different geography) **open TODO** |
+| O1 | Data loss (DB corruption, ransomware, accidental delete) | H | L | **M** | Nightly `VACUMM INTO` snapshot + tar (VM 02:15 UTC, keep 14); daily offsite pull to Sara's PC (keep 30); **freshness guard: pull exits 4 + watchdog Event ID 2 if newest offsite copy > 36 h old** (live-verified both branches) | Backups land on one person's PC — second offsite copy (different geography) **open TODO**. Whole-machine snapshots stay in the same account/region. |
 | O2 | Service outage unnoticed | M | M | **M** | Uptime watchdog every 15 min → `watchdog.log` + Windows Event Log; `/health?deep=1` DB check | Single monitor (Sara's PC) — external uptime monitor **open TODO** |
-| O3 | Single VM = single point of failure | H | M | **H** | Nightly offsite backups; restore procedure documented (`vm-restore-clean.sh`); RPO ≤ 24 h / RTO 4–8 h in SUPPORT-POLICY | No warm standby; manual restore. **Accepted** at current stage |
+| O3 | Single VM = single point of failure | H | M | **H** | Nightly offsite backups; restore procedure documented (`vm-restore-clean.sh`); RPO ≤ 24 h / RTO 4–8 h in SUPPORT-POLICY | No warm standby; restore path documented in [STANDBY-RUNBOOK.md](STANDBY-RUNBOOK.md) (whole-machine snapshots + cutover). **Accepted** at current stage |
 | O4 | TLS/certificate expiry takes site offline | H | L | **M** | Caddy auto-renewal; `check-cert.ps1`; cert-expiry in truth-check | Renewal depends on Caddy + DNS health — **mitigated** |
 | O5 | Failed deploy bricks the service | M | L | **L** | Release checklist, `npm run precommit` (check+test+verify), SHA256SUMS, versioned bundles | No automated rollback job — restore-from-backup is the rollback. **Accepted** |
 
