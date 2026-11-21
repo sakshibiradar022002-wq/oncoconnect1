@@ -63,6 +63,22 @@ test('reports silence when the audit log has no recent rows', () => {
   assert.ok(report.findings.some(f => f.id === 'audit-silence'));
 });
 
+test('--ignore-ip suppresses the scanner\'s own failed-login burst', () => {
+  const rows = [];
+  for (let i = 0; i < 12; i++) rows.push({ action: 'user.login_failed', ip: '208.72.218.131' });
+
+  const { dir, path } = makeDb(rows);
+  const noisy = run(['--db', path, '--json', join(dir, 'a.json')]);
+  const noisyReport = JSON.parse(readFileSync(join(dir, 'a.json'), 'utf8'));
+  assert.ok(noisyReport.findings.some(f => f.id === 'fail-burst'), 'detected without the allowlist');
+
+  const quiet = run(['--db', path, '--json', join(dir, 'b.json'), '--ignore-ip', '208.72.218.131']);
+  assert.equal(quiet.status, 0, quiet.stdout + quiet.stderr);
+  const quietReport = JSON.parse(readFileSync(join(dir, 'b.json'), 'utf8'));
+  assert.deepEqual(quietReport.findings, []);
+  assert.equal(quietReport.rowsIgnored, 12);
+});
+
 test('a quiet, healthy window exits 0 with no findings', () => {
   const { dir, path } = makeDb([
     { actor: 'u4', action: 'user.login.success', ip: '198.51.100.4' },

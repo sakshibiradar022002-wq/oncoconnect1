@@ -10,6 +10,7 @@
  *   node scripts/audit-anomaly.mjs
  *   node scripts/audit-anomaly.mjs --window 6 --json reports/anomaly/latest.json
  *   node scripts/audit-anomaly.mjs --db /home/ubuntu/veltruvia/app/chemocure.db
+ *   node scripts/audit-anomaly.mjs --ignore-ip 208.72.218.131   # test/pentest source
  *
  * Exit: 0 quiet · 1 critical finding · 2 warning only.
  */
@@ -29,6 +30,13 @@ const DB_PATH = resolve(arg('--db', process.env.DB_PATH || join(APP_DIR, 'chemoc
 const WINDOW_HOURS = Number(arg('--window', 24));
 const JSON_OUT = arg('--json', 'reports/anomaly/latest.json');
 const OFFSITE_HOURS = Number(arg('--off-hours', 8));   // UTC 22:00–06:00
+
+// Scanner/test IPs whose failed logins are expected. Without this every
+// pentest run would page the operator.
+const IGNORE_IPS = new Set(
+  [arg('--ignore-ip'), process.env.ANOMALY_IGNORE_IPS]
+    .filter(Boolean).join(',').split(',').map(s => s.trim()).filter(Boolean)
+);
 
 const FAIL_BURST = Number(arg('--fail-burst', 10));
 const TARGET_BULK = Number(arg('--bulk-targets', 100));
@@ -65,6 +73,10 @@ const inWindow = row => {
   return t ? t >= Date.parse(since) : String(row.created_at) >= since;
 };
 const recent = rows.filter(inWindow).sort((a, b) => when(a) - when(b));
+const ignored = IGNORE_IPS.size ? recent.filter(r => r.ip && IGNORE_IPS.has(r.ip)) : [];
+// Only the IP-based rules honour the allowlist; actor rules still run so a
+// real account used from a test IP is never hidden.
+const forIpRules = recent.filter(r => !(r.ip && IGNORE_IPS.has(r.ip)));
 
 const findings = [];
 const finding = (id, severity, title, detail, evidence = []) =>
@@ -82,7 +94,7 @@ const summarize = list => list.slice(0, 5).map(r => `${r.created_at} ${r.action}
 // 1. Failed-login bursts, grouped by IP then actor.
 for (const [keyType, key] of [['ip', r => r.ip], ['actor', r => r.actor_id]]) {
   const groups = new Map();
-  for (const r of recent.filter(isFail)) {
+  for (const r of forIpRules.filter(isFail)) {
     if (!key(r)) continue;
     const list = groups.get(key(r)) || [];
     list.push(r);
@@ -100,10 +112,10 @@ for (const [keyType, key] of [['ip', r => r.ip], ['actor', r => r.actor_id]]) {
 
 // 2. Successful login from an IP that had failures — likely guessing worked.
 const failsByIp = new Map();
-for (const r of recent.filter(isFail)) {
+for (const r of forIpRules.filter(isFail)) {
   if (r.ip) failsByIp.set(r.ip, (failsByIp.get(r.ip) || 0) + 1);
 }
-for (const r of recent.filter(isSuccess)) {
+for (const r of forIpRules.filter(isSuccess)) {
   const fails = failsByIp.get(r.ip) || 0;
   if (fails >= Math.max(5, Math.floor(FAIL_BURST / 2))) {
     finding('success-after-fails', 'critical',
@@ -172,6 +184,7 @@ findings.sort((a, b) => order[a.severity] - order[b.severity]);
 const icon = { critical: '❌', warn: '⚠️ ', info: 'ℹ️ ' };
 
 console.log(`[anomaly] ${DB_PATH} · window ${WINDOW_HOURS}h · ${recent.length}/${rows.length} rows`);
+if (ignored.length) console.log(`[anomaly] ignored ${ignored.length} row(s) from ${[...IGNORE_IPS].join(', ')}`);
 if (!findings.length) console.log('[anomaly] no anomalies found');
 for (const f of findings) {
   console.log(`${icon[f.severity]} ${f.title}`);
@@ -185,6 +198,8 @@ const report = {
   windowHours: WINDOW_HOURS,
   rowsTotal: rows.length,
   rowsInWindow: recent.length,
+  ignoredIps: [...IGNORE_IPS],
+  rowsIgnored: ignored.length,
   counts: {
     critical: findings.filter(f => f.severity === 'critical').length,
     warn: findings.filter(f => f.severity === 'warn').length,
