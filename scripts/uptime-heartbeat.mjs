@@ -25,7 +25,27 @@ const arg = (name, fallback = null) => {
 const flag = name => process.argv.includes(name);
 
 const TARGET = arg('--url', process.env.UPTIME_URL || 'https://veltruvia.duckdns.org/health?deep=1');
-const PING = arg('--ping', process.env.HEARTBEAT_URL || '');
+const PING_RAW = (arg('--ping', process.env.HEARTBEAT_URL || '') || '').trim();
+
+// A placeholder URL pings nothing, so it must never read as "monitored".
+const PLACEHOLDER = /(<|>|your-real|your-uuid|replace|changeme|xxxx|example\.(com|org|net)|hc-ping\.com\/?$)/i;
+const HEALTHCHECKS = /(^|\.)(healthchecks\.io|hc-ping\.com|hchk\.io)$/i;
+function pingUrlValid(u) {
+  if (!u || PLACEHOLDER.test(u)) return false;
+  let parsed;
+  try { parsed = new URL(u); } catch { return false; }
+  if (parsed.protocol !== 'https:') return false;
+  // Healthchecks UUIDs are 8-4-4-4-12 hex; a wrong one silently 404s.
+  if (HEALTHCHECKS.test(parsed.hostname)) {
+    const id = parsed.pathname.split('/').filter(Boolean).pop() || '';
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  }
+  return true;
+}
+const PING = pingUrlValid(PING_RAW) ? PING_RAW : '';
+if (PING_RAW && !PING) {
+  console.error(`⚠  HEARTBEAT_URL is not a usable check URL (${PING_RAW}) — ignoring it. No external alert would fire.`);
+}
 const TIMEOUT = Number(arg('--timeout', 15000));
 const MAX_LATENCY = Number(arg('--max-latency', 5000));
 
@@ -35,10 +55,11 @@ if (flag('--print-cron')) {
 }
 
 async function ping(path = '') {
-  if (!PING) return;
+  if (!PING) return null;
   try {
-    await fetch(PING.replace(/\/+$/, '') + path, { signal: AbortSignal.timeout(10000) });
-  } catch { /* the monitor's own failure must not mask the health result */ }
+    const res = await fetch(PING.replace(/\/+$/, '') + path, { signal: AbortSignal.timeout(10000) });
+    return res.ok;
+  } catch { return false; /* must not mask the health result */ }
 }
 
 const started = Date.now();
@@ -60,12 +81,15 @@ const latency = Date.now() - started;
 if (!failure && latency > MAX_LATENCY) failure = `slow response (${latency}ms > ${MAX_LATENCY}ms)`;
 
 if (failure) {
-  await ping('/fail');
-  console.error(`❌ ${TARGET} — ${failure}`);
+  const reported = await ping('/fail');
+  console.error(`❌ ${TARGET} — ${failure}${reported === false ? ' (heartbeat FAILED to send)' : ''}`);
   process.exit(1);
 }
 
-await ping();
+const sent = await ping();
 const version = body && (body.version || body.build) ? ` version ${body.version || body.build}` : '';
-console.log(`✅ ${TARGET} healthy in ${latency}ms${version}${PING ? ' · heartbeat sent' : ' · no HEARTBEAT_URL set, check only'}`);
+const pingNote = sent === true ? ' · heartbeat sent'
+  : sent === false ? ' · heartbeat FAILED'
+  : ' · no HEARTBEAT_URL set, check only';
+console.log(`✅ ${TARGET} healthy in ${latency}ms${version}${pingNote}`);
 process.exit(0);
