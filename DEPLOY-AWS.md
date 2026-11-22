@@ -65,6 +65,10 @@ this tier. Free via Free Tier credits: $7 × 6 months = $42, fully covered
   `offsite-backup.mjs --images /home/ubuntu/veltruvia/app/data/images` run is
   what gives uploaded studies an off-box copy; add the same directory to the
   local tar if on-VM copies of images are also wanted.
+- NOTE: the offsite job must read the timer's output, not the restart
+  snapshots — `--source /home/ubuntu/veltruvia-backups --pattern '*.tar.gz'`.
+  `~/veltruvia/app/backups` holds `veltruvia-boot-*` copies written on every
+  service start, so pointing at it ships a frozen archive between reboots.
 - NOTE for future migrations: never copy the DB while any server process
   has it open; verify with the LIVE engine (node:sqlite/libsql), not just
   sql.js; kill ALL stray node processes before systemd takes the port.

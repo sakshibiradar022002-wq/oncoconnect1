@@ -12,12 +12,15 @@
  *   # generate the key once, on the backup host (never in the repo)
  *   openssl rand -hex 32 > ~/.veltruvia-offsite.key && chmod 600 ~/.veltruvia-offsite.key
  *
- *   node scripts/offsite-backup.mjs --source /home/ubuntu/veltruvia/app/backups \
- *     --key-file ~/.veltruvia-offsite.key --dest /mnt/offsite/veltruvia
+ *   # on the VM, --source is the 02:15 timer's output, not app/backups (which
+ *   # only holds veltruvia-boot-* restart snapshots that never change between
+ *   # reboots)
+ *   node scripts/offsite-backup.mjs --source /home/ubuntu/veltruvia-backups \
+ *     --pattern '*.tar.gz' --key-file ~/.veltruvia-offsite.key --dest /mnt/offsite/veltruvia
  *
  *   # include the imaging store (data/images) as a second encrypted archive
- *   node scripts/offsite-backup.mjs --source /home/ubuntu/veltruvia/app/backups \
- *     --images /home/ubuntu/veltruvia/app/data/images \
+ *   node scripts/offsite-backup.mjs --source /home/ubuntu/veltruvia-backups \
+ *     --pattern '*.tar.gz' --images /home/ubuntu/veltruvia/app/data/images \
  *     --key-file ~/.veltruvia-offsite.key --dest /mnt/offsite/veltruvia
  *
  *   # same, to an rclone remote (configure the remote once with `rclone config`)
