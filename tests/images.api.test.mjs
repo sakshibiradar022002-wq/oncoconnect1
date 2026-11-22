@@ -9,7 +9,13 @@ import { join, resolve } from 'node:path';
 import net from 'node:net';
 
 const APP = resolve('VELTRUVIA Server/resources/app');
-const PORT = 3131;
+// Bind an ephemeral port: a fixed one collides with a parallel test run and
+// makes the suite fail for reasons unrelated to the code under test.
+const PORT = await new Promise((res, rej) => {
+  const probe = net.createServer();
+  probe.once('error', () => rej(new Error('no free port available')));
+  probe.listen(0, '127.0.0.1', () => { const p = probe.address().port; probe.close(() => res(p)); });
+});
 const base = `http://localhost:${PORT}`;
 const dataDir = join(APP, 'images-tmp');
 const dbPath = join(dataDir, 'test.db');
@@ -43,12 +49,6 @@ const server = spawn('node', ['src/server.js'], {
 let out = '';
 server.stdout.on('data', (d) => { out += d; });
 server.stderr.on('data', (d) => { out += d; });
-
-await new Promise((res, rej) => {
-  const probe = net.createServer();
-  probe.once('error', () => rej(new Error(`Port ${PORT} in use`)));
-  probe.listen(PORT, '127.0.0.1', () => probe.close(res));
-});
 
 before(async () => {
   for (let i = 0; i < 60; i++) {
@@ -154,4 +154,58 @@ test('delete removes the image and its bytes', async () => {
   assert.equal(d.status, 200, JSON.stringify(await d.clone().json().catch(() => ({}))));
   const r = await fetch(`${base}/api/images/${imageId}/file`, { headers: { cookie } });
   assert.equal(r.status, 404);
+});
+
+test('only clinicians can reach the imaging API', async () => {
+  const pat = await fetch(`${base}/api/sync/store-login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mrn: '12345', password: 'testpat123' }),
+  });
+  assert.equal(pat.status, 200, 'demo patient logs in');
+  const patCookie = (pat.headers.getSetCookie?.() || [pat.headers.get('set-cookie') || ''])
+    .map(c => String(c || '').split(';')[0]).filter(Boolean)[0];
+  const lab = await fetch(`${base}/api/sync/lab-store-login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'testlab', password: 'testlab123' }),
+  });
+  assert.equal(lab.status, 200, 'demo lab logs in');
+  const labCookie = (lab.headers.getSetCookie?.() || [lab.headers.get('set-cookie') || ''])
+    .map(c => String(c || '').split(';')[0]).filter(Boolean)[0];
+
+  for (const [who, ck] of [['patient', patCookie], ['lab', labCookie]]) {
+    const g = await fetch(`${base}/api/images?mrn=12345`, { headers: { cookie: ck } });
+    assert.equal(g.status, 403, `${who} cannot browse a chart gallery`);
+    const u = await fetch(`${base}/api/images/12345`, {
+      method: 'POST', headers: { cookie: ck, 'x-filename': 'x.png', 'content-type': 'image/png' }, body: PNG,
+    });
+    assert.equal(u.status, 403, `${who} cannot upload studies`);
+  }
+});
+
+test('gallery paginates and keeps a stable total', async () => {
+  for (let n = 1; n <= 3; n++) {
+    const r = await fetch(`${base}/api/images/12345`, {
+      method: 'POST',
+      headers: { cookie, 'x-filename': `page-${n}.png`, 'content-type': 'image/png' },
+      body: PNG,
+    });
+    assert.equal(r.status, 201, `upload ${n}`);
+  }
+  const first = await (await fetch(`${base}/api/images?mrn=12345&limit=2&offset=0`, { headers: { cookie } })).json();
+  assert.equal(first.total, 3);
+  assert.equal(first.images.length, 2);
+  assert.equal(first.hasMore, true);
+
+  const rest = await (await fetch(`${base}/api/images?mrn=12345&limit=2&offset=2`, { headers: { cookie } })).json();
+  assert.equal(rest.images.length, 1);
+  assert.equal(rest.hasMore, false);
+  assert.notEqual(first.images[0].id, rest.images[0].id, 'pages do not overlap');
+});
+
+test('uploads above 10 MB are rejected', async () => {
+  const big = Buffer.alloc(10 * 1024 * 1024 + 1, 0x41);
+  const r = await fetch(`${base}/api/images/12345`, {
+    method: 'POST', headers: { cookie, 'x-filename': 'huge.png', 'content-type': 'image/png' }, body: big,
+  });
+  assert.equal(r.status, 413);
 });

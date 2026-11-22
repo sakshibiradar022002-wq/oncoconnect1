@@ -15,8 +15,16 @@
  *   node scripts/offsite-backup.mjs --source /home/ubuntu/veltruvia/app/backups \
  *     --key-file ~/.veltruvia-offsite.key --dest /mnt/offsite/veltruvia
  *
+ *   # include the imaging store (data/images) as a second encrypted archive
+ *   node scripts/offsite-backup.mjs --source /home/ubuntu/veltruvia/app/backups \
+ *     --images /home/ubuntu/veltruvia/app/data/images \
+ *     --key-file ~/.veltruvia-offsite.key --dest /mnt/offsite/veltruvia
+ *
  *   # same, to an rclone remote (configure the remote once with `rclone config`)
  *   node scripts/offsite-backup.mjs --source <dir> --key-file <key> --rclone b2:veltruvia-offsite/db
+ *
+ * Images are tarred before encryption, so the archive is one file per run.
+ * Databases and image archives are pruned independently (KEEP applies to each).
  *
  *   # restore one archive
  *   node scripts/offsite-backup.mjs --decrypt <archive>.enc --out /tmp/restore --key-file <key>
@@ -112,6 +120,8 @@ if (flag('--decrypt')) {
 // ── Copy mode ──────────────────────────────────────────────────────
 const SOURCE = resolve(arg('--source', process.env.OFFSITE_SOURCE || '/home/ubuntu/veltruvia/app/backups'));
 const PATTERN = arg('--pattern', '*.db');
+// data/images holds every uploaded study; it is not part of the DB snapshot.
+const IMAGES = arg('--images', process.env.OFFSITE_IMAGES);
 const DEST = arg('--dest');
 const RCLONE = arg('--rclone');
 const KEEP = Number(arg('--keep', 12));
@@ -132,10 +142,11 @@ const candidates = readdirSync(SOURCE)
   .map(f => ({ f, path: join(SOURCE, f), mtime: statSync(join(SOURCE, f)).mtimeMs }))
   .sort((a, b) => b.mtime - a.mtime);
 
-if (!candidates.length) {
+if (!candidates.length && !IMAGES) {
   console.error(`[offsite] nothing matching ${PATTERN} in ${SOURCE}`);
   process.exit(2);
 }
+if (!candidates.length) console.warn(`[offsite] no ${PATTERN} found in ${SOURCE} — shipping images only`);
 
 const newest = candidates[0];
 const stamp = new Date(newest.mtime).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
@@ -221,3 +232,86 @@ for (const old of drop) {
 }
 
 console.log(`\n✅ offsite copy verified • ${Math.min(sorted.length, KEEP)} of ${sorted.length} archive(s) retained (keep ${KEEP})`);
+
+// ── Images archive ─────────────────────────────────────────────────
+// The nightly DB dump never contains data/images, so an off-box copy of the
+// imaging store is a separate, encrypted archive with its own retention.
+if (IMAGES) {
+  const imagesDir = resolve(IMAGES);
+  if (!existsSync(imagesDir)) {
+    console.warn(`[offsite] images directory not found: ${imagesDir} — skipped`);
+  } else {
+    const tarName = `.images-${process.pid}.tar.gz`;
+    const tarPath = join(workDir, tarName);
+    execFileSync('tar', ['-czf', tarPath, '-C', dirname(imagesDir), basename(imagesDir)], { stdio: 'inherit' });
+    const tarBytes = statSync(tarPath).size;
+    if (!tarBytes) {
+      unlinkSync(tarPath);
+      console.warn('[offsite] images directory is empty — skipped');
+    } else {
+      const imgStamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+      const imgArchive = `veltruvia-offsite-images-${imgStamp}.tar.gz.enc`;
+      const imgLocal = join(workDir, imgArchive);
+      const imgManifest = join(workDir, `${imgArchive}.json`);
+      const enc = await encrypt(tarPath, imgLocal, key);
+      writeFileSync(imgManifest, JSON.stringify({
+        createdAt: new Date().toISOString(),
+        archive: imgArchive,
+        source: { dir: imagesDir, tarBytes },
+        plaintextSha256: enc.sha256,
+        archiveBytes: enc.bytes,
+        encryption: 'AES-256-GCM',
+        version: 'VLTB1',
+        host: (await import('node:os')).hostname(),
+      }, null, 2) + '\n');
+
+      const verifyPath = join(workDir, `.verify-images-${process.pid}`);
+      const back = await decrypt(imgLocal, verifyPath, key);
+      unlinkSync(verifyPath);
+      if (back.sha256 !== enc.sha256) {
+        console.error('❌ images verification failed: decrypted sha256 does not match');
+        process.exit(1);
+      }
+      console.log(`[offsite] verified images ${enc.sha256.slice(0, 16)}… (${(tarBytes / 1024).toFixed(0)} KB tar)`);
+
+      let imgListing = [];
+      if (DEST) {
+        const dest = resolve(DEST);
+        copyFileSync(imgLocal, join(dest, imgArchive));
+        copyFileSync(imgManifest, join(dest, `${imgArchive}.json`));
+        imgListing = readdirSync(dest).filter(f => f.startsWith('veltruvia-offsite-images-') && f.endsWith('.enc'));
+        console.log(`[offsite] copied images → ${dest}`);
+      }
+      if (RCLONE) {
+        const remote = RCLONE.replace(/\/+$/, '');
+        try {
+          execFileSync('rclone', ['copyto', imgLocal, `${remote}/${imgArchive}`], { stdio: 'inherit' });
+          execFileSync('rclone', ['copyto', imgManifest, `${remote}/${imgArchive}.json`], { stdio: 'inherit' });
+          imgListing = execFileSync('rclone', ['lsf', '--files-only', remote], { encoding: 'utf8' })
+            .split('\n').map(s => s.trim()).filter(f => f.startsWith('veltruvia-offsite-images-') && f.endsWith('.enc'));
+          console.log(`[offsite] uploaded images → ${remote}`);
+        } catch (err) {
+          console.error(`❌ rclone failed for images: ${err.message}`);
+          process.exit(1);
+        }
+      }
+
+      const imgSorted = imgListing.sort();
+      for (const old of imgSorted.slice(0, Math.max(0, imgSorted.length - KEEP))) {
+        try {
+          if (DEST) {
+            unlinkSync(join(resolve(DEST), old));
+            try { unlinkSync(join(resolve(DEST), `${old}.json`)); } catch {}
+          }
+          if (RCLONE) {
+            execFileSync('rclone', ['deletefile', `${RCLONE.replace(/\/+$/, '')}/${old}`]);
+            try { execFileSync('rclone', ['deletefile', `${RCLONE.replace(/\/+$/, '')}/${old}.json`]); } catch {}
+          }
+          console.log(`[offsite] pruned images ${old}`);
+        } catch (err) { console.log(`[offsite] could not prune images ${old}: ${err.message}`); }
+      }
+      unlinkSync(tarPath);
+      console.log(`✅ image archive verified • ${Math.min(imgSorted.length, KEEP)} of ${imgSorted.length} retained (keep ${KEEP})`);
+    }
+  }
+}

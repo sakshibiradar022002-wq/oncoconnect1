@@ -13,7 +13,7 @@ Four self-contained desktop apps sharing one encrypted backend:
 
 ```bash
 npm run check      # fast quality gate: syntax, await-audit, bundle drift, icons
-npm run verify     # full 53-check feature verification × 4 apps (~2 min)
+npm run verify     # full feature verification × 4 apps (~2 min)
 npm run sync-bundles   # propagate edits from the Server bundle to the 3 clients
 node scripts/feature-sweep.mjs   # live-surface probe: every GET × every role (needs a running server)
 ```
@@ -97,7 +97,17 @@ The database is protected against the corruption class observed in the wild
 - **Boot watchdog** — the Server exe retries a failed API load and, if a
   corrupt database was the cause, self-heals before surfacing a visible error.
 
+## Mobile (Android)
+
+The two Capacitor shells live in `mobile/patient` and `mobile/lab`. They are
+build targets, not checked-in projects: `npm run apk:patient` copies the shared
+UI into `mobile/patient/www`, syncs it, and runs Gradle when an `android/`
+project and the Android SDK are present. Nothing in `mobile/` is deployable by
+itself.
+
 ## Known limitations
 
 - Exes are not code-signed; Windows SmartScreen will warn on first launch
+- The Dockerfile/compose file serve the Server bundle only; the Electron apps are not containerised
+- Uploaded imaging studies live in `data/images`, outside the DB snapshot — pass `--images <dir>` to `scripts/offsite-backup.mjs` so they get an off-box copy
 - HL7 MLLP TCP listener binds broadly when enabled — restrict with a firewall in production

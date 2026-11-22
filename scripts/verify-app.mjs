@@ -71,6 +71,20 @@ function api(method, path, body = null, cookie = '') {
 }
 const extractCookie = sc => sc.split(',').map(c => c.trim().split(';')[0]).join('; ');
 
+// Raw-body helper: imaging uploads are bytes, not JSON.
+function apiRaw(path, buf, filename, cookie) {
+  return fetch(base + path, {
+    method: 'POST',
+    headers: { Cookie: cookie, 'Content-Type': 'image/png', 'x-filename': filename },
+    body: buf,
+  }).then(async res => ({ status: res.status, data: await res.json().catch(() => ({})) }));
+}
+// 1x1 transparent PNG
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 let pass = 0, fail = 0; const failures = [];
 function check(name, cond) {
   if (cond) { pass++; console.log('  ✅ ' + name); }
@@ -112,6 +126,7 @@ check('Patient store login', r.data?.ok === true);
 const patCookie = extractCookie(r.setCookie);
 r = await api('POST', '/api/sync/lab-store-login', { username: 'testlab', password: 'testlab123' });
 check('Lab store login', r.data?.ok === true);
+const labCookie = extractCookie(r.setCookie);
 
 // ── CDS ──
 console.log('\n💊 Clinical Decision Support');
@@ -249,6 +264,27 @@ r = await api('GET', '/api/reports/quality', null, cookie);
 check('Quality report', r.data?.measures?.length > 0);
 r = await api('GET', '/api/reports/cancer-registry', null, cookie);
 check('Cancer registry report', r.data?.totalPatients !== undefined);
+
+// ── IMAGING ──
+console.log('\n🖼  Imaging');
+let img = await apiRaw('/api/images/TEST001', PNG, 'verify.png', cookie);
+check('Upload imaging study', img.status === 201 && !!img.data?.sha256);
+const imgId = img.data?.image?.id;
+let imgList = await api('GET', '/api/images?mrn=TEST001&limit=50', null, cookie);
+check('Gallery lists the study', imgList.data?.images?.some(i => i.id === imgId));
+check('Gallery reports a total', Number(imgList.data?.total) >= 1);
+const imgBytes = await fetch(`${base}/api/images/${imgId}/file`, { headers: { Cookie: cookie } });
+check('Image bytes served', imgBytes.status === 200 && (await imgBytes.arrayBuffer()).byteLength === PNG.length);
+let imgShare = await api('POST', '/api/images/share', { imageId: imgId, expiresInDays: 1 }, cookie);
+check('Share link created', !!imgShare.data?.shareToken);
+let imgPub = await fetch(base + imgShare.data.shareUrl);
+check('Share link works without a session', imgPub.status === 200);
+let imgDel = await api('DELETE', `/api/images/${imgId}`, null, cookie);
+check('Delete imaging study', imgDel.data?.ok === true);
+let patImg = await api('GET', '/api/images?mrn=12345', null, patCookie);
+check('Patient cannot browse imaging (403)', patImg.status === 403);
+let labImg = await api('GET', '/api/images?mrn=12345', null, labCookie);
+check('Lab cannot browse imaging (403)', labImg.status === 403);
 
 // ── SECURITY / FRONTEND ──
 console.log('\n🛡️ Security & Frontend');

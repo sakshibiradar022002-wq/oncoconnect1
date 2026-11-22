@@ -1,0 +1,17 @@
+.git
+.github
+node_modules
+**/node_modules
+data
+reports
+artifacts
+*.db
+*.db-wal
+*.db-shm
+*.enc
+.env
+.env.*
+!.env.example
+**/public/downloads
+**/test-verify.db
+mobile

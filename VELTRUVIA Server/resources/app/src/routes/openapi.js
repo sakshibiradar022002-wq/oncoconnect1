@@ -14,7 +14,7 @@ const spec = {
   info: {
     title: 'VELTRUVIA API',
     description: 'Secure healthcare API for neuro-oncology clinical workflows. Handles authentication, patient data sync, lab result management, team collaboration, and push notifications.',
-    version: '2.0.0',
+    version: '2.6.6',
     contact: { name: 'VELTRUVIA Support', email: 'support@veltruvia.io' },
     license: { name: 'HIPAA Compliant', url: 'https://en.wikipedia.org/wiki/Health_Insurance_Portability_and_Accountability_Act' },
   },
@@ -48,6 +48,17 @@ const spec = {
           mrn: { type: 'string' }, name: { type: 'string' }, dob: { type: 'string' },
           diag: { type: 'string' }, phase: { type: 'string' },
           age: { type: 'integer' }, gender: { type: 'string' },
+        },
+      },
+      Image: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' }, mrn: { type: 'string' }, originalName: { type: 'string' },
+          mimeType: { type: 'string' }, sizeBytes: { type: 'integer' },
+          width: { type: 'integer', nullable: true }, height: { type: 'integer', nullable: true },
+          capturedAt: { type: 'string', nullable: true }, note: { type: 'string' },
+          url: { type: 'string' }, createdAt: { type: 'string', format: 'date-time' },
+          sharedUntil: { type: 'string', nullable: true },
         },
       },
       AuditEntry: {
@@ -129,6 +140,79 @@ const spec = {
         summary: 'Sign out (revokes session)',
         tags: ['Auth'],
         responses: { 200: { description: 'Logged out' } },
+      },
+    },
+    '/api/images': {
+      get: {
+        summary: 'List a patient\'s imaging studies (paged)',
+        tags: ['Imaging'],
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          { name: 'mrn', in: 'query', required: true, schema: { type: 'string' } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 200, maximum: 500 } },
+          { name: 'offset', in: 'query', schema: { type: 'integer', default: 0 } },
+        ],
+        responses: {
+          200: { description: 'Images plus total/hasMore', content: { 'application/json': { schema: { type: 'object', properties: {
+            images: { type: 'array', items: { $ref: '#/components/schemas/Image' } },
+            total: { type: 'integer' }, limit: { type: 'integer' }, offset: { type: 'integer' }, hasMore: { type: 'boolean' },
+          } } } } },
+          403: { description: 'No access to that chart' },
+        },
+      },
+    },
+    '/api/images/{mrn}': {
+      post: {
+        summary: 'Upload an imaging study (raw bytes)',
+        description: 'Body is the raw image bytes (PNG/JPEG/GIF/WebP/BMP/DICOM, max 10 MB); filename and note travel in x-filename / x-note headers.',
+        tags: ['Imaging'],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ name: 'mrn', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { required: true, content: { 'application/octet-stream': { schema: { type: 'string', format: 'binary' } } } },
+        responses: { 201: { description: 'Stored, with SHA-256 of the bytes' }, 413: { description: 'Larger than 10 MB' }, 415: { description: 'Unsupported image type' } },
+      },
+    },
+    '/api/images/{id}': {
+      get: {
+        summary: 'Imaging study metadata',
+        tags: ['Imaging'],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Image metadata (no storage paths)' }, 404: { description: 'Not found' } },
+      },
+      delete: {
+        summary: 'Delete a study and its bytes',
+        tags: ['Imaging'],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Deleted' }, 404: { description: 'Not found' } },
+      },
+    },
+    '/api/images/{id}/file': {
+      get: {
+        summary: 'Imaging study bytes (SHA-256 verified on read)',
+        tags: ['Imaging'],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Image bytes', content: { 'application/octet-stream': { schema: { type: 'string', format: 'binary' } } } }, 500: { description: 'Integrity check failed' } },
+      },
+    },
+    '/api/images/share': {
+      post: {
+        summary: 'Create a time-limited public link (1-30 days, no identifiers)',
+        tags: ['Imaging'],
+        security: [{ cookieAuth: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['imageId'], properties: {
+          imageId: { type: 'string' }, expiresInDays: { type: 'integer', minimum: 1, maximum: 30, default: 7 } } } } } },
+        responses: { 200: { description: 'shareToken + shareUrl + expiresAt' }, 403: { description: 'No access to that chart' } },
+      },
+    },
+    '/api/images/shared/{token}': {
+      get: {
+        summary: 'Read a shared image (no session; bytes only)',
+        tags: ['Imaging'],
+        parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Image bytes' }, 404: { description: 'Unknown token' }, 410: { description: 'Share link expired' } },
       },
     },
     '/api/sync': {

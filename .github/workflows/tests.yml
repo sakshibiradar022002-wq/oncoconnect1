@@ -14,7 +14,7 @@ jobs:
       matrix:
         # engines.node is 24.x; the writer-lock regression only appeared on
         # Node >= 22, so CI now covers the boundary instead of just 20.
-        node-version: [20, 22]
+        node-version: [20, 22, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +32,15 @@ jobs:
         run: npm test
         working-directory: VELTRUVIA Server/resources/app
         timeout-minutes: 8
+      - name: Install client app dependencies
+        run: |
+          for app in "VELTRUVIA Doctor" "VELTRUVIA Patient" "VELTRUVIA Lab"; do
+            (cd "$app/resources/app" && npm ci)
+          done
+        timeout-minutes: 10
+      - name: Feature verification (70 checks × 4 apps)
+        run: node scripts/verify-all.mjs
+        timeout-minutes: 12
       # The root suite (hardening, imaging, anomaly scan, offsite backup,
       # heartbeat) is where the regressions that matter live. It resolves the
       # bundle's node_modules, so no separate root install is required.

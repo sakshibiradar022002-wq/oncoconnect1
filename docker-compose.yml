@@ -1,0 +1,32 @@
+# VELTRUVIA Server — single-service compose file.
+#
+#   cp "VELTRUVIA Server/resources/app/.env.example" .env   # then fill it in
+#   mkdir -p data && docker compose up -d --build
+#
+# TLS is terminated by the reverse proxy in front of this service; the port is
+# published on loopback only so the app cannot be reached around it.
+
+services:
+  veltruvia:
+    build: .
+    image: veltruvia-server:2.6.7
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3000"
+      DB_PATH: /data/chemocure.db
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+    security_opt:
+      - no-new-privileges:true

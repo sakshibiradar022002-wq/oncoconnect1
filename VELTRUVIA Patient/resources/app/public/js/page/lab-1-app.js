@@ -12,8 +12,6 @@ const LS={
 };
 SecureStore.init({namespace:'lab'});
 
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
-function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function v(id){const el=document.getElementById(id);return el?(el.value||'').trim():''}
 function showErr(el,msg){el.textContent=msg;el.style.display='block';setTimeout(()=>{if(el)el.style.display='none'},6000)}
 function openSheet(id){document.getElementById(id).classList.add('open')}

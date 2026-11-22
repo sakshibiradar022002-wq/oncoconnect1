@@ -11,14 +11,25 @@ const APPS = [
 ];
 
 let failed = 0;
-const checksPerApp = 70; // keep in sync with verify-app.mjs check list
+let passed = 0;
+let total = 0;
+
 for (const [dir, name] of APPS) {
-  const r = spawnSync(process.execPath, [fileURLToPath(new URL('./verify-app.mjs', import.meta.url)), dir, name], { stdio: 'inherit' });
+  const r = spawnSync(process.execPath, [fileURLToPath(new URL('./verify-app.mjs', import.meta.url)), dir, name], {
+    encoding: 'utf8',
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  const out = `${r.stdout || ''}${r.stderr || ''}`;
+  process.stdout.write(out);
+  // Totals come from verify-app's own summary; never hardcode the check count
+  // here (it silently drifted last time the check list grew).
+  const m = out.match(/(\d+) passed, (\d+) failed, (\d+) total/);
+  if (m) { passed += Number(m[1]); total += Number(m[3]); }
   if (r.status !== 0) failed++;
 }
 
 console.log('\n═══════════════════════════════════════════════');
-if (failed === 0) console.log(`  ✅ ALL 4 APPS: ${checksPerApp}/${checksPerApp} feature checks passed`);
-else console.log(`  ❌ ${failed} of 4 apps had failing checks`);
+if (failed === 0) console.log(`  ✅ ALL ${APPS.length} APPS: ${passed}/${total} feature checks passed`);
+else console.log(`  ❌ ${failed} of ${APPS.length} apps had failing checks (${passed}/${total} checks passed)`);
 console.log('═══════════════════════════════════════════════');
 process.exit(failed === 0 ? 0 : 1);

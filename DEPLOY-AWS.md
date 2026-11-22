@@ -61,6 +61,10 @@ this tier. Free via Free Tier credits: $7 × 6 months = $42, fully covered
 - Nightly backup automation: ~/veltruvia/vm-backup.sh (VACUUM INTO snapshot
   + chain + patient-store + .env, 14-day retention) via
   veltruvia-backup.timer at 02:15 UTC daily; first run verified.
+- NOTE: that VM script does NOT include `data/images`. The 03:30 UTC
+  `offsite-backup.mjs --images /home/ubuntu/veltruvia/app/data/images` run is
+  what gives uploaded studies an off-box copy; add the same directory to the
+  local tar if on-VM copies of images are also wanted.
 - NOTE for future migrations: never copy the DB while any server process
   has it open; verify with the LIVE engine (node:sqlite/libsql), not just
   sql.js; kill ALL stray node processes before systemd takes the port.

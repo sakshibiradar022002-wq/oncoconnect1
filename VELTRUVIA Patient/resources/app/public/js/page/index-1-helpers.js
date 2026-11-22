@@ -110,8 +110,6 @@ function checkDrugInteractions(meds){
   return interactions;
 }
 
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 // ── Server API helper ──
 async function api(path,opts){
   const r=await fetch('/api'+path,Object.assign({credentials:'include',headers:{'Content-Type':'application/json'}},opts));

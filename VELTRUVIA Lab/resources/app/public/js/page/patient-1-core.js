@@ -7,8 +7,6 @@ window.addEventListener("unhandledrejection",function(e){console.error("[VELTRUV
 // locally, key wrapped by the OS through the desktop app's safeStorage.
 const LS={get:k=>SecureStore.get(k),set:(k,v)=>SecureStore.set(k,v),del:k=>SecureStore.del(k),keys:pre=>SecureStore.names(pre)};
 SecureStore.init({namespace:'cc'});
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
-function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function v(id){const el=document.getElementById(id);return el?(el.value||'').trim():''}
 function toggle(el){el.classList.toggle('checked')}
 function showToast(msg){const t=document.createElement('div');t.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green2);color:#fff;padding:12px 24px;border-radius:12px;font-size:13px;font-weight:600;z-index:9000;box-shadow:0 8px 32px rgba(5,150,105,.3);animation:toastIn .3s ease,toastOut .3s ease 2.5s forwards;pointer-events:none;font-family:var(--font)';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000)}

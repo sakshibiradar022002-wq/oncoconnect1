@@ -61,6 +61,81 @@ async function writeMeta(meta) {
 
 function filePath(meta) { return join(IMAGE_DIR, meta.id + meta.ext); }
 
+// ── MRN index ─────────────────────────────────────────────────────
+// Without it every gallery/profile request decrypted every image record in
+// the database. The index is one small encrypted row per MRN
+// (`imidx_<mrn>` → { ids: [...] }) and is rebuilt from a full scan whenever
+// it is missing or stale, so no migration step is required.
+const INDEX_PREFIX = 'imidx_';
+const indexKey = (mrn) => INDEX_PREFIX + mrn;
+
+async function readIndex(mrn) {
+  const row = await db.prepare('SELECT v_enc FROM kv_store WHERE k = ?').get(indexKey(mrn));
+  if (!row) return null;
+  try {
+    const v = JSON.parse(decryptPHI(row.v_enc));
+    return Array.isArray(v?.ids) ? v.ids.filter((id) => typeof id === 'string') : null;
+  } catch { return null; }
+}
+
+async function writeIndex(mrn, ids, owner) {
+  const v = encryptPHI(JSON.stringify({ ids, updatedAt: new Date().toISOString() }));
+  const existing = await db.prepare('SELECT k FROM kv_store WHERE k = ?').get(indexKey(mrn));
+  if (existing) {
+    await db.prepare("UPDATE kv_store SET v_enc = ?, updated_at = datetime('now') WHERE k = ?")
+      .run(v, indexKey(mrn));
+  } else {
+    await db.prepare("INSERT INTO kv_store (owner_id, k, v_enc, updated_at) VALUES (?, ?, ?, datetime('now'))")
+      .run(owner || 'system', indexKey(mrn), v);
+  }
+}
+
+async function addToIndex(meta) {
+  const ids = (await readIndex(meta.mrn)) || [];
+  if (ids.includes(meta.id)) return;
+  ids.push(meta.id);
+  await writeIndex(meta.mrn, ids, meta.uploadedBy);
+}
+
+async function removeFromIndex(meta) {
+  const ids = await readIndex(meta.mrn);
+  if (!ids || !ids.includes(meta.id)) return;
+  const next = ids.filter((id) => id !== meta.id);
+  if (next.length) await writeIndex(meta.mrn, next, meta.uploadedBy);
+  else await db.prepare('DELETE FROM kv_store WHERE k = ?').run(indexKey(meta.mrn));
+}
+
+/** Full scan — only used to build/repair an index. */
+async function scanMrn(mrn) {
+  const rows = await db.prepare("SELECT v_enc FROM kv_store WHERE k LIKE 'img_%'").all();
+  const metas = [];
+  for (const r of rows) {
+    let m;
+    try { m = JSON.parse(decryptPHI(r.v_enc)); } catch { continue; }
+    if (m?.mrn === mrn && m.id) metas.push(m);
+  }
+  metas.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return metas;
+}
+
+/** Index-first lookup; self-heals a missing or stale index. */
+async function listMrnImages(mrn, owner) {
+  const ids = await readIndex(mrn);
+  if (ids) {
+    const metas = [];
+    let stale = false;
+    for (const id of ids) {
+      const m = await readMeta(id);
+      if (!m || m.mrn !== mrn) { stale = true; continue; }
+      metas.push(m);
+    }
+    if (!stale) return metas.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }
+  const metas = await scanMrn(mrn);
+  try { await writeIndex(mrn, metas.map((m) => m.id), owner || metas[0]?.uploadedBy || 'system'); } catch {}
+  return metas;
+}
+
 // Public shape — never expose the on-disk filename or share token in listings.
 function publicMeta(m) {
   return {
@@ -142,7 +217,7 @@ imagesRouter.post('/share', authenticate, requireRole('doctor', 'admin'), asyncH
 // 1. Upload  POST /api/images/:mrn   (raw body, x-filename header)
 //    NOTE: declared AFTER /share so the literal segment is never swallowed
 //    by the :mrn parameter.
-imagesRouter.post('/:mrn', authenticate, requireRole('doctor', 'admin', 'kv-patient'), asyncHandler(async (req, res) => {
+imagesRouter.post('/:mrn', authenticate, requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
   const mrn = String(req.params.mrn || '').toUpperCase();
   if (!(await canAccessMrn(req, mrn))) return res.status(403).json({ error: 'Forbidden' });
 
@@ -177,8 +252,16 @@ imagesRouter.post('/:mrn', authenticate, requireRole('doctor', 'admin', 'kv-pati
     share: null,
   };
 
+  // File first, metadata second, with cleanup: a failed metadata write must
+  // not leave an unlisted file on disk.
   writeFileSync(filePath(meta), buf);
-  await writeMeta(meta);
+  try {
+    await writeMeta(meta);
+    await addToIndex(meta);
+  } catch (err) {
+    try { unlinkSync(filePath(meta)); } catch {}
+    return res.status(500).json({ error: 'Could not store image metadata' });
+  }
   writeAudit({
     actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'image.uploaded',
     targetId: mrn, detail: { id, bytes: buf.length, mimeType: meta.mimeType }, ip: req.ip,
@@ -218,49 +301,43 @@ imagesRouter.get('/shared/:token', asyncHandler(async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════
 // 4. Profile picture — GET /api/images/profile/:patientId (latest image)
-imagesRouter.get('/profile/:patientId', authenticate, requireRole('doctor', 'admin', 'kv-patient'), asyncHandler(async (req, res) => {
+imagesRouter.get('/profile/:patientId', authenticate, requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
   const mrn = String(req.params.patientId || '').toUpperCase();
   if (!(await canAccessMrn(req, mrn))) return res.status(403).json({ error: 'Forbidden' });
-  const rows = await db.prepare("SELECT v_enc FROM kv_store WHERE k LIKE 'img_%'").all();
-  let latest = null;
-  for (const r of rows) {
-    let m;
-    try { m = JSON.parse(decryptPHI(r.v_enc)); } catch { continue; }
-    if (m?.mrn !== mrn) continue;
-    if (!latest || String(m.createdAt) > String(latest.createdAt)) latest = m;
-  }
+  const [latest] = await listMrnImages(mrn, req.auth.subjectId);
   if (!latest) return res.status(404).json({ error: 'No profile picture found' });
   res.json({ image: publicMeta(latest) });
 }));
 
 // ═══════════════════════════════════════════════════════════════════
 // 5. Gallery — GET /api/images?mrn=ABC123
-imagesRouter.get('/', authenticate, requireRole('doctor', 'admin', 'kv-patient', 'lab'), asyncHandler(async (req, res) => {
+imagesRouter.get('/', authenticate, requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
   const mrn = String(req.query.mrn || '').toUpperCase();
   if (!mrn) return res.status(400).json({ error: 'mrn query parameter is required' });
   if (!(await canAccessMrn(req, mrn))) return res.status(403).json({ error: 'Forbidden' });
 
-  const rows = await db.prepare("SELECT v_enc FROM kv_store WHERE k LIKE 'img_%'").all();
-  const images = [];
-  for (const r of rows) {
-    let m;
-    try { m = JSON.parse(decryptPHI(r.v_enc)); } catch { continue; }
-    if (m?.mrn === mrn) images.push(publicMeta(m));
-  }
-  images.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-  res.json({ images });
+  const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 200));
+  const offset = Math.max(0, Number(req.query.offset) || 0);
+  const metas = await listMrnImages(mrn, req.auth.subjectId);
+  res.json({
+    images: metas.slice(offset, offset + limit).map(publicMeta),
+    total: metas.length,
+    limit,
+    offset,
+    hasMore: offset + limit < metas.length,
+  });
 }));
 
 // ═══════════════════════════════════════════════════════════════════
 // 6. Metadata — GET /api/images/:id
-imagesRouter.get('/:id', authenticate, requireRole('doctor', 'admin', 'kv-patient', 'lab'), asyncHandler(async (req, res) => {
+imagesRouter.get('/:id', authenticate, requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
   const meta = await loadAuthorized(req, res);
   if (!meta) return;
   res.json({ image: publicMeta(meta) });
 }));
 
 // 7. Bytes — GET /api/images/:id/file
-imagesRouter.get('/:id/file', authenticate, requireRole('doctor', 'admin', 'kv-patient', 'lab'), asyncHandler(async (req, res) => {
+imagesRouter.get('/:id/file', authenticate, requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
   const meta = await loadAuthorized(req, res);
   if (!meta) return;
   const p = filePath(meta);
@@ -275,16 +352,13 @@ imagesRouter.get('/:id/file', authenticate, requireRole('doctor', 'admin', 'kv-p
 
 // ═══════════════════════════════════════════════════════════════════
 // 8. Delete — DELETE /api/images/:id
-imagesRouter.delete('/:id', authenticate, requireRole('doctor', 'admin', 'kv-patient'), asyncHandler(async (req, res) => {
+imagesRouter.delete('/:id', authenticate, requireRole('doctor', 'admin'), asyncHandler(async (req, res) => {
   const meta = await loadAuthorized(req, res);
   if (!meta) return;
-  // A patient may delete only images they uploaded themselves.
-  if (req.auth.role === 'kv-patient' && meta.uploadedBy !== req.auth.subjectId) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
 
   try { if (statSync(filePath(meta)).isFile()) unlinkSync(filePath(meta)); } catch {}
   await db.prepare('DELETE FROM kv_store WHERE k = ?').run('img_' + meta.id);
+  try { await removeFromIndex(meta); } catch { /* index self-heals on next read */ }
   writeAudit({
     actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'image.deleted',
     targetId: meta.mrn, detail: { id: meta.id }, ip: req.ip,

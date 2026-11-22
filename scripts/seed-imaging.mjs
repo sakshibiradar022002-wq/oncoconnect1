@@ -181,20 +181,22 @@ async function login() {
 // holds anything else is a real patient chart, and public images must never
 // be mixed into it.
 async function existingKeys(mrns) {
-  const seen = new Set();
+  const seen = new Map();   // mrn → Set('name|size') — dedupe is per patient
   const realCharts = new Set();
   for (const mrn of mrns) {
-    const res = await request('/api/images?mrn=' + encodeURIComponent(mrn));
+    const res = await request('/api/images?mrn=' + encodeURIComponent(mrn) + '&limit=500');
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       die(`cannot read the gallery for ${mrn} (HTTP ${res.status}): ${data.error || 'no message'}\n`
         + '    Sign in as a doctor/admin who can access that MRN, and check the MRN spelling.');
     }
     const data = await res.json().catch(() => ({}));
+    const set = new Set();
     for (const im of data.images || []) {
-      seen.add(`${im.originalName}|${im.sizeBytes}`);
+      set.add(`${im.originalName}|${im.sizeBytes}`);
       if (!/commons:/i.test(String(im.note || ''))) realCharts.add(mrn);
     }
+    seen.set(mrn, set);
   }
   return { seen, realCharts };
 }
@@ -317,13 +319,14 @@ async function main() {
   console.log(`  patients: ${MRNAMES.join(', ')}${DRY ? '   (dry run — nothing is saved)' : ''}`);
 
   let role = '(dry run)';
-  let seen = new Set();
+  let seen = new Map();
   let realCharts = new Set();
   if (!DRY) {
     role = await login();
     console.log(`  signed in as ${role}`);
     ({ seen, realCharts } = await existingKeys(MRNAMES));
-    console.log(`  gallery already holds ${seen.size} image(s) for these patients`);
+    const existing = [...seen.values()].reduce((n, s) => n + s.size, 0);
+    console.log(`  gallery already holds ${existing} image(s) for these patients`);
   }
 
   // Public demo studies go only to charts that hold no real patient images.
@@ -382,7 +385,11 @@ async function main() {
     }
 
     const key = `${name}|${buf.length}`;
-    if (!KEEP_DUPES && seen.has(key)) { console.log(`  [${i}] dup   ${name}`); skipped++; continue; }
+    const targetMrn = item.kind === 'url'
+      ? demoMrns[demoN % demoMrns.length]
+      : MRNAMES[done % MRNAMES.length];
+    const alreadyThere = seen.get(targetMrn);
+    if (!KEEP_DUPES && alreadyThere?.has(key)) { console.log(`  [${i}] dup   ${name}`); skipped++; continue; }
 
     if (DRY) {
       console.log(`  [${i}] would upload  ${kb(buf.length)}  ${name}${item.note ? '  — ' + item.note : ''}`);
@@ -390,13 +397,13 @@ async function main() {
       continue;
     }
 
-    const list = item.kind === 'url' ? demoMrns : MRNAMES;
     const mrn = item.kind === 'url'
-      ? list[demoN++ % list.length]
+      ? demoMrns[demoN++ % demoMrns.length]
       : MRNAMES[done % MRNAMES.length];
     try {
       const img = await upload(mrn, name, buf, item.note || NOTE);
-      seen.add(key);
+      if (!seen.has(mrn)) seen.set(mrn, new Set());
+      seen.get(mrn).add(key);
       done++; bytes += buf.length;
       console.log(`  [${i}] ✓ ${mrn}  ${kb(buf.length)}  ${name}`);
       manifest.push({

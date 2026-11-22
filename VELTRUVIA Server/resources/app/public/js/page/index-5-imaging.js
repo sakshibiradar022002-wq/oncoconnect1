@@ -17,8 +17,9 @@
 // matching the rest of the app.
 // ═══════════════════════════════════════════════════════════════════
 
-const IMG = { mrn: '', images: [], shareUrl: '' };
+const IMG = { mrn: '', images: [], shareUrl: '', total: 0, hasMore: false };
 const IMG_MAX_BYTES = 10 * 1024 * 1024;
+const IMG_PAGE = 200;
 
 function imgEl(id) { return document.getElementById(id); }
 
@@ -49,7 +50,14 @@ function renderImagingPanel() {
   imgLoadGallery();
 }
 
-async function imgLoadGallery() {
+/** A share link belongs to the image it was made for — drop it on reload. */
+function imgClearShare() {
+  IMG.shareUrl = '';
+  const out = imgEl('img-share-out');
+  if (out) out.innerHTML = '';
+}
+
+async function imgLoadGallery(more = false) {
   const box = imgEl('img-gallery');
   if (!box) return;
   const sel = imgEl('img-mrn');
@@ -57,19 +65,32 @@ async function imgLoadGallery() {
   IMG.mrn = mrn;
   if (!mrn) {
     IMG.images = [];
+    IMG.total = 0;
+    IMG.hasMore = false;
+    imgClearShare();
     box.innerHTML = '<div class="empty-card">Select a patient to view imaging studies.</div>';
     return;
   }
-  box.innerHTML = '<div class="empty-card">Loading images…</div>';
+  const offset = more ? IMG.images.length : 0;
+  if (!more) {
+    IMG.images = [];
+    imgClearShare();
+    box.innerHTML = '<div class="empty-card">Loading images…</div>';
+  }
   try {
     // api() on this page is the doctor app helper: api('/path', {method, body}).
-    const data = await api('/images?mrn=' + encodeURIComponent(mrn));
-    IMG.images = Array.isArray(data?.images) ? data.images : [];
+    const data = await api(`/images?mrn=${encodeURIComponent(mrn)}&limit=${IMG_PAGE}&offset=${offset}`);
+    const batch = Array.isArray(data?.images) ? data.images : [];
+    IMG.images = more ? IMG.images.concat(batch) : batch;
+    IMG.total = Number.isFinite(Number(data?.total)) ? Number(data.total) : IMG.images.length;
+    IMG.hasMore = data?.hasMore === true;
     imgRenderGallery();
   } catch (err) {
     box.innerHTML = `<div class="empty-card">Could not load images: ${esc(err.message || err)}</div>`;
   }
 }
+
+function imgLoadMore() { imgLoadGallery(true); }
 
 function imgRenderGallery() {
   const box = imgEl('img-gallery');
@@ -78,8 +99,13 @@ function imgRenderGallery() {
     box.innerHTML = `<div class="empty-card">No images for ${esc(IMG.mrn)} yet. Upload one above.</div>`;
     return;
   }
+  const more = IMG.hasMore
+    ? `<div style="text-align:center;margin-top:14px;">
+         <button class="btn btn-ghost btn-sm" data-action="imgLoadMore">Load more (${IMG.images.length} of ${IMG.total})</button>
+       </div>`
+    : '';
   box.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;">'
-    + IMG.images.map(imgCard).join('') + '</div>';
+    + IMG.images.map(imgCard).join('') + '</div>' + more;
 }
 
 function imgCard(im) {
@@ -230,7 +256,7 @@ async function imgEnsureCornerstone() {
   if (IMG_DCM.cs) return IMG_DCM.cs;
   // Version query: the vendor bundle is a static file, so browsers would
   // otherwise keep serving a previous build after an upgrade.
-  const cs = await import('/js/vendor/cornerstone/entry.js?v=2.6.6');
+  const cs = await import('/js/vendor/cornerstone/entry.js?v=2.6.7');
   // CPU rendering: no WebGL context limits, deterministic in Electron.
   if (typeof cs.setUseCPURendering === 'function') cs.setUseCPURendering(true);
   await cs.coreInit();
