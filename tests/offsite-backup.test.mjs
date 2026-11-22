@@ -81,6 +81,19 @@ test('refuses to run without a destination or with a bad key', () => {
   assert.match(badKey.stderr, /key must be 64 hex chars/);
 });
 
+test('warns instead of "verifying" an empty images directory', () => {
+  const f = fixture();
+  const images = join(f.dir, 'images');
+  mkdirSync(images, { recursive: true });
+  const out = run([
+    '--source', f.src, '--key-file', f.keyFile, '--dest', f.dest,
+    '--work', f.work, '--images', images,
+  ]);
+  assert.equal(out.status, 0, out.stderr);
+  assert.match(out.stdout + out.stderr, /images directory holds 0 file\(s\)/);
+  assert.equal(readdirSync(f.dest).filter(n => n.includes('images')).length, 0, 'no image archive written');
+});
+
 test('exits 2 when nothing matches the pattern', () => {
   const f = fixture();
   const out = run(['--source', f.src, '--pattern', '*.tar.gz', '--key-file', f.keyFile, '--dest', f.dest, '--work', f.work]);

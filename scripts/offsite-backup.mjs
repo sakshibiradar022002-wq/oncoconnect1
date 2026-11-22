@@ -241,13 +241,17 @@ if (IMAGES) {
   if (!existsSync(imagesDir)) {
     console.warn(`[offsite] images directory not found: ${imagesDir} — skipped`);
   } else {
+    // An empty directory still tars to ~115 bytes, so a byte check alone would
+    // report "verified" for a copy that contains no studies at all. Count files.
+    const imageFiles = readdirSync(imagesDir, { recursive: true, withFileTypes: true })
+      .filter(e => e.isFile()).length;
     const tarName = `.images-${process.pid}.tar.gz`;
     const tarPath = join(workDir, tarName);
     execFileSync('tar', ['-czf', tarPath, '-C', dirname(imagesDir), basename(imagesDir)], { stdio: 'inherit' });
     const tarBytes = statSync(tarPath).size;
-    if (!tarBytes) {
+    if (!tarBytes || !imageFiles) {
       unlinkSync(tarPath);
-      console.warn('[offsite] images directory is empty — skipped');
+      console.warn(`[offsite] ❌ images directory holds ${imageFiles} file(s): ${imagesDir} — nothing archived; check that --images points at the live upload store`);
     } else {
       const imgStamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
       const imgArchive = `veltruvia-offsite-images-${imgStamp}.tar.gz.enc`;
