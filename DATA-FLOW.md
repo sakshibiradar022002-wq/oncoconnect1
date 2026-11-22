@@ -62,7 +62,7 @@ flowchart LR
 | B1 | Internet → Caddy | HTTPS only | ACME TLS 1.2+, HSTS, no plaintext port |
 | B2 | Caddy → Node API | localhost only | CSP (`script-src 'self'`), nosniff, rate limits, CSRF Origin check |
 | B3 | API → SQLite / JSON stores | in-process | AES-256-GCM for PHI fields/stores; parameterized queries only |
-| B4 | Server → Sepolia | outbound HTTPS/WSS | **hashes only** — no PHI, no names, no MRNs; fail-open |
+| B4 | Server → Sepolia | outbound HTTPS/WSS | **hashes only** — `sha256`(record) + `sha256`(targetId) + action name; no PHI, no names, no MRNs in calldata (guard: `assertHashOnlyAnchor`). Fail-open. Entries written before 2.6.8 carried the raw targetId — see `reports/SEPOLIA-DISCLOSURE-ASSESSMENT.md` |
 | B5 | Server → Sentry | outbound HTTPS | `beforeSend` strips bodies, querystrings, cookies, MRN/pat_/lab_/email patterns |
 | B6 | VM → operator PC | SCP over SSH key | encrypted-at-rest key file; pull freshness guard (exit 4 / Event ID 2) |
 | B7 | Doctor ↔ Patient | WebRTC | DTLS-SRTP; server only brokers ICE/SDP, never stores media |
@@ -85,7 +85,7 @@ flowchart LR
 - **Browser/app → server:** TLS 1.2+ (Caddy/ACME), HSTS.
 - **Doctor → patient call:** WebRTC DTLS-SRTP end-to-end; coturn relays
   ciphertext only. Server sees ICE candidates, never media.
-- **Server → Sepolia:** TLS; payload is `sha256` chain entries.
+- **Server → Sepolia:** TLS; payload is two `sha256` values (audit record, target id) plus the action name — never the underlying identifier.
 - **Server → operator PC:** SSH (scp, key file).
 - LAN/TLS fallback documented in `TLS-LAN.md` for offline clinics.
 
@@ -93,7 +93,7 @@ flowchart LR
 
 | Data | Destination that must never receive it | Enforcement |
 |------|----------------------------------------|-------------|
-| PHI (names, MRN, diagnoses, notes) | Blockchain, Sentry, Cloudflare, GitHub, analytics | hash-only chain writes; Sentry scrub; **no analytics SDK exists** |
+| PHI (names, MRN, diagnoses, notes) | Blockchain, Sentry, Cloudflare, GitHub, analytics | hash-only chain writes (`assertHashOnlyAnchor` aborts non-hash payloads); Sentry scrub; **no analytics SDK exists** |
 | Passwords (plaintext) | Any log, any store | PBKDF2 at boundary; demo-rotation gate documented |
 | Telehealth media | Server disk | WebRTC P2P; rooms store holds IDs/tokens only |
 | Backup archives | Public web | `/backups` not routed (404); `.env` excluded from tar |

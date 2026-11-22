@@ -13,6 +13,12 @@
 > count, field inventory and identifier classes below must be confirmed against
 > the chain before this assessment is relied on. Every figure marked
 > **[VERIFY]** is unconfirmed.
+>
+> **Update 2026-11-22 (v2.6.8).** The mechanism is no longer a hypothesis — it
+> is read directly from source, see §3. The write path is fixed: `targetId` is
+> now hashed and a non-hash payload aborts the anchor. The **[VERIFY]** figures
+> in §2 still require a chain replay and remain unresolved; the fix stops new
+> writes and changes nothing about what is already public.
 
 ---
 
@@ -54,21 +60,30 @@ and any copy of the store (backup, stolen disk, insider, exported CSV) has a
 complete re-identification path. The email address is directly identifying on
 its own and is linkable across services.
 
-## 3. Why the data is probably on chain
+## 3. How the data got on chain (confirmed in source, 2026-11-22)
 
-`VELTRUVIA Server/resources/app/src/blockchain/index.js` builds the anchored
-payload from audit entries. The Sepolia backend (`BLOCKCHAIN_MODE=sepolia`)
-forwards the entry through `anchorWithNonceRetry(...)` to the contract. The
-contract stores whatever it is given as opaque bytes/string; it does not
-validate that the argument is a hash. If the entry object (rather than
-`entry.hash`) reached the contract call, identifiers would be written verbatim.
-That is the most likely mechanism and should be confirmed by reading one
-transaction's input data on Etherscan.
+`VELTRUVIA Server/resources/app/src/blockchain/index.js` anchors with
+`recordAudit(bytes32 recordHash, string action, string targetId)` — the second
+and third arguments are `string`, not `bytes32`, so the contract stores them as
+plaintext calldata. The Sepolia branch built the call as:
 
-A second possibility is that the hash is correct but the *pre-image* was
-published elsewhere (log, repo, Sentry event). That would be a different and
-lesser exposure. The distinction matters for notification and must be settled
-before counsel relies on this document.
+```js
+['0x' + recordHash, String(action || 'audit'), String(targetId || 'unknown')]
+```
+
+So the audit **record** was correctly hashed, but `targetId` was forwarded
+verbatim. Callers pass identifiers there: `targetId: mrn` (patient store, FHIR,
+HL7, imaging, consent, attachments), `targetId: email` (failed login, OTP send)
+and `targetId: user.id`. That is the mechanism: MRNs and email addresses appear
+in transaction input data as plain ABI-encoded strings. It is not a pre-image
+leak elsewhere, and the earlier "either the docs are wrong or the code changed"
+question is settled — the docs were wrong.
+
+**Fixed in 2.6.8:** the anchored target is `sha256(targetId)` and
+`assertHashOnlyAnchor(...)` rejects any anchor whose hashed fields are not
+`0x` + 64 hex, counting the refusal as a failed anchor (local chain unaffected,
+consistent with fail-open). Regression test: *anchor payloads carry only
+hashes — a raw identifier is refused*.
 
 ## 4. Risk analysis
 
@@ -144,6 +159,9 @@ record-keeping.
    anchor path, assert that the anchored value matches `^0x[0-9a-f]{64}$`
    before the contract call. Reject and log loudly otherwise. This prevents the
    population from growing while the assessment is underway.
+   **DONE in 2.6.8** — `assertHashOnlyAnchor` + `anchorTargetHash` in
+   `src/blockchain/index.js`; the guard is enforced per anchor, so a fault in a
+   future call site cannot publish an identifier.
 2. **Freeze the write path, not the service.** Anchoring is documented as
    fail-open; set `BLOCKCHAIN_MODE=file` if the guarantee cannot be restored
    quickly. Local tamper-evidence continues; no PHI reaches the chain.
@@ -161,6 +179,8 @@ record-keeping.
    §B4 and §96, and `RISK-REGISTER.md` must describe what actually happened,
    including the date range. Add Sepolia to the subprocessor table with a note
    that it is a public testnet and not a contracted processor.
+   **DONE in 2.6.8** for the claim itself (§3, §B4, §5, §4 of this file); the
+   **date range** waits on item 3, which remains open.
 7. **Log it in the risk register** as a new S-item (public-ledger disclosure of
    direct identifiers), owner assigned, linked to this document. Do not mark it
    closed when the write path is fixed — the disclosure already happened.

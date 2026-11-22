@@ -16,7 +16,7 @@
 | Data controller | The clinic/operator running the instance (self-hosted by design) |
 | Vendor's access to PHI | None on the hosted demo; the maintainer operates the server under operator authority |
 | PHI storage location | Server disk of the deploying operator (currently: AWS Lightsail Mumbai region, Ubuntu) |
-| Patient data on third parties | **Never** — the blockchain receives one-way hashes only (see §3) |
+| Patient data on third parties | **Never** — the blockchain receives one-way hashes only (see §3). Audit entries anchored before 2.6.8 also carried the raw `targetId` (MRN or email) in calldata; that is a completed disclosure, recorded in `reports/SEPOLIA-DISCLOSURE-ASSESSMENT.md` |
 
 ## 2. Data collected & protected
 
@@ -33,7 +33,7 @@
 
 | Destination | Data | Notes |
 |---|---|---|
-| **Sepolia blockchain** | One-way **hashes** of audit events + previous-hash chain | No PHI, no names, no MRNs on chain; `/chain.json` not web-exposed (404 by design); fail-open so care never blocks on chain writes |
+| **Sepolia blockchain** | Anchor record: `sha256` of the audit record, `sha256` of the target id, and the action name | Hash-only; no PHI, no names, no MRNs in calldata (`assertHashOnlyAnchor` rejects anything not `0x`+64 hex — 2.6.8 onward); `/chain.json` not web-exposed (404 by design); fail-open so care never blocks on chain writes. **Exception, historical:** entries anchored before 2.6.8 wrote `targetId` verbatim, so MRNs/emails from that period are public and permanent — see `reports/SEPOLIA-DISCLOSURE-ASSESSMENT.md` |
 | **Sentry** (error monitoring) | Error messages/stack traces after `beforeSend` scrub | Scrub strips request bodies, queries, cookies, URL querystrings, and redacts MRN-/pat_/lab_/email patterns (`src/observability/sentry.js`, verified 2026-09-27) |
 | **Cloudflare tunnel** | Encrypted traffic in transit | Edge sees IP addresses and TLS traffic only; no PHI storage |
 | **GitHub Releases** | Installers, checksums, ymls | Binaries only — **no patient data ever** |
@@ -63,6 +63,7 @@
 | GitHub (Microsoft) | Source + release artifacts (no PHI) | TODO: BAA/review for artifact hosting |
 | Sentry | Error telemetry (scrubbed) | Free tier; TODO: DPA review |
 | DuckDNS | DNS | Free service; no data processing of PHI |
+| Ethereum Sepolia (public testnet) | Anchoring audit hashes | **Not a processor and not contracted** — a public, permissionless testnet; writes are irreversible and world-readable, which is why only hashes may be written (see §3) |
 | Twilio / Gmail | Optional SMS/email reminders | Disabled by default; enable only with operator approval |
 
 ## 6. Secrets & credentials

@@ -256,7 +256,7 @@ async function imgEnsureCornerstone() {
   if (IMG_DCM.cs) return IMG_DCM.cs;
   // Version query: the vendor bundle is a static file, so browsers would
   // otherwise keep serving a previous build after an upgrade.
-  const cs = await import('/js/vendor/cornerstone/entry.js?v=2.6.7');
+  const cs = await import('/js/vendor/cornerstone/entry.js?v=2.6.8');
   // CPU rendering: no WebGL context limits, deterministic in Electron.
   if (typeof cs.setUseCPURendering === 'function') cs.setUseCPURendering(true);
   await cs.coreInit();

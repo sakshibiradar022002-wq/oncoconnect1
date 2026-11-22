@@ -9,7 +9,7 @@
 services:
   veltruvia:
     build: .
-    image: veltruvia-server:2.6.7
+    image: veltruvia-server:2.6.8
     restart: unless-stopped
     env_file:
       - .env

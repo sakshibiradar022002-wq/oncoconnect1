@@ -1,6 +1,6 @@
 {
   "name": "veltruvia-doctor",
-  "version": "2.6.7",
+  "version": "2.6.8",
   "description": "VELTRUVIA neuro-oncology EMR - Doctor console",
   "type": "module",
   "main": "electron/main-doctor.js",

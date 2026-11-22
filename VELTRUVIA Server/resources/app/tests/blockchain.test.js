@@ -66,6 +66,26 @@ test('gives up after the retry also fails, surfacing the node error', async () =
   assert.equal(sends, 2, 'at most two attempts, so a persistent conflict cannot loop');
 });
 
+// ── On-chain payload: hashes only ─────────────────────────────────
+// Callers pass MRNs and email addresses as `targetId`; before 2.6.8 that
+// string reached the contract verbatim, so MRNs were published in calldata
+// (see reports/SEPOLIA-DISCLOSURE-ASSESSMENT.md). These pin the guard.
+test('anchor payloads carry only hashes — a raw identifier is refused', async () => {
+  const { anchorTargetHash, assertHashOnlyAnchor, ONCHAIN_HASH } = await import('../src/blockchain/index.js');
+
+  const h = anchorTargetHash('MRN12345');
+  assert.match(h, ONCHAIN_HASH, 'the hashed target id must be a 32-byte hex value');
+  assert.equal(anchorTargetHash('MRN12345'), h, 'hashing is deterministic');
+  assert.equal(anchorTargetHash(undefined), anchorTargetHash('unknown'), 'a missing id hashes a constant');
+
+  assert.throws(() => assertHashOnlyAnchor(['0x' + 'a'.repeat(64), 'patient.view', 'MRN12345']),
+    /refusing anchor/, 'a plaintext targetId must abort the anchor');
+  assert.throws(() => assertHashOnlyAnchor(['MRN12345', 'patient.view', h]),
+    /refusing anchor/, 'a plaintext record hash must abort the anchor');
+  assert.deepEqual(assertHashOnlyAnchor(['0x' + 'a'.repeat(64), 'patient.view', h]),
+    ['0x' + 'a'.repeat(64), 'patient.view', h], 'hash-shaped args pass through unchanged');
+});
+
 test('sepolia mode routes anchors through a NonceManager, not the raw wallet', async () => {
   const { Wallet } = await import('ethers');
   const saved = {

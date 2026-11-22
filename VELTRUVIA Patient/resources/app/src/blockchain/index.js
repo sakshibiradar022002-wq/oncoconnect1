@@ -93,6 +93,31 @@ function fileVerify() {
   return { valid: true, chainLength: chain.length };
 }
 
+// ── On-chain payload guard ─────────────────────────────────────────
+// Sepolia calldata is public and permanent, so only 32-byte hashes may leave
+// the box. `targetId` used to be forwarded verbatim and callers pass MRNs and
+// email addresses in it, which put direct identifiers on the public testnet
+// (see reports/SEPOLIA-DISCLOSURE-ASSESSMENT.md). Every anchored value now goes
+// through these helpers, and anything that is not hash-shaped aborts the
+// anchor instead of being written.
+export const ONCHAIN_HASH = /^0x[0-9a-f]{64}$/;
+
+/** sha256 of an arbitrary identifier as 0x + 64 hex — safe to publish. */
+export function anchorTargetHash(targetId) {
+  return '0x' + createHash('sha256').update(String(targetId ?? 'unknown')).digest('hex');
+}
+
+/** Throws unless the hashed fields of an anchor call are hash-shaped. */
+export function assertHashOnlyAnchor(args) {
+  const [recordHash, , targetHash] = args;
+  for (const [label, value] of [['recordHash', recordHash], ['targetId hash', targetHash]]) {
+    if (typeof value !== 'string' || !ONCHAIN_HASH.test(value)) {
+      throw new Error(`[blockchain] refusing anchor: ${label} is not a 0x sha256 hash`);
+    }
+  }
+  return args;
+}
+
 // Errors a node returns when it already holds a transaction at that nonce.
 const NONCE_CONFLICT = /replacement fee too low|nonce too low|nonce too high|already known|already been used|transaction underpriced/i;
 
@@ -258,9 +283,15 @@ class BlockchainAudit {
       const recordHash = this.hashRecord(record);
       let txInfo = null;
       try {
+        // Only hashes cross this boundary — never the raw MRN/email in targetId.
+        const anchorArgs = assertHashOnlyAnchor([
+          '0x' + recordHash,
+          String(action || 'audit'),
+          anchorTargetHash(targetId),
+        ]);
         txInfo = await anchorWithNonceRetry(
           this.contract,
-          ['0x' + recordHash, String(action || 'audit'), String(targetId || 'unknown')],
+          anchorArgs,
           {
             onRetry: async (err) => {
               this.anchorStats.retries += 1;
@@ -312,7 +343,9 @@ class BlockchainAudit {
     try {
       const recordHash = this.hashRecord(record);
       const hashBytes = '0x' + recordHash;
-      const tx = await this.contract.recordAudit(hashBytes, action, targetId);
+      // Hash the target id here too, so the payload shape is identical on every
+      // backend and a stray public RPC can never receive an identifier.
+      const tx = await this.contract.recordAudit(hashBytes, action, anchorTargetHash(targetId));
       const receipt = await tx.wait();
       return {
         txHash: receipt.hash,

@@ -1,6 +1,6 @@
 {
   "name": "veltruvia-lab",
-  "version": "2.6.7",
+  "version": "2.6.8",
   "description": "VELTRUVIA neuro-oncology EMR - Lab portal",
   "type": "module",
   "main": "electron/main-lab.js",
