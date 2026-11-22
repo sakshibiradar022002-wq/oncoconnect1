@@ -7,25 +7,29 @@
 **Chain:** Ethereum Sepolia testnet (chain ID `11155111`)
 **Contract:** `0x601bfA130A709e55122234D046d57a6294aE9E7F`
 
-> **Scope note.** This document was prepared from the operator's enumeration
-> (110 events) and the repository's own design documents. The on-chain payload
-> was **not** independently re-read from Sepolia while drafting. The record
-> count, field inventory and identifier classes below must be confirmed against
-> the chain before this assessment is relied on. Every figure marked
-> **[VERIFY]** is unconfirmed.
+> **Scope note (updated 2026-11-22).** The on-chain record has now been re-read
+> from Sepolia end to end with `scripts/sepolia-replay.mjs`; the table in §2 is
+> fact, not operator statement. The enumeration this document was drafted from
+> (110 events) **undercounted the chain by roughly 9×** — there are **1,008**
+> anchored audit events, and the contract's own `getEntryCount()` agrees. The
+> earlier **[VERIFY]** markers are resolved; the remaining open questions are
+> legal, not technical. Evidence: `reports/SEPOLIA-REPLAY-20261122.json`.
 >
 > **Update 2026-11-22 (v2.6.8).** The mechanism is no longer a hypothesis — it
 > is read directly from source, see §3. The write path is fixed: `targetId` is
-> now hashed and a non-hash payload aborts the anchor. The **[VERIFY]** figures
-> in §2 still require a chain replay and remain unresolved; the fix stops new
-> writes and changes nothing about what is already public.
+> now hashed and a non-hash payload aborts the anchor. The last identifier
+> write was **2026-11-14T10:16Z**, before the fix landed, so no already-hashed
+> target exists in the record. The fix stops new writes and changes nothing
+> about what is already public.
 
 ---
 
 ## 1. Summary
 
-110 audit events written to the public Sepolia testnet contain **MRNs and email
-addresses in addition to the hash chain**. Testnet data is world-readable,
+1,008 audit events written to the public Sepolia testnet contain **MRNs and
+email addresses in addition to the hash chain** (893 events carried a short
+identifier, 100 an email address, 15 other free text; 70 distinct values in
+total). Testnet data is world-readable,
 permanent, and cannot be deleted or amended by the operator. This is a
 disclosure of direct patient identifiers to an uncontrolled public ledger.
 
@@ -45,13 +49,13 @@ discrepancy is itself a deliverable for counsel and for the security record.
 
 | Item | Value | Confidence |
 |---|---|---|
-| Events on chain | 110 | Operator enumeration **[VERIFY count on-chain]** |
+| Events on chain | **1,008** | **Confirmed** — replay 2026-11-22; `getEntryCount()` returns the same number |
 | Network | Sepolia (public testnet) | Confirmed in source and deployment records |
 | Data readable by | Anyone, no authentication | Inherent to a public chain |
 | Data deletable by operator | **No** | Inherent to a public chain |
-| Fields present | MRN, email address, plus audit-event fields and hash chain | Operator statement **[VERIFY field list]** |
-| Patients affected | Unknown — MRNs must be joined to the local patient store | **[VERIFY]** |
-| Write window | Unknown — first and last anchored block not yet recorded | **[VERIFY]** |
+| Fields present | `targetId` calldata: short identifier 893 events, email address 100, other free text 15 — plus record hash, action string and previous-hash chain | **Confirmed** by decoding every anchoring transaction's input |
+| Patients affected | 46 distinct short identifiers and 21 distinct email addresses (70 distinct targets). Person count needs a join to the local patient store — some short identifiers are user ids, not MRNs | Distinct counts **confirmed**; person count open |
+| Write window | Block 11,794,994 → 12,132,454 = **2026-09-27T18:02Z → 2026-11-14T10:16Z** | **Confirmed** |
 | Encryption at rest on chain | None | Public calldata is plaintext |
 
 An MRN is not a pseudonym in this system: the local patient store maps MRN →
@@ -95,7 +99,7 @@ hashes — a raw identifier is refused*.
 | Reversibility | **None.** There is no delete, redact or rotate operation for on-chain data. |
 | Persistence | Testnet, but Sepolia is long-lived and mirrored by block explorers and indexers. Assume permanent. |
 | Linkability | MRN + email in the same record links a clinical identifier to a contactable person. Multiple events per patient may form a longitudinal timeline. |
-| Scale | Up to 110 records; patient count likely lower than 110 (repeat events per patient) — **[VERIFY]** by distinct MRN. |
+| Scale | 1,008 events over 48 days carrying 70 distinct identifiers (46 short identifiers, 21 emails, 3 free text). Repeat events per patient mean the person count is lower than the event count; 70 is the ceiling on distinct identifiers, not a headcount. |
 
 **Severity: High.** Direct identifiers for a defined patient population are
 permanently public, with no compensating control available on the affected
@@ -125,9 +129,9 @@ decisions belong to counsel and the covered entity.
   later than **60 days** from discovery (§164.404); HHS via the breach portal
   (§164.408); media only if 500+ residents of a state are affected.
 - **Discovery date is a live question.** The 60-day clock runs from when the
-  operator knew or should have known. If the 110 events were known earlier and
-  not assessed, that date — not today — starts the clock. This is the single
-  most time-sensitive item in this document.
+  operator knew or should have known. If the on-chain entries were known
+  earlier and not assessed, that date — not today — starts the clock. This is
+  the single most time-sensitive item in this document.
 
 ### 5.2 India DPDP Act (if any Indian patients are affected)
 
@@ -169,6 +173,19 @@ record-keeping.
    transaction to the contract, decode the input, count distinct MRNs and
    emails, record first/last block and timestamps. This turns **[VERIFY]** into
    fact and is the evidentiary basis for notification.
+   **DONE 2026-11-22:** `node scripts/sepolia-replay.mjs` — read-only, no key,
+   no dependency. It locates the contract's creation block, scans every
+   `EntryRecorded` log, decodes the `recordAudit` calldata from each anchoring
+   transaction, and prints event count, distinct-value counts per class, and
+   the first/last block with timestamps. It never prints an identifier (values
+   are classified in memory and kept only as sha256 digests), so the output can
+   be attached to the file as-is. `--json` for a machine-readable summary.
+   Result recorded in `reports/SEPOLIA-REPLAY-20261122.json` and §2 above:
+   1,008 events, 70 distinct identifiers, 2026-09-27 → 2026-11-14.
+   Limitation: a transaction that reverted emits no log and is therefore not
+   counted, even though its calldata is public; and the replay needs an archive
+   RPC — a full public node (e.g. publicnode) refuses blocks older than its
+   pruning window.
 4. **Do not attempt to "fix" the chain.** No burn address, no self-destruct, no
    counter-transaction removes calldata. Any such action creates a second,
    confusing record and can look like spoliation.
@@ -191,7 +208,7 @@ record-keeping.
    low-probability exception ever apply where the recipient is the public and
    the medium is immutable?
 2. What is the defensible "discovery date" — the date of the write, the date
-   the operator enumerated the 110 events, or today?
+   the operator enumerated the events (2026-11-19), or today?
 3. For DPDP, does "without delay" require notice before the on-chain record is
    fully re-read, or may the record be completed first?
 4. Are email addresses alone sufficient to require notification where the MRN
@@ -201,9 +218,13 @@ record-keeping.
 
 ## 8. Limitations of this document
 
-- The on-chain payload was not read during drafting; §2 and §4 rest on the
-  operator's enumeration.
-- No patient count was computed; 110 is an event count, not a person count.
+- §2 is now replay-verified against Sepolia (2026-11-22). §4 rests on that
+  replay plus the operator statement.
+- No person count was computed: 70 distinct identifiers is a ceiling, and 1,008
+  is an event count, not a patient count. Joining the 46 short identifiers to
+  the local patient store is the only way to count affected people.
+- The replay counts logged events only; a reverted transaction's calldata is
+  public but invisible to it, so the true disclosure could be marginally wider.
 - No legal conclusion is offered. The HIPAA and DPDP sections identify the
   applicable tests, not their outcome.
 - The 60-day HIPAA clock may already be running. Treat the dates in §5.1 as the

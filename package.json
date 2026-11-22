@@ -23,6 +23,7 @@
     "backup:offsite": "node scripts/offsite-backup.mjs",
     "imaging:seed": "node scripts/seed-imaging.mjs",
     "uptime:ping": "node scripts/uptime-heartbeat.mjs",
+    "sepolia:replay": "node scripts/sepolia-replay.mjs",
     "apk:patient": "node scripts/build-apk.mjs patient",
     "apk:lab": "node scripts/build-apk.mjs lab",
     "precommit": "npm run guard && npm run check && npm run test && npm run verify"

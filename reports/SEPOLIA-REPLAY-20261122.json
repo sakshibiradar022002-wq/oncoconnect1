@@ -1,0 +1,49 @@
+{
+  "note": "Evidence record for reports/SEPOLIA-DISCLOSURE-ASSESSMENT.md §2. Produced by `node scripts/sepolia-replay.mjs --rpc https://sepolia.gateway.tenderly.co --chunk 100000 --json` on 2026-11-22. Counts only: the replay classifies each historic targetId in memory and keeps sha256 digests, so no MRN, email address or free-text identifier appears in this file.",
+  "ranAt": "2026-11-22",
+  "contract": "0x601bfa130a709e55122234d046d57a6294ae9e7f",
+  "chainId": 11155111,
+  "rpc": "https://sepolia.gateway.tenderly.co",
+  "scanned": {
+    "fromBlock": 11794929,
+    "toBlock": 12187948
+  },
+  "events": 1008,
+  "contractEntryCount": 1008,
+  "contractEntryCountMatchesEvents": true,
+  "undecodableLogs": 0,
+  "transactions": 1008,
+  "decodedTxs": 1008,
+  "transactionsWithoutDecodableTarget": 0,
+  "actionMismatches": 0,
+  "firstAnchor": {
+    "block": 11794994,
+    "at": "2026-09-27T18:02:00.000Z"
+  },
+  "lastAnchor": {
+    "block": 12132454,
+    "at": "2026-11-14T10:16:24.000Z"
+  },
+  "anchorsByClass": {
+    "MRN / short identifier": 893,
+    "email address": 100,
+    "other free text": 15,
+    "already hashed (2.6.8+)": 0
+  },
+  "distinctTargets": {
+    "email": 21,
+    "mrnOrShortId": 46,
+    "alreadyHashed": 0,
+    "other": 3,
+    "total": 70
+  },
+  "corrections": [
+    "The operator enumeration (110 events) undercounted the on-chain record by roughly 9x: there are 1008 EntryRecorded events, and the contract's own getEntryCount() returns 1008.",
+    "Zero already-hashed targets were found, consistent with the hashing fix landing in 2.6.8 after the last anchor (2026-11-14) and with production currently running BLOCKCHAIN_MODE=file."
+  ],
+  "limitations": [
+    "A transaction that reverted publishes calldata but emits no event, so it is not counted by this replay.",
+    "distinctTargets.mrnOrShortId counts distinct short identifiers; not all are patient MRNs (some are user ids), so the affected-person count needs a join against the local patient store.",
+    "Only blocks up to 12187948 were scanned; no anchors exist after 12132454 as of this run."
+  ]
+}
