@@ -1,6 +1,6 @@
 {
   "name": "veltruvia-suite",
-  "version": "2.6.4",
+  "version": "2.6.6",
   "private": true,
   "type": "module",
   "description": "VELTRUVIA neuro-oncology EMR desktop suite — quality gate, verification, and docs",
@@ -21,6 +21,7 @@
     "pentest:http": "node scripts/pentest/http-audit.mjs",
     "audit:anomaly": "node scripts/audit-anomaly.mjs",
     "backup:offsite": "node scripts/offsite-backup.mjs",
+    "imaging:seed": "node scripts/seed-imaging.mjs",
     "uptime:ping": "node scripts/uptime-heartbeat.mjs",
     "apk:patient": "node scripts/build-apk.mjs patient",
     "apk:lab": "node scripts/build-apk.mjs lab",

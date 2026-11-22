@@ -1,6 +1,6 @@
 {
   "name": "veltruvia-patient",
-  "version": "2.6.5",
+  "version": "2.6.6",
   "description": "VELTRUVIA neuro-oncology EMR - Patient portal",
   "type": "module",
   "main": "electron/main-patient.js",

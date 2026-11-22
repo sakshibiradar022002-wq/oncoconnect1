@@ -114,6 +114,7 @@
 
       <div class="sidebar-section">Clinical</div>
       <button class="nav-item" data-action="showPanel:labs,@this"><span class="ni">🔬</span>Labs<span class="nav-badge" id="lab-badge" style="display:none;"></span></button>
+      <button class="nav-item" data-action="showPanel:imaging,@this"><span class="ni">🧠</span>Imaging</button>
 
       <div class="sidebar-section">Financial</div>
       <button class="nav-item" data-action="showPanel:billing,@this;;renderBillingDashboard"><span class="ni">💰</span>Billing</button>
@@ -271,6 +272,36 @@
               <div class="card-title" style="margin-bottom:12px;">📋 Active Task Queue</div>
               <div id="lab-task-queue"></div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IMAGING -->
+      <div class="panel" id="panel-imaging">
+        <div class="page-header">
+          <div><div class="page-title">🧠 Imaging</div><div class="page-sub">Upload, review and share patient scans</div></div>
+          <button class="btn btn-ghost btn-sm" data-action="imgLoadGallery">↻ Refresh</button>
+        </div>
+        <div class="g2" style="align-items:start;">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:10px;">Upload study</div>
+            <div class="fg"><label for="img-mrn">Patient</label>
+              <select id="img-mrn" data-action-change="imgLoadGallery"><option value="">— Select patient —</option></select>
+            </div>
+            <div class="fg"><label for="img-file">Image file</label>
+              <input id="img-file" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.dcm" style="width:100%;padding:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:12px;">
+            </div>
+            <div class="fg"><label for="img-note">Note (optional)</label>
+              <input id="img-note" placeholder="e.g. Baseline MRI, cycle 1" maxlength="300">
+            </div>
+            <div id="img-msg" style="font-size:12px;margin-bottom:10px;"></div>
+            <button class="btn btn-primary btn-full" data-action="imgUpload">⬆ Upload image</button>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:8px;">PNG, JPG, GIF, WEBP, BMP or DICOM · max 10 MB · every read is SHA-256 verified.</div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:10px;">Gallery</div>
+            <div id="img-share-out" style="margin-bottom:10px;"></div>
+            <div id="img-gallery"><div class="empty-card">Select a patient to view imaging studies.</div></div>
           </div>
         </div>
       </div>
@@ -780,6 +811,27 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- SCRIPT BLOCK 1 — Core, Auth, Storage                       -->
 <!-- ═══════════════════════════════════════════════════════════ -->
+<!-- Full-size image viewer (opened from the imaging gallery) -->
+<div id="img-viewer" role="dialog" aria-modal="true" aria-label="Image viewer" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:24px;" data-action="imgCloseViewer">
+  <img id="img-viewer-img" alt="" data-action="stop" style="max-width:92vw;max-height:82vh;border-radius:10px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.6);">
+  <div id="img-viewer-cap" style="color:#e5e7eb;font-size:12px;text-align:center;max-width:80vw;"></div>
+  <button class="btn btn-ghost btn-sm" data-action="stop;;imgCloseViewer" style="color:#fff;border-color:rgba(255,255,255,.3);">✕ Close</button>
+</div>
+<!-- DICOM viewer (Cornerstone3D, loaded lazily on first DICOM open) -->
+<div id="img-dcm-viewer" role="dialog" aria-modal="true" aria-label="DICOM viewer" style="display:none;position:fixed;inset:0;z-index:10000;background:#0b0f16;flex-direction:column;">
+  <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.12);color:#e5e7eb;flex-wrap:wrap;">
+    <strong id="img-dcm-title" style="font-size:12.5px;">DICOM</strong>
+    <span id="img-dcm-status" style="color:#9ca3af;font-size:11px;"></span>
+    <span style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" data-action="imgDcmZoom:-1" style="color:#e5e7eb;border-color:rgba(255,255,255,.2);">−</button>
+      <button class="btn btn-ghost btn-sm" data-action="imgDcmZoom:1" style="color:#e5e7eb;border-color:rgba(255,255,255,.2);">+</button>
+      <button class="btn btn-ghost btn-sm" data-action="imgDcmReset" style="color:#e5e7eb;border-color:rgba(255,255,255,.2);">Reset</button>
+      <a id="img-dcm-download" class="btn btn-ghost btn-sm" href="#" style="color:#e5e7eb;border-color:rgba(255,255,255,.2);text-decoration:none;">Download</a>
+      <button class="btn btn-ghost btn-sm" data-action="imgDcmClose" style="color:#fff;border-color:rgba(255,255,255,.3);">✕ Close</button>
+    </span>
+  </div>
+  <div id="img-dcm-element" style="flex:1;background:#000;touch-action:none;min-height:0;"></div>
+</div>
 <script src="js/actions.js"></script>
 <script src="js/vendor/qrcode-generator.js"></script>
 <script src="sync-client.js"></script>
@@ -804,6 +856,7 @@
 
 <!-- Standalone mode: hide portal switcher when loaded from a separate app -->
 <script src="js/page/index-4-standalone.js"></script>
+<script src="js/page/index-5-imaging.js?v=2.6.6"></script>
 <script src="js/push-client.js"></script>
 </body>
 </html>

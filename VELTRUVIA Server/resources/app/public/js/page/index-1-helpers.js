@@ -518,6 +518,7 @@ function showPanel(id,btn){
   if(id==='labs'){populateLabDropdowns();refreshLabList();renderLabTaskQueue();}
   if(id==='backup')refreshStorageInfo();
   if(id==='broadcast'){checkBroadcastEmailStatus();loadBroadcastContacts();}
+  if(id==='imaging'&&typeof renderImagingPanel==='function')renderImagingPanel();
 }
 function closeRecord(){document.getElementById('record-shell').classList.remove('open');selectedMRN=null;}
 function openOverlay(id){document.getElementById(id).classList.add('open');}

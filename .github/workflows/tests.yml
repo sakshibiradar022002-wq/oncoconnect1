@@ -8,21 +8,33 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # engines.node is 24.x; the writer-lock regression only appeared on
+        # Node >= 22, so CI now covers the boundary instead of just 20.
+        node-version: [20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Repo gate (canonical bundles, syntax, drift)
-        run: node check.mjs
-      - name: Install dependencies
+          node-version: ${{ matrix.node-version }}
+      - name: Install bundle dependencies
         run: npm ci
         working-directory: VELTRUVIA Server/resources/app
-      - name: Run checks
+      - name: Repo gate (canonical bundles, syntax, drift)
+        run: node check.mjs
+      - name: Bundle checks
         run: npm run check
         working-directory: VELTRUVIA Server/resources/app
-      - name: Run test suite
+      - name: Bundle API suite
         run: npm test
         working-directory: VELTRUVIA Server/resources/app
         timeout-minutes: 8
+      # The root suite (hardening, imaging, anomaly scan, offsite backup,
+      # heartbeat) is where the regressions that matter live. It resolves the
+      # bundle's node_modules, so no separate root install is required.
+      - name: Root suite (hardening, imaging, scripts)
+        run: npm test
+        timeout-minutes: 10

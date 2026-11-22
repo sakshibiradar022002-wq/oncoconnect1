@@ -33,6 +33,31 @@ This seeds the classic demo accounts — doctor `test@example.com`, patient MRN
 generated randomly on first run, printed once to the console, and saved to
 `.demo-admin-password` next to the database (git-ignored).
 
+## Sample imaging data
+
+The imaging gallery can be filled in bulk instead of one upload at a time:
+
+```bash
+npm run imaging:seed -- --help                                    # every option
+npm run imaging:seed -- --mrn 12345 --demo 24                     # openly-licensed demo studies
+npm run imaging:seed -- --mrn <MRN> --dir ~/datasets/nih/images   # a whole local dataset
+```
+
+- `--dir` walks a folder recursively and uploads every PNG / JPEG / GIF / WebP /
+  BMP / DICOM file under 10 MB — point it at a Kaggle export, an NIH
+  ChestX-ray14 `images/` folder, a TCIA download or a USB drive.
+- `--demo` pulls radiology studies from Wikimedia Commons, keeps only public
+  domain / CC0 / CC BY / CC BY-SA files, and stores the author, licence and
+  source page in the image note. `--manifest <file>` writes the same
+  attribution to JSON for compliance records.
+- Uploads use the normal authenticated API, so PHI encryption, SHA-256
+  verification and the audit trail all apply. Re-running skips images already
+  in the gallery (same filename + size); `--duplicates` disables that.
+- Never import public/demo studies into a chart that holds real patient images.
+- A few hundred images per patient is comfortable. The gallery decrypts every
+  image record on each request, so import thousands only after that query is
+  indexed by MRN.
+
 ## Configuration
 
 All secrets come from the shared `.env` at the install root (never committed):
@@ -51,8 +76,10 @@ All secrets come from the shared `.env` at the install root (never committed):
 
 ## CI
 
-`.github/workflows/ci.yml` runs the API test suite on Node 20/22 and validates the
-app imports. Run `npm run precommit` locally before committing.
+`.github/workflows/tests.yml` runs on Node 20 **and** 22: the repo gate
+(`node check.mjs`), the bundle API suite, and the root suite (hardening,
+imaging, anomaly scan, offsite backup, heartbeat). Run `npm run precommit`
+locally before committing.
 
 ## Resilience
 
