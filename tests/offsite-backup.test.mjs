@@ -91,6 +91,7 @@ test('warns instead of "verifying" an empty images directory', () => {
   ]);
   assert.equal(out.status, 0, out.stderr);
   assert.match(out.stdout + out.stderr, /images directory holds 0 file\(s\)/);
+  assert.match(out.stdout + out.stderr, /no uploads yet/);
   assert.equal(readdirSync(f.dest).filter(n => n.includes('images')).length, 0, 'no image archive written');
 });
 

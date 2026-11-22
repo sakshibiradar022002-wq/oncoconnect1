@@ -251,7 +251,7 @@ if (IMAGES) {
     const tarBytes = statSync(tarPath).size;
     if (!tarBytes || !imageFiles) {
       unlinkSync(tarPath);
-      console.warn(`[offsite] ❌ images directory holds ${imageFiles} file(s): ${imagesDir} — nothing archived; check that --images points at the live upload store`);
+      console.warn(`[offsite] ⚠️  images directory holds ${imageFiles} file(s): ${imagesDir} — nothing archived (no uploads yet, or --images points at the wrong store)`);
     } else {
       const imgStamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
       const imgArchive = `veltruvia-offsite-images-${imgStamp}.tar.gz.enc`;
