@@ -15,7 +15,7 @@ import { closeDb, flushDb } from './db/index.js';
 import { attachTelehealthWs } from './routes/telehealth.js';
 import { startMllpServer, getMllpStatus } from './hl7/mllp.js';
 import { mailConfigured } from './mail.js';
-import { startBackups, backupDatabase } from './db/backup.js';
+import { startBackups, backupDatabaseSync } from './db/backup.js';
 import { installErrorHandlers } from './errors.js';
 import blockchain from './blockchain/index.js';
 
@@ -95,7 +95,7 @@ startBackups();
 function shutdown(signal) {
   console.log(`\n[server] ${signal} received — shutting down gracefully...`);
   flushDb();
-  backupDatabase(); // Final backup before exit
+  backupDatabaseSync(); // Final snapshot before exit (sync: promises may not settle)
   server.close(() => {
     closeDb();
     console.log('[server] Closed. Goodbye.');
