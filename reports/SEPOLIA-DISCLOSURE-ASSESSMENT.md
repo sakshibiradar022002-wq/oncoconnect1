@@ -54,7 +54,7 @@ discrepancy is itself a deliverable for counsel and for the security record.
 | Data readable by | Anyone, no authentication | Inherent to a public chain |
 | Data deletable by operator | **No** | Inherent to a public chain |
 | Fields present | `targetId` calldata: short identifier 893 events, email address 100, other free text 15 — plus record hash, action string and previous-hash chain | **Confirmed** by decoding every anchoring transaction's input |
-| Patients affected | 46 distinct short identifiers and 21 distinct email addresses (70 distinct targets). Some short identifiers are user ids, not MRNs, so the headcount needs a join to the local patient store — now possible without moving an identifier: `node scripts/sepolia-replay.mjs --join <copy-of-chemocure.db>` re-derives the digests from the store's own values and reports how many resolve to a patient MRN, a user account, or nothing, printing counts only | Distinct counts **confirmed**; person count **computable, run pending** |
+| Patients affected | 46 distinct short identifiers and 21 distinct email addresses (70 distinct targets). The join against the `2026-11-24T08-09-04` backup gives **AFFECTED PATIENTS (floor) = 1**: exactly 1 of the 46 short identifiers is a live patient MRN and 1 is a live user account; 45 of 46 still appear somewhere in `audit_log.target_id`, so the system itself used nearly all of them, but they no longer resolve to a patient row — the record was deleted, or the MRN exists only inside an encrypted `kv_store` blob. 1 of 21 published emails matches a user account; 20 match nothing. 2 of 3 free-text values match | Floor **confirmed 2026-11-24**; the true headcount is **not determinable** from the store alone and is certainly above 1 |
 | Write window | Block 11,794,994 → 12,132,454 = **2026-09-27T18:02Z → 2026-11-14T10:16Z** | **Confirmed** |
 | Encryption at rest on chain | None | Public calldata is plaintext |
 
@@ -195,6 +195,12 @@ record-keeping.
    is genuinely a floor: patient emails held inside encrypted `kv_store` blobs
    cannot be enumerated without the PHI key, and identifiers for accounts since
    deleted cannot match. Tests: `tests/sepolia-replay.test.mjs`.
+   **Run 2026-11-24** against `veltruvia-2026-11-24T08-09-04.db`: floor **1**
+   (1 of 46 short ids is a live MRN, 1 a live user account; 45 of 46 still appear
+   in `audit_log.target_id` but resolve to no current patient row), 1 of 21 emails
+   matches an account, 2 of 3 free-text values match. Treat 1 as a proven minimum,
+   not as the exposed population — the 43 audit-only matches are identifiers the
+   system used for records that are no longer resolvable here.
 4. **Do not attempt to "fix" the chain.** No burn address, no self-destruct, no
    counter-transaction removes calldata. Any such action creates a second,
    confusing record and can look like spoliation.
@@ -229,10 +235,11 @@ record-keeping.
 
 - §2 is now replay-verified against Sepolia (2026-11-22). §4 rests on that
   replay plus the operator statement.
-- No person count has been run yet: 70 distinct identifiers is a ceiling, and
-  1,008 is an event count, not a patient count. `--join` (above) produces the
-  floor; it is the only way to count affected people, and it still cannot see
-  identifiers that exist only inside encrypted blobs or in deleted accounts.
+- The person count is a **floor of 1**, not a total (§2). 70 distinct
+  identifiers is a ceiling, and 1,008 is an event count. `--join` is the only
+  way to count affected people and it cannot see identifiers held only inside
+  encrypted blobs, nor those belonging to deleted accounts — so neither this
+  document nor counsel should read "1" as the size of the exposed population.
 - The replay counts logged events only; a reverted transaction's calldata is
   public but invisible to it, so the true disclosure could be marginally wider.
 - No legal conclusion is offered. The HIPAA and DPDP sections identify the
