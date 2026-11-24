@@ -5,6 +5,8 @@ import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import {
   decodeRecordAudit,
   decodeEntryRecorded,
@@ -170,6 +172,66 @@ test('the replay counts events and distinct identifiers without printing any of 
     assert.doesNotMatch(stdout, /MRN-77/);
     assert.doesNotMatch(stdout, /doctor\.one@clinic/);
   });
+});
+
+// ── Local join (--join <db>) ──────────────────────────────────────
+// A store that names two of the published values (one MRN, one email) and knows
+// nothing about the other MRN. Values written here are synthetic.
+async function withLocalStore(fn) {
+  let DatabaseSync;
+  try { ({ DatabaseSync } = await import('node:sqlite')); } catch { return 'skip'; }
+  const dir = mkdtempSync(join(tmpdir(), 'veltruvia-join-'));
+  const dbPath = join(dir, 'store.db');
+  const db = new DatabaseSync(dbPath);
+  db.exec(`
+    CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, role TEXT);
+    CREATE TABLE audit_log (id TEXT PRIMARY KEY, target_id TEXT);
+    CREATE TABLE patient_access (patient_mrn TEXT, owner_id TEXT, doctor_id TEXT);
+  `);
+  db.exec(`
+    INSERT INTO users VALUES ('u-1', 'doctor.one@clinic.example', 'doctor');
+    INSERT INTO audit_log VALUES ('a1', 'MRN-777'), ('a2', 'doctor.one@clinic.example'), ('a3', 'u-1');
+    INSERT INTO patient_access VALUES ('MRN-777', 'u-1', 'u-1');
+  `);
+  db.close();
+  try { return await fn(dbPath); } finally { rmSync(dir, { recursive: true, force: true }); }
+}
+
+test('--join resolves published identifiers against a local store, counts only', async t => {
+  const result = await withLocalStore(async dbPath => withFakeRpc(async rpcUrl => run([
+    '--rpc', rpcUrl, '--contract', CONTRACT, '--chunk', '100', '--join', dbPath,
+  ])));
+  if (result === 'skip') return t.skip('node:sqlite unavailable on this Node');
+  const { code, stdout } = result;
+  assert.equal(code, 0);
+  assert.match(stdout, /short identifiers resolved\s+1 of 2 \(1 not found\)/);
+  assert.match(stdout, /…as a patient MRN\s+1 of 2/);
+  assert.match(stdout, /…as a user account\s+0 of 2/);
+  assert.match(stdout, /email addresses resolved\s+1 of 1/);
+  assert.match(stdout, /AFFECTED PATIENTS \(floor\)\s+1/);
+  // The join must not become a way to print an identifier.
+  assert.doesNotMatch(stdout, /MRN-77|doctor\.one@clinic/);
+});
+
+test('--join in --json mode reports the same floor and still no identifiers', async t => {
+  const result = await withLocalStore(async dbPath => withFakeRpc(async rpcUrl => run([
+    '--rpc', rpcUrl, '--contract', CONTRACT, '--chunk', '100', '--join', dbPath, '--json',
+  ])));
+  if (result === 'skip') return t.skip('node:sqlite unavailable on this Node');
+  const summary = JSON.parse(result.stdout);
+  assert.equal(summary.localJoin.affectedPatientsFloor, 1);
+  assert.equal(summary.localJoin.shortIdentifiers.matched, 1);
+  assert.equal(summary.localJoin.emails.matched, 1);
+  assert.equal(summary.localJoin.candidateValues.patientMrn, 1);
+  assert.ok(summary.localJoin.database.endsWith('store.db'));
+  assert.doesNotMatch(result.stdout, /MRN-77|doctor\.one@clinic/);
+});
+
+test('--join refuses a database that is not there instead of scanning the chain', async () => {
+  const { code, stderr, stdout } = await run(['--join', join(tmpdir(), 'nope-missing.db'), '--to-block', '1']);
+  assert.equal(code, 1);
+  assert.match(stderr, /--join database not found/);
+  assert.doesNotMatch(stdout, /Blocks scanned/);
 });
 
 test('--json emits the same counts and still no identifiers', async () => {

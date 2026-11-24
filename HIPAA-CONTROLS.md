@@ -83,7 +83,35 @@ Full guide: `TLS-LAN.md`.
 2. **BAA with Cloudflare/GitHub** — both offer them on paid/business tiers.
 3. **Formal attestation** — a signed security assessment by a professional.
 
+## Verification evidence — live instance, v2.6.8
+
+Re-verified against production on 2026-11-23/24. Each row below is something
+that was observed on the running system, not a claim from source reading.
+
+| Control | Evidence |
+|---|---|
+| §164.312(e) TLS/HSTS/CSP | `npm run pentest:http` against `https://veltruvia.duckdns.org`, 2026-11-21: TLS 1.3, HSTS, CSP without `unsafe-inline` in `script-src`, every probed API route 401, CORS not reflective, TRACE 405, login limiter 429 at attempt 6 — **15 pass / 0 fail / 3 info** |
+| Header hygiene | OWASP ZAP baseline against production, 2026-11-23 (v2.6.8): **1 Medium / 1 Low / 5 Informational**, no blocking finding. The Medium is CSP `style-src 'unsafe-inline'` (RISK-REGISTER S4, accepted); the Low is a missing `Cross-Origin-Embedder-Policy` (no PHI consequence for an app that embeds nothing) |
+| §164.312(a)(2)(iv) encryption at rest | AES-256-GCM PHI columns with `PHI_ENCRYPTION_KEY`; offsite archives are ciphertext (AES-256-GCM + SHA-256 manifest, decrypt-verified before upload) and the key is held off-box, separate from the archives |
+| §164.312(c)(1) integrity | In-app snapshot verified on production 2026-11-23: `backups/veltruvia-2026-11-23T11-02-31.db`, 1,163,264 B, `pragma quick_check` → `ok`, restored copy holds both users and 32 kv rows. Every snapshot is header-validated before it is reported as written |
+| §164.312(d) authentication | Credentials that had been disclosed in plain text were rotated 2026-11-23; appointment/report passwords rewritten in the app's own `pbkdf2$210000$…` (SHA-512) format and re-verified by a real login |
+| §164.308(a)(7)(ii)(B) contingency | Nightly `VACUUM INTO` + tar (14 kept), daily offsite pull to an off-VM location, plus an encrypted second copy with 12 kept; **freshness guard** fails the pull if the newest copy is older than 36 h |
+| §164.308(a)(6) incident response | Dead-man's switch live since 2026-11-23 (cron every 5 min; pings only while the service answers, so a dead VM goes silent and alerts). Anomaly scanner over the audit stream; both documented in PENTEST-SCOPE §6 |
+| Audit trail durability | Append-only `audit_log` rows plus the chain-hashed local trail, verified at boot and by `npm run verify`; the one blocking gap was that Sepolia anchors carried identifiers instead of hashes — fixed in 2.6.8 and recorded as RISK-REGISTER S8 |
+
+**Still open, and it cannot be closed by software:** the active (attack-traffic)
+ZAP pass and the six manual auth flows in `PENTEST-SCOPE.md` §4 — the full pass
+needs a host with more RAM than the clinic VM. Administrative items (risk
+analysis sign-off, security officer, training, BAAs, restore drill, 6-year
+audit retention) remain the clinic's, per the checklist above.
+
+## Historical evidence (v2.0.5)
+
+The crosswalk was first verified against build v2.0.5, on narrower evidence than
+the live checks above: "276/276 feature checks (incl. RBAC
+privilege-separation), unit tests, audit-chain checks — see `npm run verify`".
+Those were source-level checks; none of them exercised the deployed host, which
+is why the 2026-11-23/24 pass above exists.
+
 ---
-*Crosswalk last verified against build v2.0.5. Verification evidence:
-276/276 feature checks (incl. RBAC privilege-separation), unit tests,
-audit-chain checks — see `npm run verify`.*
+*Crosswalk last verified against build **v2.6.8** (2026-11-24).*

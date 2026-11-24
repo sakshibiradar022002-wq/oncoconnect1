@@ -9,6 +9,13 @@
  *   node scripts/sepolia-replay.mjs
  *   node scripts/sepolia-replay.mjs --contract 0x… --rpc https://… --json
  *   node scripts/sepolia-replay.mjs --from-block 6123456 --to-block 6200000
+ *   node scripts/sepolia-replay.mjs --join /tmp/chemocure-copy.db
+ *
+ * `--join <db>` answers the question the counts above cannot: how many of the
+ * published identifiers belong to a person in this store. Local values are
+ * hashed here with the same digest used for the chain values and compared
+ * set-to-set, so no identifier leaves the process — the output is counts.
+ * Open a COPY of the live database, not the live file.
  *
  * Safety properties, by design:
  *   • read-only — no key, no transaction, no eth_sendRawTransaction.
@@ -16,7 +23,9 @@
  *     classified, and folded into a counter; only counts are emitted. Even the
  *     distinct-value sets are kept as sha256 digests, so a printed report/JSON
  *     can be handed to counsel without re-publishing PHI.
- *   • no npm dependency — plain JSON-RPC over fetch, like scripts/uptime-heartbeat.mjs.
+ *   • no npm dependency for the replay — plain JSON-RPC over fetch, like
+ *     scripts/uptime-heartbeat.mjs. The `--join` store is opened read-only with
+ *     `node:sqlite`, falling back to the app's better-sqlite3.
  *
  * Why calldata and not the event: `recordAudit(bytes32 recordHash, string action,
  * string targetId)` emits EntryRecorded(id, recordHash, action, previousHash) —
@@ -29,6 +38,7 @@
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
+import { existsSync } from 'node:fs';
 
 const DEFAULTS = {
   // Documented in reports/SEPOLIA-DISCLOSURE-ASSESSMENT.md and contracts/README.md.
@@ -55,6 +65,10 @@ if (flag('--help') || flag('-h')) {
   --chunk <n>            blocks per eth_getLogs call (default ${DEFAULTS.chunk}; halved on error)
   --json                 emit a machine-readable summary to stdout instead of the report
   --quiet                suppress progress lines on stderr
+  --join <db>            also join the published identifiers against a local
+                         VELTRUVIA database (use a copy, not the live file) and
+                         report how many resolve to a patient MRN, a user
+                         account, or nothing. Counts only — never a value.
 
 Print-out contains counts and block numbers only — never an MRN or an email.`);
   process.exit(0);
@@ -76,6 +90,7 @@ const RPC = arg('--rpc', DEFAULTS.rpc);
 const CHUNK_START = Math.max(100, Number(arg('--chunk', DEFAULTS.chunk)) || DEFAULTS.chunk);
 const JSON_OUT = flag('--json');
 const QUIET = flag('--quiet');
+const JOIN_DB = arg('--join', null);
 
 if (!/^0x[0-9a-f]{40}$/.test(CONTRACT)) {
   console.error(`✗ --contract is not a 20-byte address: ${CONTRACT}`);
@@ -170,6 +185,79 @@ export function classifyTarget(targetId) {
   return 'other free text';
 }
 
+// ── Optional local join (--join <db>) ─────────────────────────────
+// The replay keeps only digests, so the person count cannot be recovered from
+// its own output. Re-derive it: hash this store's values with the same DIGEST,
+// intersect, count. Values stay in memory; only the tallies leave.
+const APP_DIR = process.env.APP_DIR || 'VELTRUVIA Server/resources/app';
+
+async function openLocalDb(path) {
+  try {
+    const { DatabaseSync } = await import('node:sqlite');
+    return new DatabaseSync(path, { readOnly: true });
+  } catch { /* older Node — use the app's driver */ }
+  const { createRequire } = await import('node:module');
+  const req = createRequire(resolve(APP_DIR, 'package.json'));
+  return new (req('better-sqlite3'))(path, { readonly: true });
+}
+
+/** Digests of every identifier this store can name without the PHI key. */
+function localDigestSets(db) {
+  const rows = sql => { try { return db.prepare(sql).all() || []; } catch { return []; } };
+  const add = (set, list) => {
+    for (const row of list) if (row && row.v != null && row.v !== '') set.add(DIGEST(row.v));
+  };
+  const emails = new Set();
+  const userIds = new Set();
+  const mrns = new Set();
+  const auditTargets = new Set();
+  add(emails, rows('SELECT DISTINCT email AS v FROM users'));
+  add(userIds, rows('SELECT DISTINCT id AS v FROM users'));
+  // The exact strings the old write path anchored: audit_log.target_id.
+  add(auditTargets, rows('SELECT DISTINCT target_id AS v FROM audit_log WHERE target_id IS NOT NULL'));
+  // Every table carrying a plaintext MRN key — discovered, not hard-listed.
+  for (const t of rows("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")) {
+    const name = String(t && t.name);
+    if (!/^[A-Za-z0-9_]+$/.test(name)) continue;
+    add(mrns, rows(`SELECT DISTINCT patient_mrn AS v FROM "${name}"`));
+    add(mrns, rows(`SELECT DISTINCT mrn AS v FROM "${name}"`));
+  }
+  return { emails, userIds, mrns, auditTargets };
+}
+
+/** Count how many published digests resolve inside the given local sets. */
+function tally(chainDigests, localSets) {
+  const merged = new Set();
+  for (const set of localSets) for (const d of set) merged.add(d);
+  let matched = 0;
+  for (const d of chainDigests) if (merged.has(d)) matched += 1;
+  return { published: chainDigests.size, matched, unmatched: chainDigests.size - matched };
+}
+
+export function joinWithLocal(seen, database, db) {
+  const local = localDigestSets(db);
+  const shortId = tally(seen.id, [local.mrns, local.userIds, local.auditTargets]);
+  const toPatient = tally(seen.id, [local.mrns]);
+  const toAccount = tally(seen.id, [local.userIds]);
+  return {
+    database,
+    candidateValues: {
+      usersEmail: local.emails.size,
+      usersId: local.userIds.size,
+      patientMrn: local.mrns.size,
+      auditTargetId: local.auditTargets.size,
+    },
+    shortIdentifiers: shortId,
+    shortIdentifiersAsPatientMrn: toPatient,
+    shortIdentifiersAsUserAccount: toAccount,
+    emails: tally(seen.email, [local.emails, local.auditTargets]),
+    otherFreeText: tally(seen.other, [local.auditTargets, local.mrns, local.userIds]),
+    // A matched MRN is one patient; a matched account is one person. Emails held
+    // only inside encrypted kv blobs cannot be seen here, so this is a floor.
+    affectedPatientsFloor: toPatient.matched,
+  };
+}
+
 // ── Discovery ──────────────────────────────────────────────────────
 async function latestBlock() {
   return Number(BigInt(await rpc('eth_blockNumber', [])));
@@ -226,6 +314,9 @@ async function blockTimestamp(n) {
 
 // ── Main ───────────────────────────────────────────────────────────
 async function main() {
+  if (JOIN_DB && !existsSync(JOIN_DB)) {
+    throw new Error(`--join database not found: ${JOIN_DB} (use a copy, e.g. cp chemocure.db /tmp/join.db)`);
+  }
   const latest = await latestBlock();
   const toBlock = Number(arg('--to-block', latest));
   if (!Number.isInteger(toBlock) || toBlock > latest) {
@@ -323,6 +414,15 @@ async function main() {
     note: 'Counts only — no identifier value is printed or stored by this script.',
   };
 
+  if (JOIN_DB) {
+    const db = await openLocalDb(JOIN_DB);
+    try {
+      summary.localJoin = joinWithLocal(seen, JOIN_DB, db);
+    } finally {
+      try { db.close(); } catch { /* closing a read-only handle cannot lose data */ }
+    }
+  }
+
   if (JSON_OUT) {
     console.log(JSON.stringify(summary, null, 2));
     return summary;
@@ -362,6 +462,26 @@ async function main() {
   pad('    already hashed (2.6.8+)', summary.distinctTargets.alreadyHashed);
   pad('    other free text', summary.distinctTargets.other);
   pad('    total distinct', summary.distinctTargets.total);
+  if (summary.localJoin) {
+    const j = summary.localJoin;
+    const line = (label, t) => pad(`    ${label}`, `${t.matched} of ${t.published}${t.unmatched ? ` (${t.unmatched} not found)` : ''}`);
+    console.log('');
+    console.log(`  Join against the local store (read-only, counts only):`);
+    pad('    database', j.database);
+    pad('    candidate values', `emails ${j.candidateValues.usersEmail} · user ids ${j.candidateValues.usersId} · MRNs ${j.candidateValues.patientMrn}`);
+    line('short identifiers resolved', j.shortIdentifiers);
+    line('    …as a patient MRN', j.shortIdentifiersAsPatientMrn);
+    line('    …as a user account', j.shortIdentifiersAsUserAccount);
+    line('email addresses resolved', j.emails);
+    line('other free text resolved', j.otherFreeText);
+    console.log('');
+    pad('    AFFECTED PATIENTS (floor)', j.affectedPatientsFloor);
+    console.log('');
+    console.log('  Floor, not a total: a short identifier that is a patient MRN counts as');
+    console.log('  one patient, but patient emails live inside encrypted kv blobs, so an');
+    console.log('  email that matches no user account is unresolvable here. Identifiers');
+    console.log('  published for accounts since deleted also cannot match.');
+  }
   console.log('');
   console.log('  A reverted transaction publishes calldata but emits no event, so it is');
   console.log('  not in the counts above. Copy the numbers into');

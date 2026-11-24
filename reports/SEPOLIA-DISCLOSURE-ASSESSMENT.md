@@ -54,7 +54,7 @@ discrepancy is itself a deliverable for counsel and for the security record.
 | Data readable by | Anyone, no authentication | Inherent to a public chain |
 | Data deletable by operator | **No** | Inherent to a public chain |
 | Fields present | `targetId` calldata: short identifier 893 events, email address 100, other free text 15 — plus record hash, action string and previous-hash chain | **Confirmed** by decoding every anchoring transaction's input |
-| Patients affected | 46 distinct short identifiers and 21 distinct email addresses (70 distinct targets). Person count needs a join to the local patient store — some short identifiers are user ids, not MRNs | Distinct counts **confirmed**; person count open |
+| Patients affected | 46 distinct short identifiers and 21 distinct email addresses (70 distinct targets). Some short identifiers are user ids, not MRNs, so the headcount needs a join to the local patient store — now possible without moving an identifier: `node scripts/sepolia-replay.mjs --join <copy-of-chemocure.db>` re-derives the digests from the store's own values and reports how many resolve to a patient MRN, a user account, or nothing, printing counts only | Distinct counts **confirmed**; person count **computable, run pending** |
 | Write window | Block 11,794,994 → 12,132,454 = **2026-09-27T18:02Z → 2026-11-14T10:16Z** | **Confirmed** |
 | Encryption at rest on chain | None | Public calldata is plaintext |
 
@@ -186,6 +186,15 @@ record-keeping.
    counted, even though its calldata is public; and the replay needs an archive
    RPC — a full public node (e.g. publicnode) refuses blocks older than its
    pruning window.
+   **Person count:** `--join <db>` (added 2026-11-24) hashes `users.email`,
+   `users.id`, every plaintext `patient_mrn`/`mrn` column and every
+   `audit_log.target_id` in a local store with the same SHA-256 the replay used,
+   intersects the sets, and prints per-class matched/unmatched counts plus
+   `AFFECTED PATIENTS (floor)` = short identifiers that resolve to a patient
+   MRN. It opens the store read-only; use a copy, never the live file. The floor
+   is genuinely a floor: patient emails held inside encrypted `kv_store` blobs
+   cannot be enumerated without the PHI key, and identifiers for accounts since
+   deleted cannot match. Tests: `tests/sepolia-replay.test.mjs`.
 4. **Do not attempt to "fix" the chain.** No burn address, no self-destruct, no
    counter-transaction removes calldata. Any such action creates a second,
    confusing record and can look like spoliation.
@@ -220,9 +229,10 @@ record-keeping.
 
 - §2 is now replay-verified against Sepolia (2026-11-22). §4 rests on that
   replay plus the operator statement.
-- No person count was computed: 70 distinct identifiers is a ceiling, and 1,008
-  is an event count, not a patient count. Joining the 46 short identifiers to
-  the local patient store is the only way to count affected people.
+- No person count has been run yet: 70 distinct identifiers is a ceiling, and
+  1,008 is an event count, not a patient count. `--join` (above) produces the
+  floor; it is the only way to count affected people, and it still cannot see
+  identifiers that exist only inside encrypted blobs or in deleted accounts.
 - The replay counts logged events only; a reverted transaction's calldata is
   public but invisible to it, so the true disclosure could be marginally wider.
 - No legal conclusion is offered. The HIPAA and DPDP sections identify the
