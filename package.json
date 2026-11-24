@@ -19,6 +19,7 @@
     "audit:cui": "node scripts/audit-rxnorm-cui.mjs",
     "pentest:zap": "bash scripts/pentest/zap-scan.sh",
     "pentest:http": "node scripts/pentest/http-audit.mjs",
+    "pentest:auth": "node scripts/pentest/auth-flows.mjs",
     "audit:anomaly": "node scripts/audit-anomaly.mjs",
     "backup:offsite": "node scripts/offsite-backup.mjs",
     "imaging:seed": "node scripts/seed-imaging.mjs",
