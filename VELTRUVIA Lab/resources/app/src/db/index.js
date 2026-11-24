@@ -28,6 +28,9 @@ export async function initSchema() {
   await db.exec(schema);
   // Column additions for databases created before these features existed.
   try { await db.exec('ALTER TABLE users ADD COLUMN totp_enc TEXT'); } catch { /* already there */ }
+  // Last accepted TOTP time step (S11): a code is single-use, so a replay
+  // inside the ±1-step drift window is refused instead of logging in again.
+  try { await db.exec('ALTER TABLE users ADD COLUMN totp_last_counter INTEGER'); } catch { /* already there */ }
   try { await db.exec('ALTER TABLE sessions ADD COLUMN last_activity TEXT'); } catch { /* already there */ }
   try { await db.exec('ALTER TABLE password_change_requests ADD COLUMN new_pass_plain TEXT'); } catch { /* already there */ }
   // Indian-style prescription fields (0-0-1 dosage pattern, meal timing).

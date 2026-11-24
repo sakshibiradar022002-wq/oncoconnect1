@@ -62,15 +62,24 @@ function totpCode(secret, counter) {
   return String(code).padStart(6, '0');
 }
 
-// Accepts the current 30s window ± 1 to absorb clock drift.
-export function verifyTotp(secret, code) {
-  if (!/^\d{6}$/.test(String(code || ''))) return false;
+// Accepts the current 30s window ± 1 to absorb clock drift, and returns the
+// time step that matched (or null). Callers that need 2FA codes to be
+// single-use store the returned step and refuse anything <= it — otherwise
+// one observed code logs in repeatedly for the whole ~90s drift window.
+export function verifyTotpCounter(secret, code) {
+  if (!/^\d{6}$/.test(String(code || ''))) return null;
   const counter = Math.floor(Date.now() / 30000);
-  return [counter - 1, counter, counter + 1].some(c => {
+  for (const c of [counter - 1, counter, counter + 1]) {
     const expected = Buffer.from(totpCode(secret, c));
     const given = Buffer.from(String(code));
-    return expected.length === given.length && crypto.timingSafeEqual(expected, given);
-  });
+    if (expected.length === given.length && crypto.timingSafeEqual(expected, given)) return c;
+  }
+  return null;
+}
+
+// Accepts the current 30s window ± 1 to absorb clock drift.
+export function verifyTotp(secret, code) {
+  return verifyTotpCounter(secret, code) !== null;
 }
 
 // ── PHI encryption at rest (AES-256-GCM) ──────────────────────────

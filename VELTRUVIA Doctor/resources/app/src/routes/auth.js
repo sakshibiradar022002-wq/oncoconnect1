@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { db, writeAudit } from '../db/index.js';
 import {
   hashPassword, verifyPassword, encryptPHI, decryptPHI, randomToken,
-  generateTotpSecret, verifyTotp,
+  generateTotpSecret, verifyTotp, verifyTotpCounter,
 } from '../crypto.js';
 import {
   createSession, revokeSession, clearSessionCookie, authenticate, requireRole,
@@ -156,8 +156,24 @@ authRouter.post('/login', validate(loginSchema), asyncHandler(async (req, res) =
   const totp = decryptPHI(user.totp_enc);
   if (totp?.enabled) {
     if (!totpCode) return res.status(401).json({ error: 'TOTP code required', totpRequired: true });
-    if (!verifyTotp(totp.secret, totpCode)) {
+    const counter = verifyTotpCounter(totp.secret, totpCode);
+    if (counter === null) {
       await clearLoginAttempts('auth:' + email); // Valid password but wrong TOTP — don't count as brute force
+      return res.status(401).json({ error: 'Invalid TOTP code', totpRequired: true });
+    }
+    // A code is single-use: remember the time step it was accepted for and
+    // refuse anything at or below it, so a code observed once cannot be
+    // replayed inside the ±1-step drift window (~90 s).
+    const lastCounter = Number(user.totp_last_counter) || 0;
+    // The conditional UPDATE is the claim: two simultaneous logins cannot
+    // both spend the same code.
+    const claim = counter > lastCounter
+      ? await db.prepare('UPDATE users SET totp_last_counter = ? WHERE id = ? AND (totp_last_counter IS NULL OR totp_last_counter < ?)')
+        .run(counter, user.id, counter)
+      : null;
+    if (!claim || !claim.changes) {
+      await clearLoginAttempts('auth:' + email);
+      await writeAudit({ actorId: user.id, actorRole: user.role, action: 'user.login_totp_replay', targetId: user.id, detail: { counter, lastCounter }, ip: req.ip });
       return res.status(401).json({ error: 'Invalid TOTP code', totpRequired: true });
     }
   }
@@ -190,7 +206,8 @@ authRouter.post('/totp/setup', authenticate, asyncHandler(async (req, res) => {
   if (existing?.enabled) return res.status(409).json({ error: '2FA already enabled' });
 
   const secret = generateTotpSecret();
-  await db.prepare('UPDATE users SET totp_enc = ? WHERE id = ?')
+  // A new secret starts a new counter sequence, so clear the last accepted step.
+  await db.prepare('UPDATE users SET totp_enc = ?, totp_last_counter = NULL WHERE id = ?')
     .run(encryptPHI({ secret, enabled: false }), req.auth.subjectId);
   res.json({
     ok: true, secret,
@@ -205,10 +222,13 @@ authRouter.post('/totp/enable', authenticate, validate(totpCodeSchema), asyncHan
   const u = await db.prepare('SELECT totp_enc FROM users WHERE id = ?').get(req.auth.subjectId);
   const totp = decryptPHI(u?.totp_enc);
   if (!totp?.secret) return res.status(400).json({ error: 'Run /totp/setup first' });
-  if (!verifyTotp(totp.secret, req.valid.code)) return res.status(401).json({ error: 'Invalid code' });
+  // Store the step this enrolment code belongs to: it is spent here and
+  // cannot be reused for a login in the same window.
+  const enrolCounter = verifyTotpCounter(totp.secret, req.valid.code);
+  if (enrolCounter === null) return res.status(401).json({ error: 'Invalid code' });
 
-  await db.prepare('UPDATE users SET totp_enc = ? WHERE id = ?')
-    .run(encryptPHI({ secret: totp.secret, enabled: true }), req.auth.subjectId);
+  await db.prepare('UPDATE users SET totp_enc = ?, totp_last_counter = ? WHERE id = ?')
+    .run(encryptPHI({ secret: totp.secret, enabled: true }), enrolCounter, req.auth.subjectId);
   await writeAudit({ actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'totp.enable', targetId: req.auth.subjectId, ip: req.ip });
   res.json({ ok: true, message: '2FA enabled. Codes will be required at login.' });
 }));
@@ -221,7 +241,7 @@ authRouter.post('/totp/disable', authenticate, validate(totpCodeSchema), asyncHa
   if (!totp?.enabled) return res.status(400).json({ error: '2FA not enabled' });
   if (!verifyTotp(totp.secret, req.valid.code)) return res.status(401).json({ error: 'Invalid code' });
 
-  await db.prepare('UPDATE users SET totp_enc = NULL WHERE id = ?').run(req.auth.subjectId);
+  await db.prepare('UPDATE users SET totp_enc = NULL, totp_last_counter = NULL WHERE id = ?').run(req.auth.subjectId);
   await writeAudit({ actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'totp.disable', targetId: req.auth.subjectId, ip: req.ip });
   res.json({ ok: true });
 }));
