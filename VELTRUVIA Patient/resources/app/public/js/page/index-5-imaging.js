@@ -1,23 +1,21 @@
 // ═══════════════════════════════════════════════════════════════════
 // IMAGING GALLERY — the client for /api/images
 //
-// The imaging API (upload, gallery, bytes, share, delete) shipped without
+// The imaging API (upload, gallery, bytes, delete) shipped without
 // any screen reaching it. This page module closes that gap: patient picker,
-// raw-body upload, thumbnail grid, full-size viewer, time-limited share
-// links and delete.
+// raw-body upload, thumbnail grid, full-size viewer and delete.
 //
 // Endpoints used (src/routes/images.js):
 //   POST   /api/images/:mrn         raw bytes, x-filename / x-note headers
 //   GET    /api/images?mrn=         gallery listing
 //   GET    /api/images/:id/file     bytes (cookie-authenticated)
-//   POST   /api/images/share        { imageId, expiresInDays }
 //   DELETE /api/images/:id          remove image + bytes
 //
 // CSP note: no inline handlers — everything is wired through data-action,
 // matching the rest of the app.
 // ═══════════════════════════════════════════════════════════════════
 
-const IMG = { mrn: '', images: [], shareUrl: '', total: 0, hasMore: false };
+const IMG = { mrn: '', images: [], total: 0, hasMore: false };
 const IMG_MAX_BYTES = 10 * 1024 * 1024;
 const IMG_PAGE = 200;
 
@@ -50,13 +48,6 @@ function renderImagingPanel() {
   imgLoadGallery();
 }
 
-/** A share link belongs to the image it was made for — drop it on reload. */
-function imgClearShare() {
-  IMG.shareUrl = '';
-  const out = imgEl('img-share-out');
-  if (out) out.innerHTML = '';
-}
-
 async function imgLoadGallery(more = false) {
   const box = imgEl('img-gallery');
   if (!box) return;
@@ -67,14 +58,12 @@ async function imgLoadGallery(more = false) {
     IMG.images = [];
     IMG.total = 0;
     IMG.hasMore = false;
-    imgClearShare();
     box.innerHTML = '<div class="empty-card">Select a patient to view imaging studies.</div>';
     return;
   }
   const offset = more ? IMG.images.length : 0;
   if (!more) {
     IMG.images = [];
-    imgClearShare();
     box.innerHTML = '<div class="empty-card">Loading images…</div>';
   }
   try {
@@ -130,7 +119,6 @@ function imgCard(im) {
       <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
         ${isDicom ? `<button class="btn btn-primary btn-sm" data-action="imgOpenDicom:${id}">View</button>` : ''}
         <a class="btn btn-ghost btn-sm" href="${fileUrl}" target="_blank" rel="noopener" style="text-decoration:none;">Open</a>
-        <button class="btn btn-ghost btn-sm" data-action="imgShare:${id}">Share</button>
         <button class="btn btn-ghost btn-sm" data-action="imgDelete:${id}" style="color:var(--red);">Delete</button>
       </div>
     </div>`;
@@ -197,79 +185,6 @@ function imgCloseViewer() {
   if (overlay) overlay.style.display = 'none';
   const image = imgEl('img-viewer-img');
   if (image) image.src = '';
-}
-
-/** Same-origin path of the API's shareUrl, or '' when it is missing/unusable. */
-function imgSharePath(raw) {
-  const s = String(raw || '').trim();
-  if (!s) return '';
-  try {
-    const u = new URL(s, location.origin);
-    return u.origin === location.origin ? u.pathname + u.search : '';
-  } catch { return ''; }
-}
-
-/** Replace the share box with a visible failure — never leave it blank. */
-function imgShareError(msg) {
-  IMG.shareUrl = '';
-  const out = imgEl('img-share-out');
-  if (out) out.innerHTML = `<div style="font-size:12px;color:var(--red);">${esc(msg)}</div>`;
-}
-
-async function imgShare(id) {
-  const out = imgEl('img-share-out');
-  try {
-    const data = await api('/images/share', {
-      method: 'POST',
-      body: JSON.stringify({ imageId: id, expiresInDays: 7 }),
-    });
-    // Validate the response before building anything: a blank box must never be
-    // mistaken for a rendering bug when the API never sent a link.
-    const path = imgSharePath(data && data.shareUrl);
-    const usable = /^\/api\/images\/shared\/[A-Za-z0-9_-]{16,}$/.test(path);
-    const url = usable ? location.origin + path : '';
-    // Refresh first: imgLoadGallery() → imgClearShare() wipes IMG.shareUrl and
-    // this box, so the link is only kept and rendered after the refresh.
-    await imgLoadGallery();
-    if (!usable) {
-      imgShareError(data && data.shareUrl
-        ? 'The server returned a share link this page cannot use, so it is not shown. Reload and try again; if it repeats, check the server log for image.shared.'
-        : 'The server accepted the share but returned no link. Reload and try again; if it repeats, check the server log for image.shared.');
-      return;
-    }
-    IMG.shareUrl = url;
-    if (out) {
-      out.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-          <a id="img-share-link" href="${escAttr(url)}" target="_blank" rel="noopener" style="flex:1;min-width:180px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11.5px;text-decoration:none;word-break:break-all;">${esc(url)}</a>
-          <button class="btn btn-ghost btn-sm" data-action="imgCopyShare">Copy</button>
-        </div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Anyone with this link can view the image until ${esc(formatDateTime(data.expiresAt))}. No patient identifiers are in the link.</div>`;
-    }
-  } catch (err) {
-    imgShareError(`Could not create a share link: ${err.message || err}`);
-  }
-}
-
-async function imgCopyShare() {
-  const link = imgEl('img-share-link');
-  const url = IMG.shareUrl || link?.getAttribute('href') || '';
-  if (!url) return;
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
-    } else {
-      const ta = document.createElement('textarea');
-      ta.value = url;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); } finally { ta.remove(); }
-    }
-    imgMsg('Share link copied.', true);
-  } catch {
-    imgMsg('Could not copy automatically — select the link text instead.', false);
-  }
 }
 
 async function imgDelete(id) {
