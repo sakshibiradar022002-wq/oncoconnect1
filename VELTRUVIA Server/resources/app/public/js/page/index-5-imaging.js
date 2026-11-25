@@ -212,7 +212,7 @@ async function imgShare(id) {
     await imgLoadGallery();
     if (out) {
       out.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-          <input id="img-share-url" readonly value="${escAttr(IMG.shareUrl)}" style="flex:1;min-width:180px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11.5px;">
+          <a id="img-share-link" href="${escAttr(IMG.shareUrl)}" target="_blank" rel="noopener" style="flex:1;min-width:180px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11.5px;text-decoration:none;word-break:break-all;">${esc(IMG.shareUrl)}</a>
           <button class="btn btn-ghost btn-sm" data-action="imgCopyShare">Copy</button>
         </div>
         <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Anyone with this link can view the image until ${esc(formatDateTime(data.expiresAt))}. No patient identifiers are in the link.</div>`;
@@ -222,14 +222,25 @@ async function imgShare(id) {
   }
 }
 
-function imgCopyShare() {
-  const input = imgEl('img-share-url');
-  if (!input) return;
-  input.select();
-  if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(input.value).catch(() => {});
-  } else {
-    try { document.execCommand('copy'); } catch {}
+async function imgCopyShare() {
+  const link = imgEl('img-share-link');
+  const url = IMG.shareUrl || link?.getAttribute('href') || '';
+  if (!url) return;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } finally { ta.remove(); }
+    }
+    imgMsg('Share link copied.', true);
+  } catch {
+    imgMsg('Could not copy automatically — select the link text instead.', false);
   }
 }
 
