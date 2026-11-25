@@ -199,6 +199,23 @@ function imgCloseViewer() {
   if (image) image.src = '';
 }
 
+/** Same-origin path of the API's shareUrl, or '' when it is missing/unusable. */
+function imgSharePath(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  try {
+    const u = new URL(s, location.origin);
+    return u.origin === location.origin ? u.pathname + u.search : '';
+  } catch { return ''; }
+}
+
+/** Replace the share box with a visible failure — never leave it blank. */
+function imgShareError(msg) {
+  IMG.shareUrl = '';
+  const out = imgEl('img-share-out');
+  if (out) out.innerHTML = `<div style="font-size:12px;color:var(--red);">${esc(msg)}</div>`;
+}
+
 async function imgShare(id) {
   const out = imgEl('img-share-out');
   try {
@@ -206,19 +223,30 @@ async function imgShare(id) {
       method: 'POST',
       body: JSON.stringify({ imageId: id, expiresInDays: 7 }),
     });
-    IMG.shareUrl = location.origin + data.shareUrl;
-    // Refresh first: imgLoadGallery() → imgClearShare() empties this box, so
-    // writing the link before the refresh would erase it the moment it appears.
+    // Validate the response before building anything: a blank box must never be
+    // mistaken for a rendering bug when the API never sent a link.
+    const path = imgSharePath(data && data.shareUrl);
+    const usable = /^\/api\/images\/shared\/[A-Za-z0-9_-]{16,}$/.test(path);
+    const url = usable ? location.origin + path : '';
+    // Refresh first: imgLoadGallery() → imgClearShare() wipes IMG.shareUrl and
+    // this box, so the link is only kept and rendered after the refresh.
     await imgLoadGallery();
+    if (!usable) {
+      imgShareError(data && data.shareUrl
+        ? 'The server returned a share link this page cannot use, so it is not shown. Reload and try again; if it repeats, check the server log for image.shared.'
+        : 'The server accepted the share but returned no link. Reload and try again; if it repeats, check the server log for image.shared.');
+      return;
+    }
+    IMG.shareUrl = url;
     if (out) {
       out.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-          <a id="img-share-link" href="${escAttr(IMG.shareUrl)}" target="_blank" rel="noopener" style="flex:1;min-width:180px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11.5px;text-decoration:none;word-break:break-all;">${esc(IMG.shareUrl)}</a>
+          <a id="img-share-link" href="${escAttr(url)}" target="_blank" rel="noopener" style="flex:1;min-width:180px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11.5px;text-decoration:none;word-break:break-all;">${esc(url)}</a>
           <button class="btn btn-ghost btn-sm" data-action="imgCopyShare">Copy</button>
         </div>
         <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Anyone with this link can view the image until ${esc(formatDateTime(data.expiresAt))}. No patient identifiers are in the link.</div>`;
     }
   } catch (err) {
-    if (out) out.innerHTML = `<div style="font-size:12px;color:var(--red);">Could not create a share link: ${esc(err.message || err)}</div>`;
+    imgShareError(`Could not create a share link: ${err.message || err}`);
   }
 }
 
