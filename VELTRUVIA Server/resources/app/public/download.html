@@ -237,7 +237,6 @@ h1 {
   background: rgba(72,199,116,0.08); border: 1px solid rgba(72,199,116,0.25);
   font-size: 10px; letter-spacing: 0.04em;
 }
-.ver-line .sha-chip { color: var(--blue); opacity: 0.85; }
 .card-badge {
   position: absolute; top: 18px; right: 18px; font-size: 10px; font-weight: 700;
   padding: 5px 12px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.12em;
@@ -515,7 +514,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
       <div class="card-desc">
         Full EMR dashboard with patient records, appointment scheduling, clinical notes, lab management, billing, and video calls. Connects to the clinic automatically — register with your email and a 6-digit verification code.
       </div>
-      <div class="ver-line"><span class="v-badge">v2.6.6</span><span>Nov&nbsp;22,&nbsp;2026</span><span class="sha-chip" title="Published with the installer in /downloads/SHA256SUMS.txt">SHA256&nbsp;see&nbsp;SHA256SUMS</span></div>
+      <div class="ver-line"><span class="v-badge">v2.6.6</span><span>Nov&nbsp;22,&nbsp;2026</span></div>
       <div class="btn-row">
         <a class="download-btn" href="/downloads/VELTRUVIA-Doctor-Setup.exe" download>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
@@ -546,7 +545,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
       <div class="card-desc">
         Manage lab test orders, upload results, and track sample status. Install the Windows software on the lab computer, or the Android app on any phone — task lists arrive from the doctor in real time.
       </div>
-      <div class="ver-line"><span class="v-badge">v2.6.6</span><span>Nov&nbsp;22,&nbsp;2026</span><span class="sha-chip" title="Published with the installer in /downloads/SHA256SUMS.txt">SHA256&nbsp;see&nbsp;SHA256SUMS</span></div>
+      <div class="ver-line"><span class="v-badge">v2.6.6</span><span>Nov&nbsp;22,&nbsp;2026</span></div>
       <div class="btn-row">
         <a class="download-btn" href="/downloads/VELTRUVIA-Lab-Setup.exe" download>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
@@ -587,7 +586,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
       <div class="card-desc">
         Log daily symptoms, track medications, view appointments, and message your care team — right from your phone. Register yourself with your email, verify with the 6-digit code we send, and you're in.
       </div>
-      <div class="ver-line"><span class="v-badge">v2.6.6</span><span>Nov&nbsp;22,&nbsp;2026</span><span class="sha-chip" title="Published with the installer in /downloads/SHA256SUMS.txt">APK · see SHA256SUMS</span><span class="sha-chip" title="Published with the installer in /downloads/SHA256SUMS.txt">Setup · see SHA256SUMS</span></div>
+      <div class="ver-line"><span class="v-badge">v2.6.6</span><span>Nov&nbsp;22,&nbsp;2026</span></div>
       <div class="btn-row">
         <a class="download-btn" href="/downloads/VELTRUVIA-Patient.apk" download>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
@@ -626,7 +625,7 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
       <div class="card-desc">
         Hosts the clinic database and the sync service every other app connects to. Install it once on the clinic computer — Doctor, Lab and Patient apps then find it automatically, with no addresses to configure.
       </div>
-      <div class="ver-line"><span class="v-badge">v2.6.6</span><span class="sha-chip" title="Published with the installer in /downloads/SHA256SUMS.txt">SHA256&nbsp;see&nbsp;SHA256SUMS</span></div>
+      <div class="ver-line"><span class="v-badge">v2.6.6</span></div>
       <div class="btn-row">
         <a class="download-btn" href="/downloads/VELTRUVIA-Server-Setup.exe" download>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
@@ -717,21 +716,15 @@ button.download-btn{cursor:pointer;font-family:inherit;font-size:0.95rem;}
   </div>
 </div>
 
-<!-- ── Published checksums ── -->
-<div class="checksums" id="checksums">
+<!-- ── Published checksums ──
+     Hidden until /downloads/SHA256SUMS.txt is actually published: this machine
+     has no release binaries, so the page must not imply digests exist. When the
+     file loads, download-page.js fills #sha-rows and unhides the box. -->
+<div class="checksums" id="checksums" hidden>
   <h2>SHA-256 Checksums</h2>
-  <p class="sha-hint">Every release publishes a SHA-256 for each installer. Download <a href="/downloads/SHA256SUMS.txt">SHA256SUMS.txt</a> or <a href="/verify.html#file">verify a downloaded file in your browser</a> — the file is hashed locally and never uploaded.</p>
+  <p class="sha-hint">Published with the release binaries. Download <a href="/downloads/SHA256SUMS.txt">SHA256SUMS.txt</a> or <a href="/verify.html#file">verify a downloaded file in your browser</a> — the file is hashed locally and never uploaded.</p>
   <table class="sha-table">
-    <tbody>
-      <tr><td>VELTRUVIA-Doctor-Setup.exe</td><td class="sha">see /downloads/SHA256SUMS.txt</td></tr>
-      <tr><td>VELTRUVIA-Lab-Setup.exe</td><td class="sha">see /downloads/SHA256SUMS.txt</td></tr>
-      <tr><td>VELTRUVIA-Server-Setup.exe</td><td class="sha">see /downloads/SHA256SUMS.txt</td></tr>
-      <tr><td>VELTRUVIA-Doctor-Portable.zip</td><td class="sha">see /downloads/SHA256SUMS.txt</td></tr>
-      <tr><td>VELTRUVIA-Lab-Portable.zip</td><td class="sha">see /downloads/SHA256SUMS.txt</td></tr>
-      <tr><td>VELTRUVIA-Patient.apk</td><td class="sha">see /downloads/SHA256SUMS.txt</td></tr>
-      <tr><td>VELTRUVIA-Lab.apk</td><td class="sha">see /downloads/SHA256SUMS.txt</td></tr>
-      <tr><td>VELTRUVIA-Patient-Setup.exe</td><td class="sha">see /downloads/SHA256SUMS.txt</td></tr>
-    </tbody>
+    <tbody id="sha-rows"></tbody>
   </table>
 </div>
 

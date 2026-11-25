@@ -1,0 +1,116 @@
+VELTRUVIA 2.6.8 — Release Notes
+===============================
+
+Everything below landed between the v2.5.0 tag and this build: 84 commits,
+2026-10-04 → 2026-11-25. Version numbers in this range were bumped as work
+shipped, so the grouping mirrors the bumps (2.6.3 → 2.6.8) rather than a
+release cadence; no binaries were published for any of them.
+
+NEW — Imaging (2.6.4 → 2.6.7)
+-----------------------------
+• Imaging API with six endpoints: upload, list/gallery, metadata, original file,
+  delete, and a time-limited share link (2.6.4). Uploads are SHA-256 hashed on
+  the way in and re-verified on the way out.
+• Imaging gallery UI, a DICOM viewer for the browser, and a bulk seeder for
+  demo/eval datasets (2.6.6).
+• Patient-level access rules: browsing imaging requires a doctor session —
+  patient and lab sessions get 403 on every imaging route.
+• The gallery no longer offers a Share control (2026-11-25). The share API is
+  unchanged and still covered by the API tests; the page simply stopped minting
+  links, because a link the page cannot display is worse than no button.
+
+SECURITY & PRIVACY
+------------------
+• Audit anchoring is hash-only (2.6.8). The anchored target is now
+  sha256(targetId), and `assertHashOnlyAnchor` aborts any anchor whose hashed
+  fields are not `0x` + 64 hex — a future call site cannot publish an MRN.
+  The local file chain remains the source of truth; anchoring is fail-open.
+• The on-chain record was re-read end to end and is documented: 1,008 anchored
+  events carried 70 distinct identifiers (46 short identifiers, 21 email
+  addresses, 3 free-text) between 2026-09-27 and 2026-11-14. This is a
+  disclosure that has already happened and cannot be undone — see
+  reports/SEPOLIA-DISCLOSURE-ASSESSMENT.md and reports/S8-DISCLOSURE-PACK.md.
+  The governance documents that claimed "hashes only" were corrected.
+• TOTP codes are single-use; a replayed code is refused (2.6.7/2.6.8 window
+  handled after enrolment).
+• Session TTL is 7 days with scaled sliding refresh.
+• Shared JSON stores (patients, logs, messages, appointments, availability,
+  telehealth) stay AES-256-GCM encrypted on disk; the DB writer lock is now
+  enforced on every backend.
+• Login and password-reset error paths no longer blame the user's password for
+  a server-side failure, and the recovery limiter names itself when reset mail
+  is suppressed.
+• Account/email-trace wipe script added for erasure requests; secret rotation
+  and a read-only restore drill documented.
+
+OPS — backups, monitoring, deploy
+---------------------------------
+• Nightly backups now use VACUUM INTO against a single-quoted target, so a
+  snapshot can no longer land mid-checkpoint; the job awaits its async exec and
+  verifies the snapshot before reporting success.
+• Offsite backup job documented against the nightly dump rather than restart
+  snapshots; the offsite decryption key lives only on the VM and is noted as
+  such.
+• Healthchecks dead-man's switch is live; placeholder heartbeat URLs are
+  refused instead of reported as success.
+• Anomaly scan ignores the pentest scanner's own IP; cron examples point at the
+  repo checkout, not the app directory.
+• Staged deploy with rollback and the domain migration are documented, and the
+  deploy no longer reports an untested admin login as a pass or bash-sources
+  .env while staging.
+• Empty imaging stores warn "no uploads yet" instead of reporting a verified
+  copy.
+
+DATA QUALITY
+------------
+• 186 RxNorm CUIs corrected after an RxNav audit; brand names resolve and
+  unlisted drugs fall back to NLM label data.
+• Drug-interaction and dosage checks unchanged in behaviour, re-verified.
+
+QUALITY GATES
+-------------
+• check.mjs rejects edits outside the canonical Server bundle, so the four
+  bundles cannot drift.
+• The API verification runner boots its own server on a free port, seeds demo
+  accounts, and registers a patient before the RBAC checks — the four-app sweep
+  is 79 checks per app (this build: Server 79/79).
+• Root test suite 110/110, bundle suite 36/36, check.mjs green (2026-11-25).
+
+FIXED
+-----
+• Sepolia anchors arriving together were dropped instead of queued.
+• Patient "Export My Data", symptom trends, and photo/file attachments.
+• Appointment loop: cancel works, one booking record, real pending count, no
+  past slots.
+• Android medicine reminders are real OS-level alarms again.
+• Lab report requests flow; lab results addressed by MRN.
+• Patient Windows installer linked from the download page; in-browser
+  checksum verifier shipped.
+
+DOWNLOAD PAGE — what changed in this build
+------------------------------------------
+• The per-card "SHA256 see SHA256SUMS" chips are gone. This build has no
+  published binaries and no /downloads/SHA256SUMS.txt, so the page must not
+  imply digests exist.
+• The checksum table is hidden until SHA256SUMS.txt actually loads; when it
+  does, download-page.js fills the rows from the file instead of the eight
+  hardcoded "see /downloads/SHA256SUMS.txt" placeholders that could never
+  resolve.
+• docs.html's "digest printed on the card" claim corrected to match.
+
+OPEN — not fixed by this release
+--------------------------------
+• No release binaries or SHA256SUMS.txt are published for 2.6.8; the four
+  /downloads/* links have nothing behind them until a release job runs.
+• The Sepolia notification decision (S8) is with counsel; the disclosure pack
+  is the input to that decision.
+• Installers remain unsigned — an OV/EV code-signing certificate is still
+  outstanding (P4).
+• The imaging share-link expiry probe is scheduled for 2026-12-02.
+
+Upgrade notes
+-------------
+• No schema or store migration in this release; 2.6.8 reads what 2.6.7 wrote.
+• Doctor, Lab, Patient and Server bundles must stay byte-identical — copy one
+  bundle's public/ and src/ into all four, then run `node sync-bundles.mjs`
+  and `node check.mjs`.

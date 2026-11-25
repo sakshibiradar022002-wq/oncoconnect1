@@ -174,7 +174,7 @@ td.dim { color: var(--text-muted); }
 
   <section id="verification">
     <h2>Downloads and verification</h2>
-    <p>Installers are on the <a href="/download.html">download page</a>, each with its SHA-256 digest printed on the card and listed again in the checksum table at the bottom of that page. The same digests are published as <a href="/downloads/SHA256SUMS.txt">/downloads/SHA256SUMS.txt</a>.</p>
+    <p>Installers are on the <a href="/download.html">download page</a>. Once a release publishes its binaries, their SHA-256 digests appear in the checksum table at the bottom of that page, served from <a href="/downloads/SHA256SUMS.txt">/downloads/SHA256SUMS.txt</a>; until then that table is not shown, because a checksum the deployment cannot serve is worse than none.</p>
     <p>To check a file you already have, open the <a href="/verify.html#file">verifier</a>: it hashes the file locally with the browser's Web Crypto API and compares it against the published digest, or against one you paste in. The file is never uploaded, and the result is either a match or a mismatch — no partial credit.</p>
     <p>The same page also verifies the tamper-evident record chain, which is a separate check from an installer's checksum.</p>
   </section>
