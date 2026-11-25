@@ -207,6 +207,9 @@ async function imgShare(id) {
       body: JSON.stringify({ imageId: id, expiresInDays: 7 }),
     });
     IMG.shareUrl = location.origin + data.shareUrl;
+    // Refresh first: imgLoadGallery() → imgClearShare() empties this box, so
+    // writing the link before the refresh would erase it the moment it appears.
+    await imgLoadGallery();
     if (out) {
       out.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
           <input id="img-share-url" readonly value="${escAttr(IMG.shareUrl)}" style="flex:1;min-width:180px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11.5px;">
@@ -214,7 +217,6 @@ async function imgShare(id) {
         </div>
         <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Anyone with this link can view the image until ${esc(formatDateTime(data.expiresAt))}. No patient identifiers are in the link.</div>`;
     }
-    await imgLoadGallery();
   } catch (err) {
     if (out) out.innerHTML = `<div style="font-size:12px;color:var(--red);">Could not create a share link: ${esc(err.message || err)}</div>`;
   }
