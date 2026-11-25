@@ -34,6 +34,18 @@ test('DICOM studies open in the vendored Cornerstone3D viewer', () => {
 test('gallery module uses the real imaging endpoints', () => {
   assert.match(gallery, /\/api\/images\?mrn=/, 'lists via the gallery endpoint');
   assert.match(gallery, /method: 'POST'[\s\S]{0,400}x-filename/, 'uploads raw bytes with x-filename');
-  assert.match(gallery, /\/api\/images\/share/, 'creates time-limited share links');
   assert.match(gallery, /method: 'DELETE'/, 'can delete images');
+});
+
+// The gallery's Share button was removed on 2026-11-25: it handed out a
+// login-free bearer link, which the operator judged not worth the exposure.
+// The API route stays (tests/images.api.test.mjs exercises it), so this locks
+// both halves: no share path in the page, the route still present on the server.
+test('the gallery mints no share links, and the share route is untouched', () => {
+  assert.doesNotMatch(gallery, /\/api\/images\/share/, 'no share call in the gallery module');
+  assert.doesNotMatch(gallery, /imgShare|shareUrl/, 'no share helpers or state left behind');
+  const routes = readFileSync(join(APP, 'src', 'routes', 'images.js'), 'utf8');
+  assert.match(routes, /imagesRouter\.post\('\/share'/, 'POST /api/images/share still exists');
+  assert.match(html, /id="img-gallery"/, 'the gallery container the module renders into still exists');
+  assert.doesNotMatch(html, /img-share-out/, 'the share output box is gone from the page');
 });
