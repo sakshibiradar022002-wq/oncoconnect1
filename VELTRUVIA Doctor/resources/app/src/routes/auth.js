@@ -198,17 +198,37 @@ authRouter.post('/login', validate(loginSchema), asyncHandler(async (req, res) =
 
 // ── Two-factor auth (TOTP, RFC 6238) for doctor/admin accounts ────
 // Setup: returns a fresh secret + otpauth:// URL for the authenticator app.
-authRouter.post('/totp/setup', authenticate, asyncHandler(async (req, res) => {
+// The account password is required again: a session cookie alone must not be
+// able to bind an attacker-controlled authenticator (PENTEST-SCOPE §4 flow 6).
+const totpSetupSchema = z.object({
+  password: z.string().min(1),
+  // Explicit opt-in to replace a pending (unenabled) secret.
+  restart: z.boolean().optional().default(false),
+});
+authRouter.post('/totp/setup', authenticate, validate(totpSetupSchema), asyncHandler(async (req, res) => {
   if (req.auth.subjectType !== 'user') return res.status(403).json({ error: 'Accounts only' });
-  const u = await db.prepare('SELECT email, totp_enc FROM users WHERE id = ?').get(req.auth.subjectId);
+  const u = await db.prepare('SELECT email, password_hash, totp_enc FROM users WHERE id = ?').get(req.auth.subjectId);
   if (!u) return res.status(404).json({ error: 'Not found' });
+  if (!verifyPassword(req.valid.password, u.password_hash)) {
+    await writeAudit({ actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'totp.setup_refused', targetId: req.auth.subjectId, ip: req.ip });
+    return res.status(401).json({ error: 'Password incorrect' });
+  }
   const existing = decryptPHI(u.totp_enc);
   if (existing?.enabled) return res.status(409).json({ error: '2FA already enabled' });
+  // A pending secret is not silently replaced: a second setup would otherwise
+  // swap the secret out from under whoever is mid-enrolment. Ask for restart.
+  if (existing?.secret && !req.valid.restart) {
+    return res.status(409).json({
+      error: 'An enrolment is already pending. Finish it, or retry with restart:true to replace the pending secret.',
+      pending: true,
+    });
+  }
 
   const secret = generateTotpSecret();
   // A new secret starts a new counter sequence, so clear the last accepted step.
   await db.prepare('UPDATE users SET totp_enc = ?, totp_last_counter = NULL WHERE id = ?')
     .run(encryptPHI({ secret, enabled: false }), req.auth.subjectId);
+  await writeAudit({ actorId: req.auth.subjectId, actorRole: req.auth.role, action: 'totp.setup', targetId: req.auth.subjectId, detail: { restart: !!req.valid.restart }, ip: req.ip });
   res.json({
     ok: true, secret,
     otpauthUrl: `otpauth://totp/VELTRUVIA:${encodeURIComponent(u.email)}?secret=${secret}&issuer=VELTRUVIA`,

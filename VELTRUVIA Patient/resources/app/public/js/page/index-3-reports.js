@@ -1094,11 +1094,28 @@ d.id='twofa-modal';d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0
 d.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:400px;width:90%;position:relative;">
   <button data-action="elRemove:twofa-modal" style="position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;">✕</button>
   <h2 style="font-size:16px;margin-bottom:12px;">🔐 Two-Factor Authentication</h2>
-  <div id="twofa-content"><div style="text-align:center;color:var(--text-muted);font-size:13px;">Loading...</div></div>
+  <div id="twofa-content">
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Confirm your account password to start setting up an authenticator app.</div>
+    <div class="pw-wrap"><input id="twofa-pass" type="password" autocomplete="current-password" placeholder="Account password" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;"></div>
+    <button data-action="start2FA" style="margin-top:12px;width:100%;padding:10px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Continue</button>
+  </div>
 </div>`;
 d.onclick=e=>{if(e.target===d)d.remove()};document.body.appendChild(d);
+}
+// Enrolment requires the password again — a session alone must not bind an
+// authenticator. A pending secret is replaced only on explicit confirmation.
+async function start2FA(){
+  const pass=document.getElementById('twofa-pass')?.value||'';
+  if(!pass){AppDialog.alert('Enter your password.');return;}
   try{
-    const r=await api('/auth/totp/setup',{method:'POST'});
+    let r;
+    try{
+      r=await api('/auth/totp/setup',{method:'POST',body:JSON.stringify({password:pass})});
+    }catch(e){
+      if(!/pending/i.test(e.message||''))throw e;
+      if(!await AppDialog.confirm('An enrolment for this account is already in progress. Replace the pending secret with a new one?'))return;
+      r=await api('/auth/totp/setup',{method:'POST',body:JSON.stringify({password:pass,restart:true})});
+    }
     if(r.ok&&r.secret){
       _totpSecret=r.secret;
       document.getElementById('twofa-content').innerHTML=`

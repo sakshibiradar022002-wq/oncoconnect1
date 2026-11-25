@@ -18,9 +18,11 @@ const spec = {
     contact: { name: 'VELTRUVIA Support', email: 'support@veltruvia.io' },
     license: { name: 'HIPAA Compliant', url: 'https://en.wikipedia.org/wiki/Health_Insurance_Portability_and_Accountability_Act' },
   },
+  // Only the server that serves this document. The spec used to advertise an
+  // external deployment the operator does not manage; generated clients and
+  // scanners followed it off-target (RISK-REGISTER S10).
   servers: [
     { url: '/', description: 'Current server' },
-    { url: 'https://veltruvia-server.onrender.com', description: 'Production (Render)' },
   ],
   components: {
     securitySchemes: {

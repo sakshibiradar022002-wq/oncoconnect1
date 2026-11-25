@@ -109,8 +109,19 @@ test('a used TOTP code cannot be replayed within the drift window', async () => 
   const first = await login();
   assert.equal(first.status, 200, `demo admin login failed: ${first.text}`);
 
-  const setup = await call('/api/auth/totp/setup', { method: 'POST' });
+  // Enrolment re-authenticates: a session cookie alone must not bind a factor.
+  const noPassword = await call('/api/auth/totp/setup', { method: 'POST', body: {} });
+  assert.equal(noPassword.status, 400, 'setup must reject a request without the password');
+  const wrongPassword = await call('/api/auth/totp/setup', { method: 'POST', body: { password: 'not-the-password' } });
+  assert.equal(wrongPassword.status, 401, 'setup must reject a wrong password');
+
+  const setup = await call('/api/auth/totp/setup', { method: 'POST', body: { password: DEMO_PASSWORD } });
   assert.equal(setup.status, 200, `totp setup failed: ${setup.text}`);
+
+  // A second setup must not silently replace the pending secret.
+  const setupAgain = await call('/api/auth/totp/setup', { method: 'POST', body: { password: DEMO_PASSWORD } });
+  assert.equal(setupAgain.status, 409, 'a pending enrolment must not be silently replaced');
+  assert.equal(setupAgain.body?.pending, true);
   const secret = setup.body.secret;
   assert.ok(secret, 'setup must return a secret');
 

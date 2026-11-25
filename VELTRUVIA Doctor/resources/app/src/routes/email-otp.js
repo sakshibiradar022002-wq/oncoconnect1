@@ -89,11 +89,27 @@ const sendOtpSchema = z.object({
 emailOtpRouter.post('/send', otpIpLimiter, otpEmailLimiter, validate(sendOtpSchema), asyncHandler(async (req, res) => {
   const { email, purpose } = req.valid;
 
-  // For registration: reject if email already registered
+  // For registration: an address that already has an account must be
+  // indistinguishable from a new one — otherwise this endpoint is an
+  // unauthenticated account-existence oracle. No code is issued or sent to a
+  // registered address, but the response is the same shape either way
+  // (PENTEST-SCOPE §4 flow 2, fixed 2026-11-25).
   if (purpose === 'register') {
     const existing = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existing) {
-      return res.status(409).json({ error: 'An account already exists for this email' });
+      const mailReady = mailConfigured();
+      await writeAudit({
+        actorId: email, actorRole: 'anonymous',
+        action: 'otp.send', targetId: email,
+        detail: { purpose, delivery: 'suppressed', reason: 'already-registered' }, ip: req.ip,
+      });
+      return res.json({
+        ok: true,
+        message: mailReady
+          ? `Verification code sent to ${email}`
+          : 'Email delivery is not configured on this server — contact your administrator.',
+        delivery: mailReady ? 'email' : 'none',
+      });
     }
   }
 
