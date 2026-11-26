@@ -76,8 +76,9 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    critical finding and 2 on a warning only when `--strict` is passed — the cron line documented
    before 2026-11-26 omitted that flag, so every warning-only rule exited 0 and stayed silent;
    the line is fixed and `--print-cron` now emits it. **Installed 2026-11-26** (`*/15`, `--strict`,
-   `--stale-hours 24`); first run exit 0 on a clean window. What remains is the consumer: the exit
-   code goes to a log file, so a finding is recorded but not announced.
+   `--stale-hours 24`), and cron firing is confirmed by the log growing at 06:45 without operator
+   action. What remains is the consumer: the exit code goes to a log file, so a finding is recorded
+   but not announced.
 
 ### P2 — tracked
 
