@@ -79,7 +79,12 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    `--stale-hours 24`), and cron firing is confirmed by the log growing at 06:45 without operator
    action. The consumer now exists too: `scripts/anomaly-alert.mjs` pings a Healthchecks check on a
    clean window and `/fail` on exit 1 or 2, with a test for each code. What remains is creating that
-   check and putting `ANOMALY_CHECK_URL` in the crontab.
+   check and putting `ANOMALY_CHECK_URL` in the crontab. Both are now done on the VM: a separate
+   Healthchecks check (period 15, grace 30) exists, its URL sits in `~/.secrets/anomaly-check.url`
+   (mode 600) and the crontab line reads it with `$(cat …)`, so `crontab -l` is safe to hand to an
+   auditor. The dry run exited 0 with `[anomaly-alert] ✅ heartbeat sent`, and a real cron tick
+   wrote the same line to `~/veltruvia-anomaly.log`. A critical finding now reaches an outside
+   service within 15 minutes instead of waiting to be read.
 
 ### P2 — tracked
 
