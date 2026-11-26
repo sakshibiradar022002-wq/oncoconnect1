@@ -11,8 +11,12 @@
  *   node scripts/audit-anomaly.mjs --window 6 --json reports/anomaly/latest.json
  *   node scripts/audit-anomaly.mjs --db /home/ubuntu/veltruvia/app/chemocure.db
  *   node scripts/audit-anomaly.mjs --ignore-ip 208.72.218.131   # test/pentest source
+ *   node scripts/audit-anomaly.mjs --strict                     # warnings also exit 2
+ *   node scripts/audit-anomaly.mjs --print-cron                 # print the crontab line
  *
- * Exit: 0 quiet · 1 critical finding · 2 warning only.
+ * Exit: 0 quiet · 1 critical · 2 warnings, only when --strict is passed. A
+ * cron entry must pass --strict, otherwise a warning-only scan (bulk reads,
+ * off-hours writes, audit silence) exits 0 and never alerts.
  */
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -41,6 +45,13 @@ const IGNORE_IPS = new Set(
 const FAIL_BURST = Number(arg('--fail-burst', 10));
 const TARGET_BULK = Number(arg('--bulk-targets', 100));
 const STALE_HOURS = Number(arg('--stale-hours', 6));
+
+// Printed from the repo root so the path cron needs is absolute. The scanner
+// IP stays a placeholder — it is site-specific and must not be guessed here.
+if (flag('--print-cron')) {
+  console.log(`*/15 * * * * cd ${process.cwd()} && ANOMALY_IGNORE_IPS=<scanner-ip> ${process.execPath} scripts/audit-anomaly.mjs --db ${DB_PATH} --strict >> /home/ubuntu/veltruvia-anomaly.log 2>&1`);
+  process.exit(0);
+}
 
 if (!existsSync(DB_PATH)) {
   console.error(`[anomaly] database not found: ${DB_PATH} (pass --db/DB_PATH, or set APP_DIR)`);

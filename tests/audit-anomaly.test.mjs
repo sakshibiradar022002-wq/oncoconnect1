@@ -79,6 +79,27 @@ test('--ignore-ip suppresses the scanner\'s own failed-login burst', () => {
   assert.equal(quietReport.rowsIgnored, 12);
 });
 
+test('--strict turns a warning-only scan into exit 2 for cron', () => {
+  const rows = [];
+  for (let i = 0; i < 120; i++) rows.push({ actor: 'u5', action: 'patient.view', target: `s${i}` });
+  const { dir, path } = makeDb(rows);
+  const out = run(['--db', path, '--json', join(dir, 'report.json'), '--strict']);
+  assert.equal(out.status, 2, out.stdout + out.stderr);
+
+  const report = JSON.parse(readFileSync(join(dir, 'report.json'), 'utf8'));
+  assert.equal(report.counts.critical, 0);
+  assert.ok(report.counts.warn > 0);
+});
+
+test('--print-cron prints a runnable line with --strict and needs no database', () => {
+  const out = run(['--print-cron', '--db', '/nonexistent/does-not-exist.db']);
+  assert.equal(out.status, 0, out.stdout + out.stderr);
+  const line = out.stdout.trim();
+  assert.match(line, /^\*\/15 \* \* \* \* cd \//);
+  assert.match(line, /--strict/);
+  assert.match(line, /--db \/nonexistent\/does-not-exist\.db/);
+});
+
 test('a quiet, healthy window exits 0 with no findings', () => {
   const { dir, path } = makeDb([
     { actor: 'u4', action: 'user.login.success', ip: '198.51.100.4' },

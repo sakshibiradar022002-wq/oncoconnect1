@@ -72,8 +72,11 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    "tested here" and "running there" as separate claims.
 6. **No BAA is in place for any subprocessor** before real PHI: Resend/Gmail, Cloudflare, GitHub,
    Sentry. Recorded as dated items, still dated.
-7. **S6 anomaly alerting is shipped but not installed.** `scripts/audit-anomaly.mjs` exits 1/2 for
-   cron; `RISK-REGISTER.md` S6 still says "install the cron line".
+7. **S6 anomaly alerting is shipped but not installed.** `scripts/audit-anomaly.mjs` exits 1 on a
+   critical finding and 2 on a warning only when `--strict` is passed — the cron line documented
+   before 2026-11-26 omitted that flag, so every warning-only rule exited 0 and stayed silent;
+   the line is fixed and `--print-cron` now emits it. `RISK-REGISTER.md` S6 still says "install
+   the cron line": that one-line crontab entry is the operator's step, not code.
 
 ### P2 — tracked
 
