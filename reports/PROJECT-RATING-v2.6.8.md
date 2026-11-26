@@ -77,8 +77,9 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    before 2026-11-26 omitted that flag, so every warning-only rule exited 0 and stayed silent;
    the line is fixed and `--print-cron` now emits it. **Installed 2026-11-26** (`*/15`, `--strict`,
    `--stale-hours 24`), and cron firing is confirmed by the log growing at 06:45 without operator
-   action. What remains is the consumer: the exit code goes to a log file, so a finding is recorded
-   but not announced.
+   action. The consumer now exists too: `scripts/anomaly-alert.mjs` pings a Healthchecks check on a
+   clean window and `/fail` on exit 1 or 2, with a test for each code. What remains is creating that
+   check and putting `ANOMALY_CHECK_URL` in the crontab.
 
 ### P2 — tracked
 
