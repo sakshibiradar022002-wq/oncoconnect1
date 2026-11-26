@@ -38,7 +38,7 @@ jobs:
             (cd "$app/resources/app" && npm ci)
           done
         timeout-minutes: 10
-      - name: Feature verification (70 checks × 4 apps)
+      - name: Feature verification (90 checks × 4 apps)
         run: node scripts/verify-all.mjs
         timeout-minutes: 12
       # The root suite (hardening, imaging, anomaly scan, offsite backup,

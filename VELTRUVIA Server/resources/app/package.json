@@ -38,6 +38,6 @@
     "seed-demo": "node scripts/seed-demo.mjs",
     "init-db": "node src/db/init.js",
     "check": "node --check src/app.js && node --check src/server.js",
-    "test": "node --test --test-concurrency=1 tests/"
+    "test": "node --test --test-concurrency=1 tests/*.test.js"
   }
 }
