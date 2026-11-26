@@ -26,11 +26,32 @@ Run electron-builder from the **Server** bundle directory (it has the working
 local electron-builder install) and pass each app's config by path — running
 npx from the client bundles can resolve a broken cached electron-builder:
 
+**Always pass `--win nsis zip`.** electron-builder builds for the *host* platform
+by default, so the same command on Linux quietly produces `AppImage`/`deb` and
+no installer at all — `public/downloads/` then gets nothing and the download
+page keeps its old version. On a Windows host the flag is harmless; on Linux it
+is the difference between a Windows installer and a Linux one.
+
+Paths use forward slashes so the same line works in bash and PowerShell. Do not
+copy the `..\..\..\` form from older notes: on Linux that is one long filename
+and electron-builder fails with `ENOENT`.
+
 ```bash
 cd "VELTRUVIA Server/resources/app"
-npx electron-builder --config electron/electron-builder-server.json --publish never
-npx electron-builder --config "..\..\..\VELTRUVIA Doctor\resources\app\electron\electron-builder-doctor.json" --publish never
+npx electron-builder --win nsis zip --config electron/electron-builder-server.json --publish never
+npx electron-builder --win nsis zip --config "../../../VELTRUVIA Doctor/resources/app/electron/electron-builder-doctor.json" --publish never
+npx electron-builder --win nsis zip --config "../../../VELTRUVIA Patient/resources/app/electron/electron-builder-patient.json" --publish never
+npx electron-builder --win nsis zip --config "../../../VELTRUVIA Lab/resources/app/electron/electron-builder-lab.json" --publish never
 ```
+
+Two Linux-host caveats: the `linux` target in the configs aborts on `deb` with
+`Please specify project homepage` because `package.json` has no `homepage`
+field — irrelevant with `--win`, and the reason to build only Windows here. The
+`ffmpeg.dll` line of `extraResources` does not exist in a Linux electron
+package, so `file source doesn't exist` is expected noise; the Windows build of
+electron ships it. If the NSIS step itself stops on the VM, it wants wine
+(`sudo apt-get install -y wine64`); build on Windows instead if you would
+rather not add it.
 
 Note: all configs write into the same `dist-desktop/` — each build replaces
 `win-unpacked/`, so copy/sign each exe before building the next app. The
