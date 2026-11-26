@@ -62,9 +62,13 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    **70 distinct identifiers**, and the join against the 2026-11-24 backup puts at least one live
    patient MRN on a public chain. No code change closes this; the open action is the notification
    decision, which is counsel's.
-3. **Release provenance.** `public/download.html` advertises v2.6.8 with SHA-256 chips, but
-   `RELEASE-NOTES-2.5.0.txt` is still the newest note and `public/downloads/` is absent. Either
-   publish notes plus real checksums for 2.6.8 or stop asserting them.
+3. **Release provenance.** The page no longer asserts digests: the SHA-256 table stays hidden until
+   `/downloads/SHA256SUMS.txt` actually loads, and the version text now reads v2.6.8 (Nov 25, 2026)
+   instead of the stale v2.6.6, matching `RELEASE-NOTES-2.6.8.txt`. What is still untrue is the
+   download itself — `public/downloads/` is absent, so the six `/downloads/*` buttons and the
+   SHA256SUMS link return 404, and no binary has been published since 2.5.0. Building the four
+   installers on Windows and publishing them with a real `SHA256SUMS.txt` is the only fix; nothing
+   in this repository can produce them.
 4. **`scripts/verify-all.mjs` does not cover imaging** (`grep -c images` = 0). It is the only
    feature outside the 70×4 sweep, and it is the feature that just changed twice.
 5. **Deployment-matches-source is not proven in this pass.** The v2.6.4 P0 said live 2.6.4
