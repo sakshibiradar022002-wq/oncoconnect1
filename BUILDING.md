@@ -163,8 +163,8 @@ top-level folders:
       from `dist-desktop/win-unpacked/` (delete destination `locales/` first;
       copy everything **except** `resources/` — see "Deploying a fresh build")
 - [ ] Mobile APKs built + signed into `dist/`: `VELTRUVIA Patient.apk`,
-      `VELTRUVIA Lab.apk` (toolchain + commands in `mobile/README.md`; on this
-      machine JDK 21 + Android SDK already live in `C:\Users\Sara\veltruvia-build-tools\`)
+      `VELTRUVIA Lab.apk` (toolchain + commands in `mobile/README.md`; the
+      JDK 21 + Android SDK toolchain lives on the Windows build machine, not here)
 - [ ] APKs + exes uploaded to GitHub Releases (download-page links point there)
 - [ ] The same files present in `public/downloads/` — `VELTRUVIA-Server-Setup.exe`,
       `VELTRUVIA-Doctor-Setup.exe`, `VELTRUVIA-Doctor-Portable.zip`,
