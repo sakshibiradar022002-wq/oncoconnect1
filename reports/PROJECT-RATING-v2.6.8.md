@@ -78,9 +78,11 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    repository has no `public/downloads/`, but production does — the deploy preserves it — and it
    holds all eight artifacts plus `SHA256SUMS.txt`, served with 200. `sha256sum -c` passes on every
    one of the eight (2026-11-26), so there is no tampering signal. The problem is age and
-   attribution: every installer, portable ZIP and APK is dated **2026-10-08 → 2026-10-15**, while
-   the page advertises v2.6.8 (2026-11-25) and `/health` reports 2.6.8, so a visitor is told they
-   are getting a build a month newer than the bytes they receive. The checksum box that
+   attribution: every installer, portable ZIP and APK is dated **2026-10-08 → 2026-10-15**, and the
+   server's own manifest on production states `version: **2.5.0**` (checked 2026-11-26), while the
+   page advertised v2.6.8 and `/health` reports 2.6.8 — so a visitor was told they were getting a
+   build five minor releases newer than the bytes they actually receive. That is wider than the
+   "month older" the earlier entries assumed. The checksum box that
    `download-page.js` unhides now lists digests for those older files, and nothing ties them to the
    2.6.8 source tree; which version the artifacts report internally was not determined. Fix: rebuild
    the four installers and two APKs from the current source and republish with a matching
