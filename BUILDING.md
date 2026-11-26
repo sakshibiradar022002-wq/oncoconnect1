@@ -4,7 +4,8 @@
 
 Each `VELTRUVIA <App>/` folder is a **packaged Electron build** of the shared
 backend (`VELTRUVIA Server/resources/app/`), built with electron-builder using
-the configs in `src/electron/electron-builder-<app>.json`. The builder injects
+the configs in `resources/app/electron/electron-builder-<app>.json` — one set
+per bundle, byte-identical, mirrored by `sync-bundles.mjs`. The builder injects
 each app's entry via `extraMetadata.main`:
 
 - `electron-builder-server.json` → `main-server.js`
@@ -17,7 +18,7 @@ each app's entry via `extraMetadata.main`:
 1. Edit **only** `VELTRUVIA Server/resources/app/` (canonical source).
 2. Run `npm run sync-bundles` to propagate to the three client bundles
    (each client keeps its own `package.json` main entry automatically).
-3. Run `npm run check` (fast gate) and `npm run verify` (full 53-check × 4 apps).
+3. Run `npm run check` (fast gate) and `npm run verify` (full feature sweep, 90 checks × 4 apps).
 
 ## Rebuilding the executables
 
@@ -115,7 +116,7 @@ top-level folders:
 ## Release checklist
 
 - [ ] `npm run check` green (no drift, no await bugs, icons valid)
-- [ ] `npm run verify` green (70/70 × 4 apps)
+- [ ] `npm run verify` green (90/90 × 4 apps)
 - [ ] Version bumped in all four `resources/app/package.json`
 - [ ] No `.exe.new`, `test*.db`, `.demo-admin-password`, or logs in release folders
 - [ ] `HOST` unset (or `127.0.0.1`), `VELTRUVIA_DEMO` unset
@@ -132,3 +133,18 @@ top-level folders:
       `VELTRUVIA-Lab-Setup.exe`, `VELTRUVIA-Lab-Portable.zip`, `VELTRUVIA-Lab.apk`,
       `VELTRUVIA-Patient.apk`. `download.html` links to that directory by name and
       the page 404s on every button when it is missing; binaries are never committed
+- [ ] The four updater manifests alongside them — `latest-server.yml`,
+      `latest-doctor.yml`, `latest-patient.yml`, `latest-lab.yml`. electron-builder
+      names each one after its config's `publish.channel` (`latest-server`, …), so
+      they come out of `dist-desktop/` already named. **The download page reads the
+      version from these, not from the HTML** (`public/js/artifact-versions.js`):
+      copy a manifest and its card shows that version; omit it and the card hides
+      its version line entirely. Never hand-edit them
+- [ ] `SHA256SUMS.txt` regenerated from the files just copied, in the same directory:
+      `cd public/downloads && sha256sum VELTRUVIA-*-Setup.exe VELTRUVIA-*-Portable.zip \
+      VELTRUVIA-*.apk > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt` — every line
+      must report `OK`, and the download page's checksum table fills from this file
+- [ ] Each manifest's `version:` matches the version the page should advertise —
+      `grep -m1 '^version' public/downloads/latest-*.yml` should print the same
+      version four times. A page that shows an older version than `/health` is this
+      step skipped, not a bug in the page
