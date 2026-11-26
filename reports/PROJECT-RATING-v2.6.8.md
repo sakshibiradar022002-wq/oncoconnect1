@@ -32,10 +32,13 @@ Supersedes `reports/PROJECT-RATING-v2.6.4.md` (2026-11-19, 7.3/10).
 | `node check.mjs` | **ALL CHECKS PASSED** — 4 bundles identical, 16 page-script blocks parse per bundle, icons correct |
 | `node --test --test-force-exit tests/` (root) | **110 / 110 pass, 0 fail, 0 skip** (after the repair in §3.1) |
 | `npm test` (bundle) | **36 / 36 pass** |
+| `node scripts/verify-app.mjs "VELTRUVIA Server/resources/app" Server` | **79 / 79 feature checks pass**, including the 9 imaging checks (upload → gallery → bytes → share → anonymous share → delete → patient/lab 403) |
 | source measurement (small node script) | 192 handlers / 24 route files; 16,296 src LOC; 11,004 non-vendor page-js LOC; 41 distinct `process.env.*`; 2,654 governance-doc lines |
 
-**Not run here, and therefore not claimed:** `scripts/verify-all.mjs` (needs the three client
-bundles' dependencies installed), ZAP and `pentest:auth` (need the VM and network), live probes
+**Not run here, and therefore not claimed:** the Doctor, Patient and Lab bundles of
+`scripts/verify-all.mjs` (only the Server bundle was installed and run; the four bundles share an
+identical `src/`, checked by `check.mjs`, but identical source is not a substitute for a run),
+ZAP and `pentest:auth` (need the VM and network), live probes
 against `https://veltruvia.duckdns.org`, and a fresh Sepolia replay (needs RPC). The pentest
 numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, dated 2026-11-24/25.
 
@@ -59,7 +62,7 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
 
 2. **S8 — the Sepolia disclosure is still the highest residual risk.** Hash-only anchoring is
    enforced going forward (`assertHashOnlyAnchor`), but **1,008** already-anchored events carried
-   **70 distinct identifiers**, and the join against the 2026-11-24 backup puts at least one live
+   **70 distinct identifiers** (an unrelated number), and the join against the 2026-11-24 backup puts at least one live
    patient MRN on a public chain. No code change closes this; the open action is the notification
    decision, which is counsel's.
 3. **Release provenance — the page and the bytes disagree.** Correcting an earlier entry: the
@@ -73,8 +76,17 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    2.6.8 source tree; which version the artifacts report internally was not determined. Fix: rebuild
    the four installers and two APKs from the current source, republish with a matching
    `SHA256SUMS.txt`, and until then stop asserting a version the page cannot read from the files.
-4. **`scripts/verify-all.mjs` does not cover imaging** (`grep -c images` = 0). It is the only
-   feature outside the 70×4 sweep, and it is the feature that just changed twice.
+4. **Imaging coverage in the sweep — corrected.** Earlier entries said `scripts/verify-all.mjs` had
+   no imaging coverage because `grep -c images` was 0. That grep measured the delegating wrapper,
+   which carries no checks for any feature — every check lives in `scripts/verify-app.mjs`. That
+   runner has had a 9-check imaging block since `289ac2e` (v2.6.7): upload returns 201 with a
+   sha256, the gallery lists the study and reports a total, the file endpoint returns exactly the
+   uploaded byte length, `POST /api/images/share` returns a token, the share URL serves without a
+   session, delete succeeds, and patient and lab sessions get 403 on the gallery. Genuinely
+   uncovered, and worth adding the next time the suite is touched: `GET /api/images/:id` metadata,
+   an unauthenticated probe per route (expect 401), a patient-role delete attempt, and the
+   expired-share 410, which needs a TTL the run can control. So this item is closed rather than
+   open: on 2026-11-26 the Server bundle ran 79/79 checks with the 9 imaging checks all green.
 5. **Deployment-matches-source is not proven in this pass.** The v2.6.4 P0 said live 2.6.4
    returned 404 for `/api/metrics` and no `X-Request-Id`. One curl settles it; until then treat
    "tested here" and "running there" as separate claims.
@@ -126,5 +138,5 @@ cd "VELTRUVIA Server/resources/app" && npm ci --omit=dev
 cd - && node check.mjs                        # ALL CHECKS PASSED
 npm test                                      # 110/110 (root)
 cd "VELTRUVIA Server/resources/app" && npm test # 36/36 (what CI runs first)
-node scripts/verify-all.mjs                   # 4 × 70 — needs the client bundles installed
+node scripts/verify-all.mjs                   # 4 × 79 checks — Server bundle verified here
 ```
