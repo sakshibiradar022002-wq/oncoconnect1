@@ -18,7 +18,7 @@ Supersedes `reports/PROJECT-RATING-v2.6.4.md` (2026-11-19, 7.3/10).
 | Test depth & reproducibility | 6.5 | **8.0** | Root suite **110/110**, bundle suite **36/36**, `check.mjs` green. CI runs the root suite on Node 20/22/24, which is where the hardening regressions live |
 | Security engineering | 8.0 | **8.3** | S10 closed (spec no longer advertises an off-target host; that deployment is gone), S11 closed (TOTP replay, guarded by conditional `UPDATE` + retest on the VM), §4 auth flow **35/0/0/0** with `--expiry-waits`, S4 accepted with its cost measured rather than assumed |
 | Regulatory / documentation | 7.5 | **7.8** | 2,654 lines of governance docs; Sepolia `[VERIFY]` markers resolved; the S8 notification decision is still open and belongs to counsel |
-| Operations & release | 6.0 | **6.5** | `LICENSE`, `Dockerfile`, `docker-compose.yml`, server `.env.example` (41 env vars) all present now; still no release notes past 2.5.0 and `public/downloads/` is empty |
+| Operations & release | 6.0 | **6.5** | `LICENSE`, `Dockerfile`, `docker-compose.yml`, server `.env.example` (41 env vars) all present now; `RELEASE-NOTES-2.6.8.txt` covers the 84 commits since 2.5.0, and the eight published artifacts are real and digest-verified — but they are a month older than the version the page advertises |
 | Maintainability | 6.5 | **7.0** | Four bundles byte-identical under `check.mjs` (16 page-script blocks each); 54 src files / 16,296 LOC, 26 non-vendor page JS files / 11,004 LOC; drift gated in CI |
 | **Overall** | 7.3 | **7.8 / 10** | Solid single-clinic pilot software. **Not** production-ready as a regulated multi-tenant EMR — see §4 |
 
@@ -62,13 +62,17 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    **70 distinct identifiers**, and the join against the 2026-11-24 backup puts at least one live
    patient MRN on a public chain. No code change closes this; the open action is the notification
    decision, which is counsel's.
-3. **Release provenance.** The page no longer asserts digests: the SHA-256 table stays hidden until
-   `/downloads/SHA256SUMS.txt` actually loads, and the version text now reads v2.6.8 (Nov 25, 2026)
-   instead of the stale v2.6.6, matching `RELEASE-NOTES-2.6.8.txt`. What is still untrue is the
-   download itself — `public/downloads/` is absent, so the six `/downloads/*` buttons and the
-   SHA256SUMS link return 404, and no binary has been published since 2.5.0. Building the four
-   installers on Windows and publishing them with a real `SHA256SUMS.txt` is the only fix; nothing
-   in this repository can produce them.
+3. **Release provenance — the page and the bytes disagree.** Correcting an earlier entry: the
+   repository has no `public/downloads/`, but production does — the deploy preserves it — and it
+   holds all eight artifacts plus `SHA256SUMS.txt`, served with 200. `sha256sum -c` passes on every
+   one of the eight (2026-11-26), so there is no tampering signal. The problem is age and
+   attribution: every installer, portable ZIP and APK is dated **2026-10-08 → 2026-10-15**, while
+   the page advertises v2.6.8 (2026-11-25) and `/health` reports 2.6.8, so a visitor is told they
+   are getting a build a month newer than the bytes they receive. The checksum box that
+   `download-page.js` unhides now lists digests for those older files, and nothing ties them to the
+   2.6.8 source tree; which version the artifacts report internally was not determined. Fix: rebuild
+   the four installers and two APKs from the current source, republish with a matching
+   `SHA256SUMS.txt`, and until then stop asserting a version the page cannot read from the files.
 4. **`scripts/verify-all.mjs` does not cover imaging** (`grep -c images` = 0). It is the only
    feature outside the 70×4 sweep, and it is the feature that just changed twice.
 5. **Deployment-matches-source is not proven in this pass.** The v2.6.4 P0 said live 2.6.4
