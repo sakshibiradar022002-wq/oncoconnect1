@@ -30,10 +30,26 @@ SERVICE="${SERVICE:-veltruvia}"
 STAGING_PORT="${STAGING_PORT:-3100}"
 PUBLIC_URL="${PUBLIC_URL:-https://veltruvia.duckdns.org}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@veltruvia.local}"
-CREDS_FILE="${CREDS_FILE:-$HOME/veltruvia-admin-credentials.txt}"
-STATE_DIR="${STATE_DIR:-$HOME/veltruvia-deploys}"
-
 if [[ $EUID -eq 0 ]]; then SUDO=""; else SUDO="sudo"; fi
+
+# sudo resets HOME to /root, where the operator's credentials and rollback
+# points are not. Left alone, every sudo deploy printed "login NOT tested" and
+# still counted as success — the check exists for exactly the deploy that
+# breaks sign-in. Look in the invoking user's home first, then the app owner's.
+OPERATOR_HOME="${OPERATOR_HOME:-}"
+if [[ -z "$OPERATOR_HOME" ]]; then
+  if [[ $EUID -eq 0 ]]; then
+    for u in "${SUDO_USER:-}" "$(stat -c %U "$APP_DIR" 2>/dev/null || true)"; do
+      [[ -n "$u" && "$u" != root ]] || continue
+      h=$(getent passwd "$u" 2>/dev/null | cut -d: -f6)
+      if [[ -n "${h:-}" ]]; then OPERATOR_HOME="$h"; break; fi
+    done
+  fi
+  OPERATOR_HOME="${OPERATOR_HOME:-$HOME}"
+fi
+
+CREDS_FILE="${CREDS_FILE:-$OPERATOR_HOME/veltruvia-admin-credentials.txt}"
+STATE_DIR="${STATE_DIR:-$OPERATOR_HOME/veltruvia-deploys}"
 
 STAGE_TMP=""
 STAGE_PID=""
