@@ -86,10 +86,11 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    the four installers and two APKs from the current source and republish with a matching
    `SHA256SUMS.txt`. Until that happens the page no longer asserts a version it cannot read:
    `js/artifact-versions.js` fetches `downloads/latest-<app>.yml` for each card and for the header,
-   shows the version and date that manifest carries, and hides the version line outright when there
-   is no manifest. `tests/artifact-versions.test.mjs` drives that wiring through a stubbed DOM and
-   `fetch` (6 cases), but the page has **not** been rendered in a browser — the visual result is
-   unverified.
+   shows the version and date that manifest carries, and the markup now carries no version string at
+   all (`grep -c 'v2\.6\.' download.html` = 0) with every version line shipping hidden, so a reader
+   without JavaScript is told nothing rather than something stale. `tests/artifact-versions.test.mjs`
+   drives that wiring through a stubbed DOM and `fetch` (7 cases), but the page has **not** been
+   rendered in a browser — the visual result is unverified.
 4. **Imaging coverage in the sweep — corrected.** Earlier entries said `scripts/verify-all.mjs` had
    no imaging coverage because `grep -c images` was 0. That grep measured the delegating wrapper,
    which carries no checks for any feature — every check lives in `scripts/verify-app.mjs`. That

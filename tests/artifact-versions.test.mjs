@@ -28,11 +28,13 @@ const YML = [
   '',
 ].join('\n');
 
-function makeLine(key, version = 'v2.6.8', date = 'Nov 25, 2026') {
+// The markup ships with an empty, hidden version line: before a manifest is
+// read the page states no version at all.
+function makeLine(key, version = '', date = '') {
   const badge = { textContent: version };
   const dateEl = { textContent: date };
   return {
-    hidden: false,
+    hidden: true,
     getAttribute: (name) => (name === 'data-artifact' ? key : null),
     querySelector: (sel) => {
       if (sel === '.v-badge') return badge;
@@ -44,7 +46,7 @@ function makeLine(key, version = 'v2.6.8', date = 'Nov 25, 2026') {
   };
 }
 
-function makeDoc(lines, pill = { textContent: 'Secure Cloud · v2.6.8' }, badge = { textContent: 'v2.6.8' }) {
+function makeDoc(lines, pill = { textContent: 'Secure Cloud' }, badge = { textContent: '', hidden: true }) {
   return {
     querySelectorAll: (sel) => (sel === '[data-artifact]' ? lines : []),
     getElementById: (id) => ({ 'suite-pill': pill, 'suite-badge': badge }[id] || null),
@@ -110,19 +112,32 @@ test('a card with no manifest claims no version at all', async () => {
   await wire({ document: doc, fetch: fakeFetch({}) });
 
   assert.equal(doctor.hidden, true);
-  assert.equal(doctor.badge.textContent, 'v2.6.8', 'stale markup text must not be rewritten, the line is hidden instead');
+  assert.equal(doctor.badge.textContent, '', 'nothing may be written into a line with no manifest');
 });
 
 test('the header drops its version when the server manifest is missing', async () => {
   const { wire } = loadScript();
-  const pill = { textContent: 'Secure Cloud · v2.6.8' };
-  const badge = { textContent: 'v2.6.8' };
+  const pill = { textContent: 'Secure Cloud' };
+  const badge = { textContent: '', hidden: true };
   const doc = makeDoc([], pill, badge);
 
   await wire({ document: doc, fetch: fakeFetch({}) });
 
   assert.equal(pill.textContent, 'Secure Cloud');
-  assert.equal(badge.textContent, 'Secure Cloud');
+  assert.equal(badge.hidden, true);
+  assert.equal(badge.textContent, '', 'the header must not invent a version');
+});
+
+test('the header shows the server manifest version when there is one', async () => {
+  const { wire } = loadScript();
+  const pill = { textContent: 'Secure Cloud' };
+  const badge = { textContent: '', hidden: true };
+  const doc = makeDoc([], pill, badge);
+
+  await wire({ document: doc, fetch: fakeFetch({ '/downloads/latest-server.yml': YML }) });
+
+  assert.equal(pill.textContent, 'Secure Cloud · v2.6.3');
+  assert.equal(badge.textContent, 'v2.6.3');
 });
 
 test('a manifest without a version line is treated as missing', async () => {

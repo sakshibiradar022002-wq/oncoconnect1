@@ -53,6 +53,9 @@
     await Promise.all(lines.map(async function (line) {
       var m = await load(fetchFn, line.getAttribute('data-artifact'));
       if (!m) { line.hidden = true; return; }
+      // Markup ships with the line hidden, so no manifest can still leave a
+      // stale version on screen — it is only revealed once read.
+      line.hidden = false;
       var badge = line.querySelector('.v-badge');
       if (badge) badge.textContent = 'v' + m.version;
       var dateEl = line.querySelector('[data-artifact-date]');
@@ -66,10 +69,11 @@
     var badge = doc.getElementById('suite-badge');
     if (suite && suite.version) {
       if (pill) pill.textContent = 'Secure Cloud · v' + suite.version;
-      if (badge) badge.textContent = 'v' + suite.version;
+      if (badge) { badge.textContent = 'v' + suite.version; badge.hidden = false; }
     } else {
       if (pill) pill.textContent = 'Secure Cloud';
-      if (badge) badge.textContent = 'Secure Cloud';
+      // Never invent a version for the header: the span ships empty and hidden.
+      if (badge) badge.hidden = true;
     }
   }
 
