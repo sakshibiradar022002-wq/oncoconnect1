@@ -15,7 +15,7 @@ Supersedes `reports/PROJECT-RATING-v2.6.4.md` (2026-11-19, 7.3/10).
 | Axis | v2.6.4 | **v2.6.8** | Basis |
 |---|---|---|---|
 | Functional breadth | 8.5 | **8.7** | 24 route files / 192 `Router.verb(` handlers; imaging now has a real gallery (`index-5-imaging.js`, patient picker, upload, thumbnails, viewer, delete, DICOM via vendored Cornerstone3D) — v2.6.4 P0 #2 ("the feature has no interface") is closed |
-| Test depth & reproducibility | 6.5 | **8.0** | Root suite **118/118**, bundle suite **36/36**, `check.mjs` green. CI runs the root suite on Node 20/22/24, which is where the hardening regressions live |
+| Test depth & reproducibility | 6.5 | **8.0** | Root suite **124/124**, bundle suite **36/36**, `check.mjs` green. CI runs the root suite on Node 20/22/24, which is where the hardening regressions live |
 | Security engineering | 8.0 | **8.3** | S10 closed (spec no longer advertises an off-target host; that deployment is gone), S11 closed (TOTP replay, guarded by conditional `UPDATE` + retest on the VM), §4 auth flow **35/0/0/0** with `--expiry-waits`, S4 accepted with its cost measured rather than assumed |
 | Regulatory / documentation | 7.5 | **7.8** | 2,688 lines of governance docs; Sepolia `[VERIFY]` markers resolved; the S8 notification decision is still open and belongs to counsel |
 | Operations & release | 6.0 | **6.5** | `LICENSE`, `Dockerfile`, `docker-compose.yml`, server `.env.example` (41 env vars) all present now; `RELEASE-NOTES-2.6.8.txt` covers the 84 commits since 2.5.0, and the eight published artifacts are real and digest-verified — but they are a month older than the version the page advertises |
@@ -30,7 +30,7 @@ Supersedes `reports/PROJECT-RATING-v2.6.4.md` (2026-11-19, 7.3/10).
 |---|---|
 | `npm ci --omit=dev` (in `VELTRUVIA Server/resources/app`) | clean, lockfile unchanged |
 | `node check.mjs` | **ALL CHECKS PASSED** — 4 bundles identical, 16 page-script blocks parse per bundle, icons correct |
-| `node --test --test-force-exit tests/*.test.mjs` (root) | **118 / 118 pass, 0 fail, 0 skip** (re-run 2026-11-26; the bare `tests/` argument is not usable on Node 24 — it is resolved as a module path and fails with `MODULE_NOT_FOUND`) |
+| `node --test --test-force-exit tests/*.test.mjs` (root) | **124 / 124 pass, 0 fail, 0 skip** (re-run 2026-11-26; the bare `tests/` argument is not usable on Node 24 — it is resolved as a module path and fails with `MODULE_NOT_FOUND`) |
 | `npm test` (bundle) | **36 / 36 pass** |
 | `node scripts/verify-app.mjs "VELTRUVIA Server/resources/app" Server` | **90 / 90 feature checks pass**, including 20 imaging checks (upload → gallery → bytes → metadata → share → anonymous share → 6 unauthenticated 401s → patient delete 403 → token rejects → delete → patient/lab 403) |
 | source measurement (shell counts, re-measured 2026-11-26) | 192 handlers / 24 route files / 54 src files; 16,242 src LOC; 10,978 non-vendor page-js LOC in 26 files; 42 distinct `process.env.*`; 2,688 governance-doc lines (root `*.md`) |
@@ -40,7 +40,7 @@ Supersedes `reports/PROJECT-RATING-v2.6.4.md` (2026-11-19, 7.3/10).
 '…/tests'`, exit 1) even though Node 20 scans it. The matrix in
 `.github/workflows/tests.yml` is 20/22/24, so the suite that proves everything else could not
 start on two of its three versions. Both scripts now pass an explicit glob
-(`tests/*.test.mjs`, `tests/*.test.js`) and both suites complete here: **118/118** root,
+(`tests/*.test.mjs`, `tests/*.test.js`) and both suites complete here: **124/124** root,
 **36/36** bundle, exit 0.
 
 **Not run here, and therefore not claimed:** the Doctor, Patient and Lab bundles of
@@ -83,8 +83,13 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    are getting a build a month newer than the bytes they receive. The checksum box that
    `download-page.js` unhides now lists digests for those older files, and nothing ties them to the
    2.6.8 source tree; which version the artifacts report internally was not determined. Fix: rebuild
-   the four installers and two APKs from the current source, republish with a matching
-   `SHA256SUMS.txt`, and until then stop asserting a version the page cannot read from the files.
+   the four installers and two APKs from the current source and republish with a matching
+   `SHA256SUMS.txt`. Until that happens the page no longer asserts a version it cannot read:
+   `js/artifact-versions.js` fetches `downloads/latest-<app>.yml` for each card and for the header,
+   shows the version and date that manifest carries, and hides the version line outright when there
+   is no manifest. `tests/artifact-versions.test.mjs` drives that wiring through a stubbed DOM and
+   `fetch` (6 cases), but the page has **not** been rendered in a browser — the visual result is
+   unverified.
 4. **Imaging coverage in the sweep — corrected.** Earlier entries said `scripts/verify-all.mjs` had
    no imaging coverage because `grep -c images` was 0. That grep measured the delegating wrapper,
    which carries no checks for any feature — every check lives in `scripts/verify-app.mjs`. That
@@ -147,7 +152,7 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
 ```bash
 cd "VELTRUVIA Server/resources/app" && npm ci --omit=dev
 cd - && node check.mjs                        # ALL CHECKS PASSED
-npm test                                      # 118/118 (root)
+npm test                                      # 124/124 (root)
 cd "VELTRUVIA Server/resources/app" && npm test # 36/36 (what CI runs first)
 node scripts/verify-all.mjs                   # 4 × 90 checks — Server bundle verified here
 ```

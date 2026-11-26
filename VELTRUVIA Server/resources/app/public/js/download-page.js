@@ -40,6 +40,16 @@
     if (text) { el.textContent = text; el.hidden = false; }
   })();
 
+  // ── Artifact versions (authoritative) ────────────────────────
+  // Each card's version and date come from that artifact's own published
+  // manifest, so the page cannot advertise a build newer than the bytes it
+  // offers. Hand-written markup above is only the pre-script default.
+  if (window.artifactVersions) {
+    window.artifactVersions
+      .wire({ document: document, fetch: window.fetch.bind(window) })
+      .catch(function () { /* manifests unavailable — version lines stay hidden */ });
+  }
+
   // ── QR codes for the APK cards ────────────────────────────────────
   document.querySelectorAll('[data-qr]').forEach(btn => {
     btn.addEventListener('click', () => {
