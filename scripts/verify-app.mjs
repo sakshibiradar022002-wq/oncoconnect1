@@ -279,6 +279,39 @@ let imgShare = await api('POST', '/api/images/share', { imageId: imgId, expiresI
 check('Share link created', !!imgShare.data?.shareToken);
 let imgPub = await fetch(base + imgShare.data.shareUrl);
 check('Share link works without a session', imgPub.status === 200);
+let imgMeta = await api('GET', `/api/images/${imgId}`, null, cookie);
+// publicMeta() deliberately omits sha256, the on-disk filename and the share
+// token, so assert the fields it does expose rather than the upload response's.
+check('Image metadata served',
+  imgMeta.data?.image?.id === imgId &&
+  imgMeta.data?.image?.sizeBytes === PNG.length &&
+  imgMeta.data?.image?.url === `/api/images/${imgId}/file`);
+check('Image metadata does not leak the share token',
+  !JSON.stringify(imgMeta.data).includes(imgShare.data?.shareToken));
+// Every imaging route sits behind authenticate + requireRole, and a route that
+// silently lost its guard would still pass the happy-path checks above.
+for (const [m, p, body] of [
+  ['GET', '/api/images?mrn=TEST001', null],
+  ['GET', `/api/images/${imgId}`, null],
+  ['GET', `/api/images/${imgId}/file`, null],
+  ['DELETE', `/api/images/${imgId}`, null],
+  ['POST', '/api/images/share', { imageId: imgId, expiresInDays: 1 }],
+]) {
+  const anon = await api(m, p, body);
+  check(`Unauthenticated ${m} ${p.split('?')[0].replace(imgId, ':id')} rejected (401)`, anon.status === 401);
+}
+const anonUpload = await apiRaw('/api/images/TEST001', PNG, 'anon.png', '');
+check('Unauthenticated upload rejected (401)', anonUpload.status === 401);
+let patDel = await api('DELETE', `/api/images/${imgId}`, null, patCookie);
+check('Patient cannot delete imaging (403)', patDel.status === 403);
+// The expired-share 410 needs a share whose expiry has already passed; the API
+// clamps expiresInDays to a minimum of 1, so reaching it here would mean aging
+// the encrypted kv_store row by hand. Probed against the live deployment on
+// 2026-12-02 instead (PENTEST-SCOPE §6); the rejection paths below are local.
+let badTok = await fetch(`${base}/api/images/shared/short`);
+check('Malformed share token rejected (404)', badTok.status === 404);
+let missTok = await fetch(`${base}/api/images/shared/AAAAAAAAAAAAAAAAAAAAAA`);
+check('Unknown share token rejected (404)', missTok.status === 404);
 let imgDel = await api('DELETE', `/api/images/${imgId}`, null, cookie);
 check('Delete imaging study', imgDel.data?.ok === true);
 let patImg = await api('GET', '/api/images?mrn=12345', null, patCookie);

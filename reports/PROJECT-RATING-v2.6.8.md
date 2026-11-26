@@ -32,7 +32,7 @@ Supersedes `reports/PROJECT-RATING-v2.6.4.md` (2026-11-19, 7.3/10).
 | `node check.mjs` | **ALL CHECKS PASSED** — 4 bundles identical, 16 page-script blocks parse per bundle, icons correct |
 | `node --test --test-force-exit tests/` (root) | **110 / 110 pass, 0 fail, 0 skip** (after the repair in §3.1) |
 | `npm test` (bundle) | **36 / 36 pass** |
-| `node scripts/verify-app.mjs "VELTRUVIA Server/resources/app" Server` | **79 / 79 feature checks pass**, including the 9 imaging checks (upload → gallery → bytes → share → anonymous share → delete → patient/lab 403) |
+| `node scripts/verify-app.mjs "VELTRUVIA Server/resources/app" Server` | **90 / 90 feature checks pass**, including 20 imaging checks (upload → gallery → bytes → metadata → share → anonymous share → 6 unauthenticated 401s → patient delete 403 → token rejects → delete → patient/lab 403) |
 | source measurement (small node script) | 192 handlers / 24 route files; 16,296 src LOC; 11,004 non-vendor page-js LOC; 41 distinct `process.env.*`; 2,654 governance-doc lines |
 
 **Not run here, and therefore not claimed:** the Doctor, Patient and Lab bundles of
@@ -82,11 +82,13 @@ numbers quoted in §3 come from `PENTEST-SCOPE.md` §7 and `RISK-REGISTER.md`, d
    runner has had a 9-check imaging block since `289ac2e` (v2.6.7): upload returns 201 with a
    sha256, the gallery lists the study and reports a total, the file endpoint returns exactly the
    uploaded byte length, `POST /api/images/share` returns a token, the share URL serves without a
-   session, delete succeeds, and patient and lab sessions get 403 on the gallery. Genuinely
-   uncovered, and worth adding the next time the suite is touched: `GET /api/images/:id` metadata,
-   an unauthenticated probe per route (expect 401), a patient-role delete attempt, and the
-   expired-share 410, which needs a TTL the run can control. So this item is closed rather than
-   open: on 2026-11-26 the Server bundle ran 79/79 checks with the 9 imaging checks all green.
+   session, delete succeeds, and patient and lab sessions get 403 on the gallery. The four checks it
+   lacked were added on 2026-11-26: `GET /api/images/:id` metadata (shape, plus an assertion that
+   the share token does not leak), five unauthenticated probes expecting 401 on each route, a
+   patient-role delete expecting 403, and malformed/unknown share tokens expecting 404. That brings
+   the block to 20 checks and the Server run to **90/90**, all green. The expired-share 410 is still
+   not covered locally: the API clamps `expiresInDays` to a minimum of 1, so reaching it means aging
+   the encrypted `kv_store` row by hand — it is probed against the live deployment on 2026-12-02.
 5. **Deployment-matches-source is not proven in this pass.** The v2.6.4 P0 said live 2.6.4
    returned 404 for `/api/metrics` and no `X-Request-Id`. One curl settles it; until then treat
    "tested here" and "running there" as separate claims.
@@ -138,5 +140,5 @@ cd "VELTRUVIA Server/resources/app" && npm ci --omit=dev
 cd - && node check.mjs                        # ALL CHECKS PASSED
 npm test                                      # 110/110 (root)
 cd "VELTRUVIA Server/resources/app" && npm test # 36/36 (what CI runs first)
-node scripts/verify-all.mjs                   # 4 × 79 checks — Server bundle verified here
+node scripts/verify-all.mjs                   # 4 × 90 checks — Server bundle verified here
 ```
