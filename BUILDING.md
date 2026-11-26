@@ -22,9 +22,15 @@ each app's entry via `extraMetadata.main`:
 
 ## Rebuilding the executables
 
-Run electron-builder from the **Server** bundle directory (it has the working
-local electron-builder install) and pass each app's config by path — running
-npx from the client bundles can resolve a broken cached electron-builder:
+Run each build **from inside that app's own bundle directory**, with that
+bundle's local config. The config's `files`, `directories.output` and
+`extraResources` are all resolved against the current directory, so running
+the Doctor config while sitting in the Server directory packages the *Server*
+app under the *Doctor* name.
+
+`npx` inside a client bundle can resolve a stale cached electron-builder, so
+call the Server bundle's installed builder by path while keeping the client
+directory as the working directory:
 
 **Always pass `--win nsis zip`.** electron-builder builds for the *host* platform
 by default, so the same command on Linux quietly produces `AppImage`/`deb` and
@@ -39,9 +45,20 @@ and electron-builder fails with `ENOENT`.
 ```bash
 cd "VELTRUVIA Server/resources/app"
 npx electron-builder --win nsis zip --config electron/electron-builder-server.json --publish never
-npx electron-builder --win nsis zip --config "../../../VELTRUVIA Doctor/resources/app/electron/electron-builder-doctor.json" --publish never
-npx electron-builder --win nsis zip --config "../../../VELTRUVIA Patient/resources/app/electron/electron-builder-patient.json" --publish never
-npx electron-builder --win nsis zip --config "../../../VELTRUVIA Lab/resources/app/electron/electron-builder-lab.json" --publish never
+
+BUILDER="$(pwd)/node_modules/.bin/electron-builder"
+cd "../../VELTRUVIA Doctor/resources/app"
+"$BUILDER" --win nsis zip --config electron/electron-builder-doctor.json --publish never
+cd "../../VELTRUVIA Patient/resources/app"
+"$BUILDER" --win nsis zip --config electron/electron-builder-patient.json --publish never
+cd "../../VELTRUVIA Lab/resources/app"
+"$BUILDER" --win nsis zip --config electron/electron-builder-lab.json --publish never
+```
+
+PowerShell equivalent for the client apps (from each app's `resources\app`):
+
+```powershell
+& "C:\path\to\repo\VELTRUVIA Server\resources\app\node_modules\.bin\electron-builder.cmd" --win nsis zip --config electron/electron-builder-doctor.json --publish never
 ```
 
 Two Linux-host caveats: the `linux` target in the configs aborts on `deb` with
