@@ -108,32 +108,61 @@ JDK 21 (Capacitor 7 requires it — JDK 17 fails with "invalid source release: 2
 + Android Studio or just the cmdline-tools, then `cd mobile/patient && npm install
 && npx cap add android` (and the same in `mobile/lab`). See `mobile/README.md`.
 
+**Anything published is a signed release build.** Without `--release` the helper
+runs `assembleDebug`, producing `app-debug.apk`: debuggable, larger, and signed
+with a throwaway debug key that differs per machine. Use debug builds only for
+your own device testing — never for the download page, a GitHub Release or a
+clinic.
+
 From the repo root:
 
 ```bash
-npm run apk:patient                                    # debug APK (no baked server URL)
-VELTRUVIA_API_BASE=https://emr.yourclinic.com npm run apk:lab   # bake the cloud server in
-npm run apk:patient -- --release                       # release APK (must be signed)
+# release + signed — the only flavour that gets published
+export VELTRUVIA_KEYSTORE_PASSWORD="$(tr -d '\r\n' < .keystore-pass)"
+# PowerShell: $env:VELTRUVIA_KEYSTORE_PASSWORD = (Get-Content .keystore-pass -Raw).Trim()
+npm run apk:patient -- --release
+npm run apk:lab -- --release
+
+# optional: bake the server address in (users can still change it in-app)
+VELTRUVIA_API_BASE=https://emr.yourclinic.com npm run apk:patient -- --release
 ```
+
+The build stamps `versionName`/`versionCode` from `mobile/<app>/package.json`
+(a fresh `cap add android` ships versionCode 1 — a downgrade for phones that
+already have the app) and injects `signingConfigs.release`, which reads
+`$VELTRUVIA_KEYSTORE` (default: `veltruvia-release.keystore` at the repo root,
+gitignored). Confirm the log line `✅ stamped version 2.6.8 (versionCode 20608)`.
+
+Output: `mobile/<app>/android/app/build/outputs/apk/release/app-release.apk`.
+Only that file is publishable. If gradle leaves `app-release-unsigned.apk`
+instead, the signing config did not take — fix it; never upload the unsigned
+or debug variant.
 
 Each APK ships ONLY its own portal: the build prunes the other role's HTML/JS,
 the desktop-only pages and `patient-pages.js`, and rewrites the PWA manifest
 to the app's own name and icons. No emulator URL is ever baked in — leave
 `VELTRUVIA_API_BASE` unset and users configure the server in-app (⚙ button).
 
-Output: `mobile/<app>/android/app/build/outputs/apk/<debug|release>/`.
-
 ### Signing the APKs (release)
+
+Needed once per machine, or when deliberately rotating the key:
 
 ```bash
 keytool -genkeypair -v -keystore veltruvia-release.keystore -alias veltruvia \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-Wire the keystore into each app's `android/app/build.gradle` `signingConfigs.release`
-and build with `VELTRUVIA_KEYSTORE_PASSWORD=…` (full snippet in `mobile/README.md`).
-Upload the signed `VELTRUVIA Patient.apk` and `VELTRUVIA Lab.apk` to the same
-GitHub Releases the exes use — the download page links there.
+No manual gradle editing: `scripts/gradle-stamp.mjs` injects
+`signingConfigs.release` into each generated `android/app/build.gradle` on every
+build (full snippet in `mobile/README.md`).
+
+Back up the keystore **and** `.keystore-pass` somewhere safe and keep both out of
+git. The key is the app's identity: an APK signed with a *new* key cannot
+install over one signed with the old key (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`),
+so patients would have to uninstall first — losing the app's local data. Reuse
+the same keystore as the previous release, and publish the signed
+`app-release.apk` files as `VELTRUVIA-Patient.apk` / `VELTRUVIA-Lab.apk`
+alongside the exes (see the release checklist).
 
 ## Deploying a fresh build to the top-level app folders
 
@@ -162,9 +191,12 @@ top-level folders:
 - [ ] Server & Doctor exes deployed to the top-level `VELTRUVIA <App>/` folders
       from `dist-desktop/win-unpacked/` (delete destination `locales/` first;
       copy everything **except** `resources/` — see "Deploying a fresh build")
-- [ ] Mobile APKs built + signed into `dist/`: `VELTRUVIA Patient.apk`,
-      `VELTRUVIA Lab.apk` (toolchain + commands in `mobile/README.md`; the
-      JDK 21 + Android SDK toolchain lives on the Windows build machine, not here)
+- [ ] Mobile APKs built as **signed release** (`--release` → `app-release.apk`, with
+      the log's `stamped version` line matching the release): never `app-debug.apk`.
+      Staged as `VELTRUVIA-Patient.apk` / `VELTRUVIA-Lab.apk`, signed with the same
+      keystore as the previous release, or phones cannot update in place
+      (toolchain + commands in `mobile/README.md`; the JDK 21 + Android SDK
+      toolchain lives on the Windows build machine, not here)
 - [ ] APKs + exes uploaded to GitHub Releases (download-page links point there)
 - [ ] The same files present in `public/downloads/` — `VELTRUVIA-Server-Setup.exe`,
       `VELTRUVIA-Doctor-Setup.exe`, `VELTRUVIA-Doctor-Portable.zip`,
