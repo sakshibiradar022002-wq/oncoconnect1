@@ -47,9 +47,13 @@ const TARGET_BULK = Number(arg('--bulk-targets', 100));
 const STALE_HOURS = Number(arg('--stale-hours', 6));
 
 // Printed from the repo root so the path cron needs is absolute. The scanner
-// IP stays a placeholder — it is site-specific and must not be guessed here.
+// allowlist only appears when the environment already carries one — it is
+// site-specific, and a placeholder in a live crontab would mute nothing while
+// looking like it does. --stale-hours 24 because a clinic is closed overnight
+// and the 6h default would fire every night on an idle-but-healthy service.
 if (flag('--print-cron')) {
-  console.log(`*/15 * * * * cd ${process.cwd()} && ANOMALY_IGNORE_IPS=<scanner-ip> ${process.execPath} scripts/audit-anomaly.mjs --db ${DB_PATH} --strict >> /home/ubuntu/veltruvia-anomaly.log 2>&1`);
+  const ignore = process.env.ANOMALY_IGNORE_IPS ? `ANOMALY_IGNORE_IPS=${process.env.ANOMALY_IGNORE_IPS} ` : '';
+  console.log(`*/15 * * * * cd ${process.cwd()} && ${ignore}${process.execPath} scripts/audit-anomaly.mjs --db ${DB_PATH} --strict --stale-hours 24 >> /home/ubuntu/veltruvia-anomaly.log 2>&1`);
   process.exit(0);
 }
 

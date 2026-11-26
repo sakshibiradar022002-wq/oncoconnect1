@@ -25,7 +25,8 @@ function makeDb(rows) {
   return { dir, path };
 }
 
-const run = (args, cwd = ROOT) => spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8', cwd });
+const run = (args, cwd = ROOT, env = {}) =>
+  spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8', cwd, env: { ...process.env, ...env } });
 
 test('flags a successful login from an IP that had a burst of failures', () => {
   const rows = [];
@@ -92,12 +93,15 @@ test('--strict turns a warning-only scan into exit 2 for cron', () => {
 });
 
 test('--print-cron prints a runnable line with --strict and needs no database', () => {
-  const out = run(['--print-cron', '--db', '/nonexistent/does-not-exist.db']);
+  const out = run(['--print-cron', '--db', '/nonexistent/does-not-exist.db'], ROOT, { ANOMALY_IGNORE_IPS: '' });
   assert.equal(out.status, 0, out.stdout + out.stderr);
   const line = out.stdout.trim();
   assert.match(line, /^\*\/15 \* \* \* \* cd \//);
   assert.match(line, /--strict/);
+  assert.match(line, /--stale-hours 24/);
   assert.match(line, /--db \/nonexistent\/does-not-exist\.db/);
+  // A placeholder in a live crontab looks like an allowlist but mutes nothing.
+  assert.ok(!line.includes('<scanner-ip>'), line);
 });
 
 test('a quiet, healthy window exits 0 with no findings', () => {
