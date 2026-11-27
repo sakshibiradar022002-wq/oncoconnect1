@@ -14,7 +14,7 @@
     "@capacitor/local-notifications": "^7.0.7"
   },
   "devDependencies": {
-    "@capacitor/android": "^7.0.0",
+    "@capacitor/android": "^8.5.2",
     "@capacitor/cli": "^8.5.2",
     "@capacitor/ios": "^8.5.2"
   }
