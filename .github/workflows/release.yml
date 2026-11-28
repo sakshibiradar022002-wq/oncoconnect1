@@ -51,7 +51,22 @@ jobs:
           Move-Item dist-desktop/latest.yml dist-desktop/latest-server.yml -Force
         working-directory: VELTRUVIA Server/resources/app
       - name: Build Doctor (installer + portable zip)
-        run: npx electron-builder --config electron/electron-builder-doctor.json --publish never
+        shell: pwsh
+        run: |
+          npx electron-builder --config electron/electron-builder-doctor.json --publish never
+          # Stash Doctor's updater feed now: the Patient/Lab builds below write
+          # their own latest.yml into the same folder and would overwrite it.
+          Move-Item dist-desktop/latest.yml dist-desktop/latest-doctor.yml -Force
+        working-directory: VELTRUVIA Server/resources/app
+        env:
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      - name: Build Patient (installer + portable zip)
+        run: npx electron-builder --config electron/electron-builder-patient.json --publish never
+        working-directory: VELTRUVIA Server/resources/app
+        env:
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      - name: Build Lab (installer + portable zip)
+        run: npx electron-builder --config electron/electron-builder-lab.json --publish never
         working-directory: VELTRUVIA Server/resources/app
         env:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
@@ -68,14 +83,22 @@ jobs:
           # exe — a bare Electron exe cannot run without its DLLs/paks).
           Copy-Item "$s/VELTRUVIA Server Setup*.exe" "dist/VELTRUVIA-Server-Setup.exe"
           Copy-Item "$s/VELTRUVIA Doctor Setup*.exe" "dist/VELTRUVIA-Doctor-Setup.exe"
+          Copy-Item "$s/VELTRUVIA Patient Setup*.exe" "dist/VELTRUVIA-Patient-Setup.exe"
+          Copy-Item "$s/VELTRUVIA Lab Setup*.exe" "dist/VELTRUVIA-Lab-Setup.exe"
 
           # Portable zips (no-install, USB-shareable folders), matched by prefix:
           # electron-builder emits e.g. "VELTRUVIA Doctor-2.0.1-win.zip".
-          $zipS = Get-ChildItem "$s/VELTRUVIA Server-*.zip" | Select-Object -First 1
-          $zipD = Get-ChildItem "$s/VELTRUVIA Doctor-*.zip" | Select-Object -First 1
-          if ($zipS) { Copy-Item $zipS.FullName "dist/VELTRUVIA-Server-Portable.zip" }
-          if ($zipD) { Copy-Item $zipD.FullName "dist/VELTRUVIA-Doctor-Portable.zip" }
-          if (-not ($zipS -and $zipD)) { Write-Error "portable zips missing from $s" }
+          $zips = @{
+            'VELTRUVIA Server-*.zip' = 'VELTRUVIA-Server-Portable.zip'
+            'VELTRUVIA Doctor-*.zip' = 'VELTRUVIA-Doctor-Portable.zip'
+            'VELTRUVIA Patient-*.zip' = 'VELTRUVIA-Patient-Portable.zip'
+            'VELTRUVIA Lab-*.zip' = 'VELTRUVIA-Lab-Portable.zip'
+          }
+          foreach ($pattern in $zips.Keys) {
+            $z = Get-ChildItem "$s/$pattern" | Select-Object -First 1
+            if (-not $z) { Write-Error "portable zip missing from $s (pattern: $pattern)" }
+            Copy-Item $z.FullName "dist/$($zips[$pattern])"
+          }
 
           # electron-updater feed: point latest.yml at the stable installer
           # name (bytes unchanged → sha512/size stay valid).
@@ -88,11 +111,12 @@ jobs:
           Copy-Item "$s/VELTRUVIA Server Setup*.exe.blockmap" "dist/VELTRUVIA-Server-Setup.exe.blockmap"
           Copy-Item "$s/VELTRUVIA Doctor Setup*.exe.blockmap" "dist/VELTRUVIA-Doctor-Setup.exe.blockmap" -ErrorAction SilentlyContinue
 
-          # Doctor's own updater feed. The Doctor build ran last, so
-          # dist-desktop/latest.yml currently holds the DOCTOR feed — publish
-          # it as latest-doctor.yml so the Doctor exe never reads the Server's
-          # feed (it would otherwise install the Server installer over itself).
-          Move-Item "$s/latest.yml" "dist/latest-doctor.yml" -Force
+          # Doctor's own updater feed. It was stashed right after the Doctor
+          # build (the Patient/Lab builds have since overwritten
+          # dist-desktop/latest.yml), so copy that copy — the Doctor exe must
+          # never read the Server's feed, or it would install the Server
+          # installer over itself.
+          Copy-Item "$s/latest-doctor.yml" "dist/latest-doctor.yml" -Force
           $yd = Get-Content "dist/latest-doctor.yml" -Raw
           $yd = $yd -replace 'VELTRUVIA-Doctor-Setup-[\d\.]+\.exe', 'VELTRUVIA-Doctor-Setup.exe'
           Set-Content "dist/latest-doctor.yml" $yd -Encoding utf8
@@ -290,6 +314,10 @@ jobs:
             dist/VELTRUVIA-Doctor-Setup.exe
             dist/VELTRUVIA-Server-Portable.zip
             dist/VELTRUVIA-Doctor-Portable.zip
+            dist/VELTRUVIA-Patient-Setup.exe
+            dist/VELTRUVIA-Lab-Setup.exe
+            dist/VELTRUVIA-Patient-Portable.zip
+            dist/VELTRUVIA-Lab-Portable.zip
             dist/VELTRUVIA-Patient.apk
             dist/VELTRUVIA-Lab.apk
             dist/SHA256SUMS.txt
