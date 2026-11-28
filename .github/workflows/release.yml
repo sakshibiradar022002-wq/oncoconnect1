@@ -40,86 +40,70 @@ jobs:
           } else {
             echo "No CSC_LINK secret — installers will be unsigned"
           }
+      # Each app builds into its OWN output folder. They all run from the same
+      # cwd, so a shared dist-desktop made the builds race on latest.yml (the
+      # Server build failed on exactly that). Separate folders remove the race.
       - name: Build Server (installer + portable zip)
         shell: pwsh
         env:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-        run: |
-          npx electron-builder --config electron/electron-builder-server.json --publish never
-          # Stash the Server updater feed immediately: the Doctor build below
-          # writes its own latest.yml into the same folder and would overwrite it.
-          Move-Item dist-desktop/latest.yml dist-desktop/latest-server.yml -Force
+        run: npx electron-builder --config electron/electron-builder-server.json --publish never --config.directories.output=dist-build/server
         working-directory: VELTRUVIA Server/resources/app
       - name: Build Doctor (installer + portable zip)
         shell: pwsh
-        run: |
-          npx electron-builder --config electron/electron-builder-doctor.json --publish never
-          # Stash Doctor's updater feed now: the Patient/Lab builds below write
-          # their own latest.yml into the same folder and would overwrite it.
-          Move-Item dist-desktop/latest.yml dist-desktop/latest-doctor.yml -Force
-        working-directory: VELTRUVIA Server/resources/app
         env:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: npx electron-builder --config electron/electron-builder-doctor.json --publish never --config.directories.output=dist-build/doctor
+        working-directory: VELTRUVIA Server/resources/app
       - name: Build Patient (installer + portable zip)
-        run: npx electron-builder --config electron/electron-builder-patient.json --publish never
-        working-directory: VELTRUVIA Server/resources/app
+        shell: pwsh
         env:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: npx electron-builder --config electron/electron-builder-patient.json --publish never --config.directories.output=dist-build/patient
+        working-directory: VELTRUVIA Server/resources/app
       - name: Build Lab (installer + portable zip)
-        run: npx electron-builder --config electron/electron-builder-lab.json --publish never
-        working-directory: VELTRUVIA Server/resources/app
+        shell: pwsh
         env:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: npx electron-builder --config electron/electron-builder-lab.json --publish never --config.directories.output=dist-build/lab
+        working-directory: VELTRUVIA Server/resources/app
       - name: Stage desktop assets
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          # Both electron-builder invocations run from the Server bundle's cwd,
-          # so every artifact (either app's) lands in THIS dist-desktop.
-          $s = "VELTRUVIA Server/resources/app/dist-desktop"
+          $root = "VELTRUVIA Server/resources/app/dist-build"
 
-          # Installers under stable dashed names (never the loose win-unpacked
-          # exe — a bare Electron exe cannot run without its DLLs/paks).
-          Copy-Item "$s/VELTRUVIA Server Setup*.exe" "dist/VELTRUVIA-Server-Setup.exe"
-          Copy-Item "$s/VELTRUVIA Doctor Setup*.exe" "dist/VELTRUVIA-Doctor-Setup.exe"
-          Copy-Item "$s/VELTRUVIA Patient Setup*.exe" "dist/VELTRUVIA-Patient-Setup.exe"
-          Copy-Item "$s/VELTRUVIA Lab Setup*.exe" "dist/VELTRUVIA-Lab-Setup.exe"
+          foreach ($app in @('Server', 'Doctor', 'Patient', 'Lab')) {
+            $dir = Join-Path $root $app.ToLower()
+            # Installers under stable dashed names (never the loose win-unpacked
+            # exe — a bare Electron exe cannot run without its DLLs/paks).
+            $setup = Get-ChildItem (Join-Path $dir "VELTRUVIA $app Setup*.exe") | Select-Object -First 1
+            if (-not $setup) { Write-Error "installer missing for $app in $dir" }
+            Copy-Item $setup.FullName "dist/VELTRUVIA-$app-Setup.exe"
 
-          # Portable zips (no-install, USB-shareable folders), matched by prefix:
-          # electron-builder emits e.g. "VELTRUVIA Doctor-2.0.1-win.zip".
-          $zips = @{
-            'VELTRUVIA Server-*.zip' = 'VELTRUVIA-Server-Portable.zip'
-            'VELTRUVIA Doctor-*.zip' = 'VELTRUVIA-Doctor-Portable.zip'
-            'VELTRUVIA Patient-*.zip' = 'VELTRUVIA-Patient-Portable.zip'
-            'VELTRUVIA Lab-*.zip' = 'VELTRUVIA-Lab-Portable.zip'
-          }
-          foreach ($pattern in $zips.Keys) {
-            $z = Get-ChildItem "$s/$pattern" | Select-Object -First 1
-            if (-not $z) { Write-Error "portable zip missing from $s (pattern: $pattern)" }
-            Copy-Item $z.FullName "dist/$($zips[$pattern])"
+            # Portable zips (no-install, USB-shareable folders), matched by
+            # prefix: electron-builder emits e.g. "VELTRUVIA Doctor-2.0.1-win.zip".
+            $zip = Get-ChildItem (Join-Path $dir "VELTRUVIA $app-*.zip") | Select-Object -First 1
+            if (-not $zip) { Write-Error "portable zip missing for $app in $dir" }
+            Copy-Item $zip.FullName "dist/VELTRUVIA-$app-Portable.zip"
           }
 
-          # electron-updater feed: point latest.yml at the stable installer
-          # name (bytes unchanged → sha512/size stay valid).
-          Copy-Item "$s/latest-server.yml" "dist/latest.yml"
-          $y = Get-Content "dist/latest.yml" -Raw
-          $y = $y -replace 'VELTRUVIA-Server-Setup-[\d\.]+\.exe', 'VELTRUVIA-Server-Setup.exe'
-          Set-Content "dist/latest.yml" $y -Encoding utf8
-
-          # Differential-update blockmaps, renamed to match the installers.
-          Copy-Item "$s/VELTRUVIA Server Setup*.exe.blockmap" "dist/VELTRUVIA-Server-Setup.exe.blockmap"
-          Copy-Item "$s/VELTRUVIA Doctor Setup*.exe.blockmap" "dist/VELTRUVIA-Doctor-Setup.exe.blockmap" -ErrorAction SilentlyContinue
-
-          # Doctor's own updater feed. It was stashed right after the Doctor
-          # build (the Patient/Lab builds have since overwritten
-          # dist-desktop/latest.yml), so copy that copy — the Doctor exe must
-          # never read the Server's feed, or it would install the Server
-          # installer over itself.
-          Copy-Item "$s/latest-doctor.yml" "dist/latest-doctor.yml" -Force
-          $yd = Get-Content "dist/latest-doctor.yml" -Raw
-          $yd = $yd -replace 'VELTRUVIA-Doctor-Setup-[\d\.]+\.exe', 'VELTRUVIA-Doctor-Setup.exe'
-          Set-Content "dist/latest-doctor.yml" $yd -Encoding utf8
+          # electron-updater feeds. Each app's folder holds exactly one latest*.yml
+          # (its exact name follows that config's publish channel), so take
+          # whichever is there and point it at the stable installer name — the
+          # exe bytes are unchanged, so sha512/size stay valid. The Doctor exe
+          # must never read the Server feed, or it would install the Server
+          # over itself.
+          function Copy-Feed($appDir, $dest, $versioned, $stable) {
+            $feed = Get-ChildItem (Join-Path $appDir '*.yml') | Select-Object -First 1
+            if (-not $feed) { Write-Warning "no updater feed in $appDir - $dest omitted"; return }
+            $text = (Get-Content $feed.FullName -Raw) -replace $versioned, $stable
+            Set-Content $dest $text -Encoding utf8
+            Write-Host "feed [$appDir]: $($feed.Name) -> $dest"
+          }
+          Copy-Feed (Join-Path $root 'server') 'dist/latest.yml' 'VELTRUVIA-Server-Setup-[\d\.]+\.exe' 'VELTRUVIA-Server-Setup.exe'
+          Copy-Feed (Join-Path $root 'doctor') 'dist/latest-doctor.yml' 'VELTRUVIA-Doctor-Setup-[\d\.]+\.exe' 'VELTRUVIA-Doctor-Setup.exe'
       - uses: actions/upload-artifact@v4
         with:
           name: desktop
@@ -323,5 +307,4 @@ jobs:
             dist/SHA256SUMS.txt
             dist/latest.yml
             dist/latest-doctor.yml
-            dist/VELTRUVIA-Server-Setup.exe.blockmap
           generate_release_notes: true

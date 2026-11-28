@@ -29,6 +29,7 @@ VELTRUVIA*/resources/app/chain.json
 
 # Build outputs
 dist-desktop/
+dist-build/
 dist/
 # Staged release binaries (installers, APKs, checksums) — uploaded, never committed
 artifacts/
